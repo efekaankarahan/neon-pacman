@@ -12,7 +12,7 @@ const TILE_COUNT = canvas.width / GRID_SIZE;
 let score = 0;
 let gameRunning = false;
 let gameLoopId;
-let speed = 2000; // ms per frame (2 seconds per block)
+let speed = 300; // ms per frame (User Requested Speed)
 
 let snake = [];
 let food = { x: 15, y: 15 };
@@ -107,9 +107,9 @@ function update() {
         scoreEl.innerText = score;
         placeFood();
         // Speed up slightly every 5 points
-        // Speed up slightly every 5 points
-        // Removed dynamic speed up to keep it slow on purpose
-        // if (score % 5 === 0 && speed > 50) speed -= 5;
+        // Speed up as snake grows (Make it harder)
+        // Decrease delay by 20ms every food, down to minimum 80ms
+        if (speed > 80) speed -= 20;
     } else {
         snake.pop(); // Remove tail
     }
