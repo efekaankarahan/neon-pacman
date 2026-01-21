@@ -107,7 +107,9 @@ function update() {
         scoreEl.innerText = score;
         placeFood();
         // Speed up slightly every 5 points
-        if (score % 5 === 0 && speed > 50) speed -= 5;
+        // Speed up slightly every 5 points
+        // Removed dynamic speed up to keep it slow on purpose
+        // if (score % 5 === 0 && speed > 50) speed -= 5;
     } else {
         snake.pop(); // Remove tail
     }
