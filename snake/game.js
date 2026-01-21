@@ -12,7 +12,7 @@ const TILE_COUNT = canvas.width / GRID_SIZE;
 let score = 0;
 let gameRunning = false;
 let gameLoopId;
-let speed = 100; // ms per frame
+let speed = 1000; // ms per frame (1 second per block)
 
 let snake = [];
 let food = { x: 15, y: 15 };
@@ -103,11 +103,11 @@ function update() {
 
     // Check Food Collision
     if (head.x === food.x && head.y === food.y) {
-        score += 10;
+        score += 1; // Count items eaten
         scoreEl.innerText = score;
         placeFood();
-        // Speed up slightly every 50 points
-        // logic omitted for simplicity or can be added
+        // Speed up slightly every 5 points
+        if (score % 5 === 0 && speed > 50) speed -= 5;
     } else {
         snake.pop(); // Remove tail
     }
