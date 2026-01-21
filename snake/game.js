@@ -12,7 +12,7 @@ const TILE_COUNT = canvas.width / GRID_SIZE;
 let score = 0;
 let gameRunning = false;
 let gameLoopId;
-let speed = 300; // ms per frame (User Requested Speed)
+let speed = 150; // ms per frame (150ms)
 
 let snake = [];
 let food = { x: 15, y: 15 };
