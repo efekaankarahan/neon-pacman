@@ -119,7 +119,7 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw Grid (Subtle)
-    ctx.strokeStyle = '#112211';
+    ctx.strokeStyle = '#1a1a1a';
     for (let i = 0; i < TILE_COUNT; i++) {
         ctx.beginPath();
         ctx.moveTo(i * GRID_SIZE, 0);
@@ -132,20 +132,17 @@ function draw() {
     }
 
     // Draw Food
-    ctx.fillStyle = '#ff00ff'; // Neon Pink Food
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#ff00ff';
+    ctx.fillStyle = '#ff4500'; // Orange Red Food (Contrast)
+    ctx.shadowBlur = 0; // No Neon
     ctx.fillRect(food.x * GRID_SIZE + 2, food.y * GRID_SIZE + 2, GRID_SIZE - 4, GRID_SIZE - 4);
-    ctx.shadowBlur = 0;
 
     // Draw Snake
-    ctx.fillStyle = '#00ff00'; // Neon Green
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#00ff00';
+    ctx.fillStyle = '#00BFFF'; // Pro Blue
+    ctx.shadowBlur = 0; // No Neon
     snake.forEach((part, index) => {
-        // Head is slightly different color?
-        if (index === 0) ctx.fillStyle = '#ccffcc';
-        else ctx.fillStyle = '#00ff00';
+        // Head is slightly brighter?
+        if (index === 0) ctx.fillStyle = '#fff';
+        else ctx.fillStyle = '#00BFFF';
 
         ctx.fillRect(part.x * GRID_SIZE + 1, part.y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
     });
