@@ -108,7 +108,8 @@ button:hover {
     transform: scale(0.95);
 }
 
-@media (max-width: 850px) {
+/* Support for iPads and Tablets in Landscape up to 1366px */
+@media (max-width: 1366px) {
     canvas {
         width: 100%;
         height: auto;
