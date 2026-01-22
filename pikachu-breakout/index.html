@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pikachu Breakout</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <h1>Pikachu Breakout</h1>
+        <div id="score-board">
+            <span>Score: <span id="score">0</span></span>
+            <span>Lives: <span id="lives">3</span></span>
+        </div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="game-over" class="hidden">
+            <h2 id="game-over-text">Game Over</h2>
+            <button id="restart-btn">Try Again</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+
+</html>

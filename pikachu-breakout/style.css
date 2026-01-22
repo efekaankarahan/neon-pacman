@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+    background-color: #222;
+    color: #FFDE00;
+    /* Pikachu Yellow */
+    font-family: 'Press Start 2P', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+#game-container {
+    text-align: center;
+    position: relative;
+    border: 4px solid #FFDE00;
+    padding: 20px;
+    background-color: #111;
+    box-shadow: 0 0 20px rgba(255, 222, 0, 0.5);
+}
+
+h1 {
+    margin: 0 0 20px 0;
+    text-shadow: 2px 2px #CC0000;
+    /* Red like cheeks */
+    font-size: 2rem;
+}
+
+#score-board {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+canvas {
+    background: #000;
+    border: 2px solid #555;
+    display: block;
+    margin: 0 auto;
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 40px;
+    border: 4px solid #FFDE00;
+    text-align: center;
+    z-index: 10;
+    display: none;
+    /* Controlled by JS via class */
+}
+
+#game-over.visible {
+    display: block;
+}
+
+#game-over h2 {
+    color: #FFDE00;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+button {
+    background-color: #CC0000;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #FF0000;
+}
+
+.hidden {
+    display: none !important;
+}
