@@ -436,10 +436,18 @@ function handleInput(e) {
 window.addEventListener('keydown', handleInput);
 startScreen.addEventListener('click', handleInput);
 startScreen.addEventListener('touchstart', handleInput);
-gameOverScreen.addEventListener('click', handleInput);
-gameOverScreen.addEventListener('touchstart', handleInput);
-winScreen.addEventListener('click', handleInput);
-winScreen.addEventListener('touchstart', handleInput);
+// Button Listeners
+document.getElementById('try-again-btn').addEventListener('click', startGame);
+document.getElementById('try-again-btn').addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); });
+
+document.getElementById('play-again-btn').addEventListener('click', startGame);
+document.getElementById('play-again-btn').addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); });
+
+document.getElementById('main-menu-btn-lose').addEventListener('click', () => window.location.href = '../index.html');
+document.getElementById('main-menu-btn-lose').addEventListener('touchstart', (e) => { e.preventDefault(); window.location.href = '../index.html'; });
+
+document.getElementById('main-menu-btn-win').addEventListener('click', () => window.location.href = '../index.html');
+document.getElementById('main-menu-btn-win').addEventListener('touchstart', (e) => { e.preventDefault(); window.location.href = '../index.html'; });
 
 window.addEventListener('load', () => {
     init();
