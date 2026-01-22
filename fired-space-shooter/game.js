@@ -518,3 +518,26 @@ for (let i = 0; i < 50; i++) stars.push(new Star());  // Draw static stars for b
 stars.forEach(s => s.draw());
 player = new Player(); // Show player for title screen
 player.draw();
+
+// Mobile D-Pad Logic
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+
+function handleBtn(btn, key, pressed) {
+    btn.addEventListener(pressed ? 'touchstart' : 'touchend', (e) => { e.preventDefault(); keys[key] = pressed; });
+    btn.addEventListener(pressed ? 'mousedown' : 'mouseup', (e) => { e.preventDefault(); keys[key] = pressed; });
+}
+
+if (btnLeft && btnRight) {
+    handleBtn(btnLeft, 'ArrowLeft', true);
+    handleBtn(btnLeft, 'ArrowLeft', false);
+
+    handleBtn(btnRight, 'ArrowRight', true);
+    handleBtn(btnRight, 'ArrowRight', false);
+}
+
+// Force Mobile Controls if Touch Detected
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    const dPad = document.querySelector('.d-pad');
+    if (dPad) dPad.style.display = 'flex';
+}
