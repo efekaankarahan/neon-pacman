@@ -31,8 +31,11 @@
 
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 30px;
+            width: 100%;
+            max-width: 800px;
+            justify-items: center;
         }
 
         .game-card {
@@ -94,11 +97,16 @@
 <body>
     <h1>DARKYPLAY</h1>
     <div class="game-grid">
-        <a href="/neon-pacman/" class="game-card">
+        <a href="neon-pacman/" class="game-card">
             <div class="game-icon">👻</div>
             <div class="game-title">NEON PACMAN</div>
         </a>
-        <a href="/snake/" class="game-card" style="border-color: #00BFFF; box-shadow: none; color: #00BFFF;">
+        <a href="fired-space-shooter/" class="game-card"
+            style="border-color: #FF4500; box-shadow: 0 0 10px #FF4500; color: #FF4500;">
+            <div class="game-icon">🔥</div>
+            <div class="game-title">FIRED SPACE</div>
+        </a>
+        <a href="snake/" class="game-card" style="border-color: #00BFFF; box-shadow: none; color: #00BFFF;">
             <div class="game-icon">🐍</div>
             <div class="game-title">PRO SNAKE</div>
         </a>
@@ -106,10 +114,17 @@
 
     <style>
         /* Specific hover for Snake to stay blue */
-        .game-card:nth-child(2):hover {
+        .game-card:nth-child(3):hover {
             background: #00BFFF !important;
             color: #000 !important;
             box-shadow: none !important;
+        }
+
+        /* Specific hover for Fired Space to stay orange */
+        .game-card:nth-child(2):hover {
+            background: #FF4500 !important;
+            color: #000 !important;
+            box-shadow: 0 0 30px #FF4500 !important;
         }
     </style>
     <div style="position: fixed; bottom: 10px; right: 10px; font-size: 0.8rem; color: #555;">

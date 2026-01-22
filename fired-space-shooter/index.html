@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Fired Space Shooter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Embed critical style to avoid FOUC */
+        body {
+            background-color: #000;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="score-board">SCORE: <span id="score">0</span></div>
+            <div class="health-board">HP: <div id="health-bar">
+                    <div id="health-fill"></div>
+                </div>
+            </div>
+            <a href="/" class="home-btn" style="position: absolute; top: 10px; right: 10px;">HOME</a>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="start-screen" class="overlay">
+            <h1>FIRED SPACE</h1>
+            <p>Shoot Everything!</p>
+            <p style="font-size: 0.7em; color: #aaa;">Arrow Keys / Touch to Move<br>Space / Auto-Shoot</p>
+            <button id="play-btn">LAUNCH</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 style="color: red;">MISSION FAILED</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <button id="restart-btn">RETRY</button>
+            <a href="/" class="home-btn" style="margin-top: 20px; display: inline-block;">MENU</a>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
