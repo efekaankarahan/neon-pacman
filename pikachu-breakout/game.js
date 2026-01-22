@@ -5,6 +5,8 @@ const livesEl = document.getElementById('lives');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverText = document.getElementById('game-over-text');
 const restartBtn = document.getElementById('restart-btn');
+const leftBtn = document.getElementById('left-btn');
+const rightBtn = document.getElementById('right-btn');
 
 // Game Variables
 let score = 0;
@@ -60,20 +62,48 @@ function initBricks() {
 }
 
 // Input handling
+let rightPressed = false;
+let leftPressed = false;
+
 document.addEventListener('keydown', keyDownHandler);
 document.addEventListener('keyup', keyUpHandler);
 
+// Touch/Mouse controls for mobile buttons
+function addTouchListeners(btn, isRight) {
+    const start = (e) => {
+        e.preventDefault();
+        if (isRight) rightPressed = true;
+        else leftPressed = true;
+    };
+    const end = (e) => {
+        e.preventDefault();
+        if (isRight) rightPressed = false;
+        else leftPressed = false;
+    };
+
+    btn.addEventListener('touchstart', start, { passive: false });
+    btn.addEventListener('touchend', end);
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('mouseup', end);
+    btn.addEventListener('mouseleave', end);
+}
+
+addTouchListeners(leftBtn, false);
+addTouchListeners(rightBtn, true);
+
 function keyDownHandler(e) {
     if (e.key === 'Right' || e.key === 'ArrowRight') {
-        paddle.dx = paddle.speed;
+        rightPressed = true;
     } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
-        paddle.dx = -paddle.speed;
+        leftPressed = true;
     }
 }
 
 function keyUpHandler(e) {
-    if (e.key === 'Right' || e.key === 'ArrowRight' || e.key === 'Left' || e.key === 'ArrowLeft') {
-        paddle.dx = 0;
+    if (e.key === 'Right' || e.key === 'ArrowRight') {
+        rightPressed = false;
+    } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+        leftPressed = false;
     }
 }
 
@@ -139,7 +169,11 @@ function drawBricks() {
 
 // Logic
 function movePaddle() {
-    paddle.x += paddle.dx;
+    if (rightPressed) {
+        paddle.x += paddle.speed;
+    } else if (leftPressed) {
+        paddle.x -= paddle.speed;
+    }
 
     // Wall detection
     if (paddle.x < 0) {

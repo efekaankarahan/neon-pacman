@@ -82,6 +82,43 @@ button:hover {
     background-color: #FF0000;
 }
 
+#mobile-controls {
+    display: none;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 20px;
+    padding: 0 10%;
+    box-sizing: border-box;
+}
+
+#mobile-controls button {
+    background-color: #FFDE00;
+    color: #111;
+    font-size: 2rem;
+    padding: 20px 40px;
+    border: 4px solid #111;
+    border-radius: 10px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+#mobile-controls button:active {
+    background-color: #CCB000;
+    transform: scale(0.95);
+}
+
+@media (max-width: 850px) {
+    canvas {
+        width: 100%;
+        height: auto;
+    }
+
+    #mobile-controls {
+        display: flex;
+    }
+}
+
 .hidden {
     display: none !important;
 }
