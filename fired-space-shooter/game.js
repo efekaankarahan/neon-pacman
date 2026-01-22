@@ -340,31 +340,64 @@ function checkCollisions() {
     // Projectiles hit Enemies
     projectiles.forEach(p => {
         if (!p.active) return;
-        enemies.forEach(e => {
-            if (!e.active) return;
-            if (rectIntersect(p, e)) {
+
+        // Check player bullets vs Enemies or Boss
+        if (!p.isEnemy) {
+            enemies.forEach(e => {
+                if (!e.active) return;
+
+                if (rectIntersect(p, e)) {
+                    p.active = false;
+                    e.hp--;
+
+                    if (e.hp <= 0) {
+                        e.active = false;
+                        spawnExplosion(e.x + e.width / 2, e.y + e.height / 2);
+
+                        // Handle Boss Death
+                        if (e instanceof Boss) {
+                            score += 500;
+                            updateUI();
+                            winGame();
+                        } else {
+                            score += 10;
+                            updateUI();
+                            if (score >= 1000) winGame();
+                        }
+                    }
+                }
+            });
+        }
+        // Check Enemy bullets vs Player
+        else {
+            if (rectIntersect(p, player)) {
                 p.active = false;
-                e.hp--;
-                if (e.hp <= 0) {
-                    e.active = false;
-                    score += 10;
-                    spawnExplosion(e.x + e.width / 2, e.y + e.height / 2);
-                    updateUI();
+                player.hp -= 10;
+                updateUI();
+                if (player.hp <= 0) {
+                    gameOver(true); // Killed by boss projectile
                 }
             }
-        });
+        }
     });
 
-    // Enemy hit Player
+    // Enemy body hit Player
     enemies.forEach(e => {
         if (!e.active) return;
         if (rectIntersect(e, player)) {
-            e.active = false;
-            player.hp -= 20;
+
+            if (e instanceof Boss) {
+                player.hp = 0; // Instant death
+            } else {
+                e.active = false;
+                player.hp -= 20;
+            }
+
             spawnExplosion(e.x + e.width / 2, e.y + e.height / 2, '#00BFFF');
             updateUI();
+
             if (player.hp <= 0) {
-                gameOver();
+                gameOver(e instanceof Boss);
             }
         }
     });
