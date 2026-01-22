@@ -37,9 +37,16 @@
         </div>
 
         <div id="game-over-screen" class="overlay hidden">
-            <h1 style="color: red;">MISSION FAILED</h1>
+            <h1 style="color: red; font-size: 3rem;">LOSER</h1>
             <p>Score: <span id="final-score">0</span></p>
             <button id="restart-btn">RETRY</button>
+            <a href="/" class="home-btn" style="margin-top: 20px; display: inline-block;">MENU</a>
+        </div>
+
+        <div id="win-screen" class="overlay hidden">
+            <h1 style="color: #00ff00; font-size: 3rem;">YOU WIN</h1>
+            <p>Score: <span id="win-score">0</span></p>
+            <button id="restart-win-btn">PLAY AGAIN</button>
             <a href="/" class="home-btn" style="margin-top: 20px; display: inline-block;">MENU</a>
         </div>
     </div>

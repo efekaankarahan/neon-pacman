@@ -6,9 +6,12 @@ const scoreEl = document.getElementById('score');
 const healthFill = document.getElementById('health-fill');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
+const winScreen = document.getElementById('win-screen');
 const finalScoreEl = document.getElementById('final-score');
+const winScoreEl = document.getElementById('win-score');
 const playBtn = document.getElementById('play-btn');
 const restartBtn = document.getElementById('restart-btn');
+const restartWinBtn = document.getElementById('restart-win-btn');
 
 // Game State
 let gameRunning = false;
@@ -323,6 +326,7 @@ function gameLoop(timestamp) {
 function startGame() {
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
+    winScreen.classList.add('hidden');
     init();
     gameRunning = true;
     lastTime = performance.now();
@@ -333,6 +337,12 @@ function gameOver() {
     gameRunning = false;
     finalScoreEl.innerText = score;
     gameOverScreen.classList.remove('hidden');
+}
+
+function winGame() {
+    gameRunning = false;
+    winScoreEl.innerText = score;
+    winScreen.classList.remove('hidden');
 }
 
 // Event Listeners
@@ -360,6 +370,7 @@ canvas.addEventListener('touchend', e => {
 
 playBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
+if (restartWinBtn) restartWinBtn.addEventListener('click', startGame);
 
 // Initial Load
 resizeCanvas();
