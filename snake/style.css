@@ -30,12 +30,62 @@ body {
     padding: 10px;
     /* No shadow/glow */
     border-radius: 5px;
-    width: 440px;
+    width: 100%;
+    max-width: 440px;
     /* Canvas + Padding */
     display: flex;
     flex-direction: column;
     align-items: center;
     background: #000;
+}
+
+/* D-Pad Controls */
+.d-pad {
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.d-btn {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--pro-blue);
+    border-radius: 10px;
+    color: var(--pro-blue);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.d-btn:active {
+    background: var(--pro-blue);
+    color: #000;
+}
+
+@media (max-width: 1024px) {
+    .d-pad {
+        display: grid;
+    }
+
+    .game-container {
+        padding: 5px;
+        border-width: 2px;
+    }
+
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
 }
 
 .header {

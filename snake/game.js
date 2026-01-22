@@ -24,6 +24,30 @@ let nextDy = 0;
 document.addEventListener('keydown', keyDownEvent);
 playBtn.addEventListener('click', startGame);
 
+// Touch Controls
+const btnUp = document.getElementById('btn-up');
+const btnDown = document.getElementById('btn-down');
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+
+function handleTouch(key) {
+    const event = { key: key, keyCode: 0 }; // Mock event
+    keyDownEvent(event);
+}
+
+if (btnUp) {
+    btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('ArrowUp'); });
+    btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('ArrowDown'); });
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('ArrowLeft'); });
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('ArrowRight'); });
+
+    // Also support click for testing on desktop with mouse
+    btnUp.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowUp'); });
+    btnDown.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowDown'); });
+    btnLeft.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowLeft'); });
+    btnRight.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowRight'); });
+}
+
 function resetGame() {
     snake = [
         { x: 10, y: 10 },
