@@ -262,14 +262,6 @@ function resetBall() {
     paddle.x = canvas.width / 2 - paddle.width / 2;
 }
 
-function endGame(win) {
-    gameRunning = false;
-    cancelAnimationFrame(animationId);
-    gameOverText.innerText = win ? "YOU WIN! PIKA PIKA!" : "GAME OVER";
-    gameOverScreen.classList.remove('hidden');
-    gameOverScreen.classList.add('visible');
-}
-
 function draw() {
     if (!gameRunning) return;
 
@@ -284,6 +276,56 @@ function draw() {
     movePaddle();
 
     animationId = requestAnimationFrame(draw);
+}
+
+function showStartScreen() {
+    gameRunning = false;
+    gameOverText.innerText = "Ready?";
+    gameOverScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('visible');
+
+    // Start Screen: Only Start Button
+    restartBtn.innerText = "Start Game";
+    restartBtn.style.display = "inline-block";
+    menuBtn.style.display = "none";
+}
+
+function showWinScreen() {
+    gameRunning = false;
+    cancelAnimationFrame(animationId);
+    gameOverText.innerText = "YOU WIN! PIKA PIKA!";
+    gameOverScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('visible');
+
+    // Win Screen: Play Again + Main Menu
+    restartBtn.innerText = "Play Again";
+    restartBtn.style.display = "none"; // User said: Win -> You Win message -> Main Menu. Wait, user transcript: "Win -> You Win, Main Menu".
+    // Wait, let's re-read the user request carefully.
+    // "oyunu kazanınca da en üstte you win pika pika görünsün altında try again görünsün altında main menu."
+    // So Win Screen IS: You Win, Try Again (Play Again), Main Menu.
+    restartBtn.style.display = "inline-block";
+    menuBtn.style.display = "block";
+}
+
+function showLoseScreen() {
+    gameRunning = false;
+    cancelAnimationFrame(animationId);
+    gameOverText.innerText = "GAME OVER";
+    gameOverScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('visible');
+
+    // Lose Screen: Try Again + Main Menu
+    restartBtn.innerText = "Try Again";
+    restartBtn.style.display = "inline-block";
+    menuBtn.style.display = "block";
+}
+
+function endGame(win) {
+    if (win) {
+        showWinScreen();
+    } else {
+        showLoseScreen();
+    }
 }
 
 function startGame() {
@@ -304,14 +346,11 @@ restartBtn.addEventListener('click', startGame);
 // Initial Start
 initBricks();
 resetBall();
-// Draw one frame to show initial state
 drawBricks();
 drawBall();
 drawPaddle();
 
-gameOverText.innerText = "Ready?";
-gameOverScreen.classList.remove('hidden');
-gameOverScreen.classList.add('visible');
+showStartScreen();
 
 menuBtn.addEventListener('click', () => {
     window.location.href = '../index.html';
