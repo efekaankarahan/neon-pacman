@@ -5,6 +5,7 @@ const livesEl = document.getElementById('lives');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverText = document.getElementById('game-over-text');
 const restartBtn = document.getElementById('restart-btn');
+const menuBtn = document.getElementById('menu-btn');
 const leftBtn = document.getElementById('left-btn');
 const rightBtn = document.getElementById('right-btn');
 
@@ -312,6 +313,20 @@ drawPaddle();
 // Actually, let's just show the Game Over screen with "Play" initially?
 // Or just let it sit there.
 // Let's autopause and wait for user to click "Try Again" which acts as Start.
+resetBall();
+// Draw one frame to show initial state
+drawBricks();
+drawBall();
+drawPaddle();
+// Wait for click to start or just start? Let's wait or show "Ready"
+// For now, let's just start or show a "Start" overlay.
+// Actually, let's just show the Game Over screen with "Play" initially?
+// Or just let it sit there.
+// Let's autopause and wait for user to click "Try Again" which acts as Start.
 gameOverText.innerText = "Ready?";
 gameOverScreen.classList.remove('hidden');
 gameOverScreen.classList.add('visible');
+
+menuBtn.addEventListener('click', () => {
+    window.location.href = '../index.html';
+});
