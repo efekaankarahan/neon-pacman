@@ -21,6 +21,14 @@ let dy = 0;
 let nextDx = 0;
 let nextDy = 0;
 
+// Force D-Pad on touch devices (Safari fix)
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    const dPad = document.querySelector('.d-pad');
+    if (dPad) dPad.style.display = 'grid';
+} else {
+    // Optional: Hide on non-touch if needed, but CSS handles that.
+}
+
 document.addEventListener('keydown', keyDownEvent);
 playBtn.addEventListener('click', startGame);
 

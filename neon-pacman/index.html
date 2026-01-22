@@ -1110,6 +1110,12 @@
             btnRight.addEventListener('mousedown', (e) => { e.preventDefault(); triggerKey('ArrowRight'); });
         }
 
+        // Force D-Pad on touch devices (Safari fix)
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            const dPad = document.querySelector('.d-pad');
+            if (dPad) dPad.style.display = 'grid';
+        }
+
         window.addEventListener('load', () => {
             // Load initial level for visuals (Level 1)
             loadLevel(1);
