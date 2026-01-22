@@ -270,11 +270,11 @@ class Boss {
 
         // Shoot logic
         const now = Date.now();
-        if (now - this.lastShot > 1000) { // Shoot every second
-            // Boss shoots 3 projectiles
-            projectiles.push(new Projectile(this.x + this.width / 2, this.y + this.height, 400, true)); // middle
-            projectiles.push(new Projectile(this.x, this.y + this.height, 350, true)); // left
-            projectiles.push(new Projectile(this.x + this.width, this.y + this.height, 350, true)); // right
+        if (now - this.lastShot > 600) { // Shoot faster (every 0.6s)
+            // Boss shoots 3 projectiles faster and further
+            projectiles.push(new Projectile(this.x + this.width / 2, this.y + this.height, 700, true)); // middle fast
+            projectiles.push(new Projectile(this.x, this.y + this.height, 600, true)); // left
+            projectiles.push(new Projectile(this.x + this.width, this.y + this.height, 600, true)); // right
             this.lastShot = now;
         }
     }
@@ -358,7 +358,7 @@ function checkCollisions() {
                         if (e instanceof Boss) {
                             score += 500;
                             updateUI();
-                            winGame();
+                            winGame(); // Instant win, no score check
                         } else {
                             score += 10;
                             updateUI();
