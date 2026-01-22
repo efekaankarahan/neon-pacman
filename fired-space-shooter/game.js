@@ -42,6 +42,8 @@ let projectiles = [];
 let enemies = [];
 let particles = [];
 let stars = [];
+let boss = null;
+let bossSpawned = false;
 
 // Game Constants
 const MOVEMENT_SPEED = 300; // pixels per second
@@ -153,22 +155,28 @@ class Player {
 }
 
 class Projectile {
-    constructor(x, y) {
+    constructor(x, y, speed = 600, isEnemy = false) {
         this.x = x;
         this.y = y;
         this.width = 4;
         this.height = 15;
-        this.speed = 600;
+        this.speed = speed;
+        this.isEnemy = isEnemy;
         this.active = true;
     }
 
     update(dt) {
-        this.y -= this.speed * dt;
-        if (this.y < -this.height) this.active = false;
+        if (this.isEnemy) {
+            this.y += this.speed * dt;
+            if (this.y > canvas.height) this.active = false;
+        } else {
+            this.y -= this.speed * dt;
+            if (this.y < -this.height) this.active = false;
+        }
     }
 
     draw() {
-        ctx.fillStyle = '#FFD700';
+        ctx.fillStyle = this.isEnemy ? '#ff00ff' : '#FFD700'; // Enemy shots are purple
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
@@ -217,6 +225,8 @@ function init() {
     particles = [];
     score = 0;
     frame = 0;
+    boss = null;
+    bossSpawned = false;
     updateUI();
 }
 
@@ -229,11 +239,102 @@ function resizeCanvas() {
     }
 }
 
+
+class Boss {
+    constructor() {
+        this.width = 100;
+        this.height = 100;
+        this.x = canvas.width / 2 - this.width / 2;
+        this.y = -120;
+        this.hp = 50; // Boss HP
+        this.maxHp = 50;
+        this.active = true;
+        this.color = '#800080'; // Purple
+        this.speed = 50;
+        this.dir = 1;
+        this.lastShot = 0;
+        this.lastMove = 0;
+    }
+
+    update(dt) {
+        // Entrance
+        if (this.y < 50) {
+            this.y += 30 * dt;
+        } else {
+            // Side to side movement
+            this.x += this.speed * this.dir * dt;
+            if (this.x <= 0 || this.x + this.width >= canvas.width) {
+                this.dir *= -1;
+            }
+        }
+
+        // Shoot logic
+        const now = Date.now();
+        if (now - this.lastShot > 1000) { // Shoot every second
+            // Boss shoots 3 projectiles
+            projectiles.push(new Projectile(this.x + this.width / 2, this.y + this.height, 400, true)); // middle
+            projectiles.push(new Projectile(this.x, this.y + this.height, 350, true)); // left
+            projectiles.push(new Projectile(this.x + this.width, this.y + this.height, 350, true)); // right
+            this.lastShot = now;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.fillStyle = this.color;
+        // Simple shape for Boss
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y); // Top left
+        ctx.lineTo(this.x + this.width, this.y); // Top right
+        ctx.lineTo(this.x + this.width / 2, this.y + this.height); // Bottom center
+        ctx.fill();
+
+        // Boss Eyes
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(this.x + 30, this.y + 40, 10, 0, Math.PI * 2);
+        ctx.arc(this.x + this.width - 30, this.y + 40, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Boss HP Bar
+        ctx.fillStyle = 'red';
+        ctx.fillRect(this.x, this.y - 15, this.width, 5);
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(this.x, this.y - 15, this.width * (this.hp / this.maxHp), 5);
+        ctx.restore();
+    }
+}
+
+// Modify Projectile to handle enemy headers (passed down from Boss)
+// But Projectile class is separate. I need to update Projectile to support owner/enemy shots.
+
+// Updating Projectile class first as Helper
+// I will just overload the existing Projectile class in next step if needed, 
+// for now let's use a flag in existing Projectile or create EnemyProjectile
+// Actually, I can reuse Projectile but I need to modify it.
+
+// Let's modify logic in `spawnEnemy` first
 function spawnEnemy() {
+    // Check for Boss Spawn
+    if (score >= 500 && !bossSpawned) {
+        enemies.forEach(e => e.active = false); // Clear screen
+        boss = new Boss();
+        enemies.push(boss); // Add boss to enemies list for drawing/updates? 
+        // Better to have separate variable 'boss' to track him easily for logic
+        // But for update loop, putting him in enemies array is easier if I distinguish by type.
+        // Let's keep separate `boss` variable but ALSO handle update manually or put in loop.
+        // Actually, let's put boss in enemies list but flag it.
+        bossSpawned = true;
+        return;
+    }
+
+    if (bossSpawned && boss && boss.active) return; // Don't spawn minions during boss?
+
     if (Math.random() < 0.02 + (score * 0.0001)) { // Increase difficulty logic
         enemies.push(new Enemy());
     }
 }
+
 
 function checkCollisions() {
     // Projectiles hit Enemies
@@ -333,9 +434,15 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
-function gameOver() {
+function gameOver(isBossDeath = false) {
     gameRunning = false;
     finalScoreEl.innerText = score;
+    const title = gameOverScreen.querySelector('h1');
+    if (isBossDeath) {
+        title.innerText = "LOOOOOOSER";
+    } else {
+        title.innerText = "LOSER";
+    }
     gameOverScreen.classList.remove('hidden');
 }
 
