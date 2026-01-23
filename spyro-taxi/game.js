@@ -155,8 +155,8 @@ function updateGame() {
             obstacles.splice(index, 1);
             score++;
             scoreEl.innerText = 'Score: ' + score;
-            // Increase speed
-            if (score % 5 === 0) gameSpeed += 0.02;
+            // Increase speed every time
+            gameSpeed += 0.015;
         }
     });
 
