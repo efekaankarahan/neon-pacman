@@ -1153,6 +1153,54 @@
             if (dPad) dPad.style.display = 'grid';
         }
 
+        // Flicker Effect Logic
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function flicker(active) {
+            const bodyValue = document.body.classList;
+            if (active) bodyValue.add('power-outage');
+            else bodyValue.remove('power-outage');
+        }
+
+        function triggerBlackout() {
+            // Flicker Sequence: On/Off rapidly
+            let count = 0;
+            const interval = setInterval(() => {
+                flicker(count % 2 === 0);
+                count++;
+                if (count > 6) { // 3 flickers
+                    clearInterval(interval);
+                    flicker(true); // Stay OFF
+
+                    // Stay OFF for 2 seconds
+                    setTimeout(() => {
+                        // Turn Back ON with flicker
+                        let count2 = 0;
+                        const interval2 = setInterval(() => {
+                            flicker(count2 % 2 === 0);
+                            count2++;
+                            if (count2 > 6) {
+                                clearInterval(interval2);
+                                flicker(false); // Finally ON
+                                scheduleBlackout(); // Schedule next
+                            }
+                        }, 50);
+                    }, 2000);
+                }
+            }, 50);
+        }
+
+        function scheduleBlackout() {
+            // Random time between 15s and 30s
+            const time = randomInt(15000, 30000);
+            setTimeout(triggerBlackout, time);
+        }
+
+        // Start random flicker loop
+        scheduleBlackout();
+
         window.addEventListener('load', () => {
             // Load initial level for visuals (Level 1)
             loadLevel(1);
