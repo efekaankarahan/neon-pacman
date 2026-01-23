@@ -11,8 +11,194 @@
         content="Darky Play, Online Games, Free Games, Kids Games, Browser Games, Play Game, Neon Pacman, Space Shooter, Snake Game, Pokemon Game">
     <meta name="robots" content="index, follow">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            /* overflow: hidden; Removed for scrolling */
+            text-align: center;
+            position: relative;
+            min-height: 100vh;
+            height: auto;
+            /* Allow growth */
+            padding-bottom: 50px;
+        }
+
+        /* Icon Buttons */
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .icon-btn span {
+                display: none;
+            }
+
+            .icon-btn::after {
+                content: attr(data-icon);
+                font-size: 1.5rem;
+            }
+
+            .icon-btn {
+                padding: 10px !important;
+            }
+        }
+
+        /* Dynamic Gradient Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, #1a1a1a, #000);
+            z-index: 0;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+            margin-bottom: 50px;
+            animation: glow 1.5s ease-in-out infinite alternate;
+            z-index: 2;
+            position: relative;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 800px;
+            justify-items: center;
+            z-index: 2;
+            position: relative;
+        }
+
+        .game-card {
+            background: #222;
+            border: 4px solid #00f3ff;
+            padding: 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #00f3ff;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 200px;
+            box-shadow: 0 0 10px #00f3ff;
+        }
+
+        .game-card:hover {
+            background: #00f3ff;
+            color: #000;
+            box-shadow: 0 0 30px #00f3ff;
+            transform: scale(1.1);
+        }
+
+        .game-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .game-title {
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+            }
+
+            to {
+                text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 60px #ff00ff;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .game-grid {
+                grid-template-columns: 1fr;
+                width: 90%;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Specific Game Card Styles */
+        .game-card:nth-child(3):hover {
+            background: #00BFFF !important;
+            color: #000 !important;
+            box-shadow: none !important;
+        }
+
+        .game-card:nth-child(2):hover {
+            background: #FF4500 !important;
+            color: #000 !important;
+            box-shadow: 0 0 30px #FF4500 !important;
+        }
+
+        .game-card:nth-child(4):hover {
+            background: #FFDE00 !important;
+            color: #000 !important;
+            box-shadow: 0 0 30px #FFDE00 !important;
+        }
+
+        /* Background Animation */
+        .background-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .floating-icon {
+            position: absolute;
+            font-size: 3rem;
+            opacity: 0.8;
+            /* Increased from 0.15 */
+            animation: float 15s infinite linear;
+            filter: none;
+            /* Removed blur */
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(110vh) rotate(0deg);
+                opacity: 0.1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0.1;
+            }
+        }
+
+        /* Original Embedded Styles Override */
         @media (max-width: 768px) {
             .game-grid {
                 display: flex;
@@ -123,9 +309,14 @@
             <div class="game-icon">⚡</div>
             <div class="game-title">PIKACHU BREAKOUT</div>
         </a>
+        <a href="spyro-taxi/index.html" class="game-card"
+            style="border-color: #bf00ff; box-shadow: 0 0 10px #bf00ff; color: #bf00ff;">
+            <div class="game-icon">🐉</div>
+            <div class="game-title">SPYRO TAXI</div>
+        </a>
     </div>
 
-    <div style="position: fixed; bottom: 10px; right: 10px; font-size: 0.8rem; color: #555;">
+    <div class="site-footer">
         &copy; 2026 - Efe Kaan Karahan
     </div>
 </body>
