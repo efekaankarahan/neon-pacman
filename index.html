@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Darky Play - Free Online Arcade Games for Kids</title>
     <meta name="description"
         content="Play free online games like Neon Pacman, Space Shooter, Snake, and Pikachu Breakout at Darky Play. No downloads required! Fun and safe browser games for kids.">
@@ -11,95 +11,98 @@
         content="Darky Play, Online Games, Free Games, Kids Games, Browser Games, Play Game, Neon Pacman, Space Shooter, Snake Game, Pokemon Game">
     <meta name="robots" content="index, follow">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <style>
-        body {
-            background-color: #111;
-            color: #fff;
-            font-family: 'Press Start 2P', cursive;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 3rem;
-            color: #fff;
-            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff;
-            margin-bottom: 50px;
-            animation: glow 1.5s ease-in-out infinite alternate;
-        }
-
-        .game-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 30px;
-            width: 100%;
-            max-width: 800px;
-            justify-items: center;
-        }
-
-        .game-card {
-            background: #222;
-            border: 4px solid #00f3ff;
-            padding: 30px;
-            border-radius: 10px;
-            text-decoration: none;
-            color: #00f3ff;
-            transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 200px;
-            box-shadow: 0 0 10px #00f3ff;
-        }
-
-        .game-card:hover {
-            background: #00f3ff;
-            color: #000;
-            box-shadow: 0 0 30px #00f3ff;
-            transform: scale(1.1);
-        }
-
-        .game-icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
-
-        .game-title {
-            font-size: 1.2rem;
-            line-height: 1.5;
-        }
-
-        @keyframes glow {
-            from {
-                text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
-            }
-
-            to {
-                text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 60px #ff00ff;
-            }
-        }
-
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .game-grid {
-                grid-template-columns: 1fr;
-                width: 90%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
             }
 
-            h1 {
-                font-size: 2rem;
+            .game-card {
+                width: 90%;
+                margin-bottom: 20px;
+            }
+
+            .floating-icon {
+                font-size: 1.5rem !important;
+                /* Smaller icons on mobile */
             }
         }
     </style>
 </head>
 
 <body>
+    <!-- Background Animation -->
+    <div class="background-container">
+        <!-- Mass Emoji Flood -->
+
+        <!-- Row 1: Ghosts & Monsters -->
+        <span class="floating-icon" style="left: 5%; animation-duration: 20s; font-size: 3rem;">👻</span>
+        <span class="floating-icon"
+            style="left: 25%; animation-duration: 25s; animation-delay: 2s; font-size: 4rem;">👽</span>
+        <span class="floating-icon" style="left: 45%; animation-duration: 18s; animation-delay: 5s;">👾</span>
+        <span class="floating-icon"
+            style="left: 65%; animation-duration: 22s; animation-delay: 1s; font-size: 3.5rem;">👻</span>
+        <span class="floating-icon"
+            style="left: 85%; animation-duration: 24s; animation-delay: 6s; font-size: 2.5rem;">🤖</span>
+
+        <!-- Row 2: Gaming -->
+        <span class="floating-icon" style="left: 10%; animation-duration: 28s; animation-delay: 4s;">🎮</span>
+        <span class="floating-icon"
+            style="left: 30%; animation-duration: 30s; animation-delay: 0s; font-size: 4rem;">🕹️</span>
+        <span class="floating-icon" style="left: 50%; animation-duration: 26s; animation-delay: 8s;">🎲</span>
+        <span class="floating-icon"
+            style="left: 70%; animation-duration: 22s; animation-delay: 3s; font-size: 3rem;">🎮</span>
+        <span class="floating-icon" style="left: 90%; animation-duration: 25s; animation-delay: 10s;">👾</span>
+
+        <!-- Row 3: Smileys -->
+        <span class="floating-icon" style="left: 8%; animation-duration: 18s; animation-delay: 7s;">😀</span>
+        <span class="floating-icon"
+            style="left: 28%; animation-duration: 20s; animation-delay: 12s; font-size: 4rem;">😎</span>
+        <span class="floating-icon" style="left: 48%; animation-duration: 15s; animation-delay: 2s;">🤪</span>
+        <span class="floating-icon"
+            style="left: 68%; animation-duration: 24s; animation-delay: 5s; font-size: 3.5rem;">🥳</span>
+        <span class="floating-icon" style="left: 88%; animation-duration: 19s; animation-delay: 9s;">🤩</span>
+        <span class="floating-icon"
+            style="left: 18%; animation-duration: 26s; animation-delay: 14s; font-size: 2.5rem;">😈</span>
+
+        <!-- Row 4: Pokemon/Animals -->
+        <span class="floating-icon"
+            style="left: 12%; animation-duration: 22s; animation-delay: 1s; color: yellow;">⚡</span>
+        <span class="floating-icon"
+            style="left: 32%; animation-duration: 27s; animation-delay: 6s; font-size: 4.5rem;">🐭</span>
+        <span class="floating-icon" style="left: 52%; animation-duration: 21s; animation-delay: 11s;">🐍</span>
+        <span class="floating-icon"
+            style="left: 72%; animation-duration: 25s; animation-delay: 4s; color: yellow;">⚡</span>
+        <span class="floating-icon"
+            style="left: 92%; animation-duration: 29s; animation-delay: 8s; font-size: 3rem;">🐉</span>
+
+        <!-- Row 5: Action/Space -->
+        <span class="floating-icon" style="left: 6%; animation-duration: 16s; animation-delay: 3s;">🚀</span>
+        <span class="floating-icon" style="left: 36%; animation-duration: 20s; animation-delay: 9s;">🔥</span>
+        <span class="floating-icon"
+            style="left: 56%; animation-duration: 23s; animation-delay: 13s; font-size: 4rem;">💥</span>
+        <span class="floating-icon" style="left: 76%; animation-duration: 18s; animation-delay: 2s;">⭐</span>
+        <span class="floating-icon" style="left: 96%; animation-duration: 25s; animation-delay: 7s;">🪐</span>
+
+        <!-- Row 6: Food & Fun -->
+        <span class="floating-icon" style="left: 20%; animation-duration: 30s; animation-delay: 5s;">🍕</span>
+        <span class="floating-icon" style="left: 40%; animation-duration: 24s; animation-delay: 10s;">🍔</span>
+        <span class="floating-icon" style="left: 60%; animation-duration: 28s; animation-delay: 15s;">⚽</span>
+        <span class="floating-icon" style="left: 80%; animation-duration: 22s; animation-delay: 1s;">🏆</span>
+        <span class="floating-icon" style="left: 2%; animation-duration: 26s; animation-delay: 12s;">👑</span>
+
+        <!-- Row 7: Pacman -->
+        <span class="floating-icon"
+            style="left: 15%; animation-duration: 17s; animation-delay: 4s; color: yellow;">ᗧ</span>
+        <span class="floating-icon"
+            style="left: 55%; animation-duration: 19s; animation-delay: 8s; color: yellow; font-size: 4.5rem;">ᗧ</span>
+        <span class="floating-icon"
+            style="left: 85%; animation-duration: 21s; animation-delay: 0s; color: pink;">👻</span>
+    </div>
+
     <h1>DARKYPLAY</h1>
     <div class="game-grid">
         <a href="neon-pacman/index.html" class="game-card">
@@ -122,28 +125,6 @@
         </a>
     </div>
 
-    <style>
-        /* Specific hover for Snake to stay blue */
-        .game-card:nth-child(3):hover {
-            background: #00BFFF !important;
-            color: #000 !important;
-            box-shadow: none !important;
-        }
-
-        /* Specific hover for Fired Space to stay orange */
-        .game-card:nth-child(2):hover {
-            background: #FF4500 !important;
-            color: #000 !important;
-            box-shadow: 0 0 30px #FF4500 !important;
-        }
-
-        /* Specific hover for Pikachu Breakout to stay yellow */
-        .game-card:nth-child(4):hover {
-            background: #FFDE00 !important;
-            color: #000 !important;
-            box-shadow: 0 0 30px #FFDE00 !important;
-        }
-    </style>
     <div style="position: fixed; bottom: 10px; right: 10px; font-size: 0.8rem; color: #555;">
         &copy; 2026 - Efe Kaan Karahan
     </div>
