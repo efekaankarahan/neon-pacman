@@ -11,8 +11,7 @@ const TILE_COUNT = canvas.width / GRID_SIZE;
 
 let score = 0;
 let gameRunning = false;
-let gameLoopId;
-let speed = 150; // ms per frame (150ms)
+let speed = 150;
 
 let snake = [];
 let food = { x: 15, y: 15 };
@@ -21,12 +20,15 @@ let dy = 0;
 let nextDx = 0;
 let nextDy = 0;
 
+// Dynamic Area Variables
+let borderOffset = 0; // 0 = normal, 1 = shrunk
+let shrinkTimeout;
+let restoreTimeout;
+
 // Force D-Pad on touch devices (Safari fix)
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
     const dPad = document.querySelector('.d-pad');
     if (dPad) dPad.style.display = 'grid';
-} else {
-    // Optional: Hide on non-touch if needed, but CSS handles that.
 }
 
 document.addEventListener('keydown', keyDownEvent);
@@ -39,7 +41,7 @@ const btnLeft = document.getElementById('btn-left');
 const btnRight = document.getElementById('btn-right');
 
 function handleTouch(key) {
-    const event = { key: key, keyCode: 0 }; // Mock event
+    const event = { key: key, keyCode: 0 };
     keyDownEvent(event);
 }
 
@@ -49,7 +51,6 @@ if (btnUp) {
     btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('ArrowLeft'); });
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('ArrowRight'); });
 
-    // Also support click for testing on desktop with mouse
     btnUp.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowUp'); });
     btnDown.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowDown'); });
     btnLeft.addEventListener('mousedown', (e) => { e.preventDefault(); handleTouch('ArrowLeft'); });
@@ -61,17 +62,26 @@ function resetGame() {
         { x: 10, y: 10 },
         { x: 10, y: 11 },
         { x: 10, y: 12 }
-    ]; // Head is index 0
+    ];
     dx = 0;
-    dy = -1; // Moving Up initially
+    dy = -1;
     nextDx = 0;
     nextDy = -1;
     score = 0;
     scoreEl.innerText = score;
+    borderOffset = 0;
+
+    // Clear timeouts
+    clearTimeout(shrinkTimeout);
+    clearTimeout(restoreTimeout);
+
     placeFood();
     gameOverScreen.classList.add('hidden');
     gameRunning = true;
     gameLoop();
+
+    // Schedule first shrink
+    scheduleShrink();
 }
 
 function startGame() {
@@ -79,28 +89,48 @@ function startGame() {
     resetGame();
 }
 
+// Shrink Logic
+function scheduleShrink() {
+    // Random delay between 10s and 30s
+    const delay = Math.floor(Math.random() * 20000) + 10000;
+    shrinkTimeout = setTimeout(() => {
+        if (!gameRunning) return;
+        borderOffset = 1;
+        // Schedule restore
+        restoreTimeout = setTimeout(() => {
+            if (!gameRunning) return;
+            borderOffset = 0;
+            scheduleShrink();
+        }, 20000); // 20 seconds shrink duration
+    }, delay);
+}
+
 function keyDownEvent(e) {
-    // Left
     if ((e.keyCode === 37 || e.key === 'ArrowLeft') && dy !== 0) {
         nextDx = -1; nextDy = 0;
     }
-    // Up
     else if ((e.keyCode === 38 || e.key === 'ArrowUp') && dx !== 0) {
         nextDx = 0; nextDy = -1;
     }
-    // Right
     else if ((e.keyCode === 39 || e.key === 'ArrowRight') && dy !== 0) {
         nextDx = 1; nextDy = 0;
     }
-    // Down
     else if ((e.keyCode === 40 || e.key === 'ArrowDown') && dx !== 0) {
         nextDx = 0; nextDy = 1;
     }
 }
 
 function placeFood() {
-    food.x = Math.floor(Math.random() * TILE_COUNT);
-    food.y = Math.floor(Math.random() * TILE_COUNT);
+    // Food must be within playable area
+    // Min: borderOffset, Max: TILE_COUNT - 1 - borderOffset
+    const min = borderOffset;
+    const max = TILE_COUNT - 1 - borderOffset;
+    const range = max - min + 1;
+
+    if (range <= 0) return; // Should not happen with 1 tile border
+
+    food.x = Math.floor(Math.random() * range) + min;
+    food.y = Math.floor(Math.random() * range) + min;
 
     // Don't spawn on snake body
     for (let part of snake) {
@@ -117,8 +147,14 @@ function update() {
 
     const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-    // Check Wall Collision
-    if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
+    // Check Wall Collision with dynamic border
+    // Valid X: [borderOffset, TILE_COUNT - 1 - borderOffset]
+    // If head.x < borderOffset or head.x > TILE_COUNT - 1 - borderOffset => die
+    // TILE_COUNT = 20. Offset 1. Valid 1..18. 
+    // If head.x < 1 (0) or head.x >= 19.
+
+    if (head.x < borderOffset || head.x >= TILE_COUNT - borderOffset ||
+        head.y < borderOffset || head.y >= TILE_COUNT - borderOffset) {
         endGame();
         return;
     }
@@ -131,28 +167,36 @@ function update() {
         }
     }
 
-    snake.unshift(head); // Add new head
+    snake.unshift(head);
 
     // Check Food Collision
     if (head.x === food.x && head.y === food.y) {
-        score += 1; // Count items eaten
+        score += 1;
         scoreEl.innerText = score;
         placeFood();
-        // Speed up slightly every 5 points
-        // Speed up as snake grows (Make it harder)
-        // Decrease delay by 20ms every food, down to minimum 80ms
         if (speed > 80) speed -= 20;
     } else {
-        snake.pop(); // Remove tail
+        snake.pop();
     }
 }
 
 function draw() {
-    // Clear Screen
-    ctx.fillStyle = 'black';
+    // Clear Screen with Gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#0f0c29'); // Deep dark blue/purple
+    gradient.addColorStop(1, '#302b63'); // Slightly lighter
+    // Or simpler:
+    // gradient.addColorStop(0, '#141414');
+    // gradient.addColorStop(1, '#000000');
+    // Let's go with a very subtle dark grey-blue
+    const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bgGradient.addColorStop(0, '#0a0a12');
+    bgGradient.addColorStop(1, '#1a1a24');
+
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Grid (Subtle)
+    // Draw Grid
     ctx.strokeStyle = '#1a1a1a';
     for (let i = 0; i < TILE_COUNT; i++) {
         ctx.beginPath();
@@ -165,16 +209,33 @@ function draw() {
         ctx.stroke();
     }
 
+    // Draw Danger Zone (Border) if active
+    if (borderOffset > 0) {
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; // Red tint
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+
+        // Top
+        ctx.fillRect(0, 0, canvas.width, GRID_SIZE);
+        // Bottom
+        ctx.fillRect(0, canvas.height - GRID_SIZE, canvas.width, GRID_SIZE);
+        // Left
+        ctx.fillRect(0, 0, GRID_SIZE, canvas.height);
+        // Right
+        ctx.fillRect(canvas.width - GRID_SIZE, 0, GRID_SIZE, canvas.height);
+
+        ctx.strokeRect(GRID_SIZE, GRID_SIZE, canvas.width - 2 * GRID_SIZE, canvas.height - 2 * GRID_SIZE);
+    }
+
     // Draw Food
-    ctx.fillStyle = '#ff4500'; // Orange Red Food (Contrast)
-    ctx.shadowBlur = 0; // No Neon
+    ctx.fillStyle = '#ff4500';
+    ctx.shadowBlur = 0;
     ctx.fillRect(food.x * GRID_SIZE + 2, food.y * GRID_SIZE + 2, GRID_SIZE - 4, GRID_SIZE - 4);
 
     // Draw Snake
-    ctx.fillStyle = '#00BFFF'; // Pro Blue
-    ctx.shadowBlur = 0; // No Neon
+    ctx.fillStyle = '#00BFFF';
+    ctx.shadowBlur = 0;
     snake.forEach((part, index) => {
-        // Head is slightly brighter?
         if (index === 0) ctx.fillStyle = '#fff';
         else ctx.fillStyle = '#00BFFF';
 
@@ -187,7 +248,7 @@ function gameLoop() {
     if (!gameRunning) return;
 
     update();
-    if (!gameRunning) return; // double check after update
+    if (!gameRunning) return;
     draw();
 
     setTimeout(gameLoop, speed);
@@ -195,6 +256,8 @@ function gameLoop() {
 
 function endGame() {
     gameRunning = false;
+    clearTimeout(shrinkTimeout);
+    clearTimeout(restoreTimeout);
     finalScoreEl.innerText = score;
     gameOverScreen.classList.remove('hidden');
 }

@@ -253,6 +253,32 @@
             box-shadow: none !important;
             border-color: #333 !important;
         }
+
+        #warning-text {
+            position: fixed;
+            top: 20%;
+            width: 100%;
+            text-align: center;
+            color: red;
+            font-size: 40px;
+            font-weight: bold;
+            z-index: 200;
+            text-shadow: 0 0 10px red;
+            animation: warnBlink 0.2s infinite;
+            display: none;
+        }
+
+        @keyframes warnBlink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
