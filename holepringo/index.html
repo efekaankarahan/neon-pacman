@@ -120,14 +120,17 @@
         });
 
         // TIMER
-        const timerInterval = setInterval(() => {
-            if (!gameActive) return;
-            timeLeft--;
-            document.getElementById("time").innerText = timeLeft;
-            if (timeLeft <= 0) {
-                gameActive = false;
-            }
-        }, 1000);
+        let timerInterval;
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!gameActive) return;
+                timeLeft--;
+                document.getElementById("time").innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    gameActive = false;
+                }
+            }, 1000);
+        }
 
         // GAME LOOP
         function update() {
@@ -205,10 +208,36 @@
         function startGame() {
             document.getElementById("startScreen").style.display = "none";
             gameActive = true;
+            startTimer();
         }
 
         function restartGame() {
-            location.reload();
+            // Stop old timer
+            clearInterval(timerInterval);
+
+            // Reset state
+            score = 0;
+            timeLeft = 120;
+            gameActive = true;
+
+            // Reset player
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.vx = 0;
+            player.vy = 0;
+
+            // Reset objects
+            objects = [];
+            for (let i = 0; i < 50; i++) spawn();
+
+            // Reset UI
+            document.getElementById("score").innerText = "0";
+            document.getElementById("time").innerText = "120";
+            document.getElementById("menuScreen").style.display = "none";
+            canvas.style.pointerEvents = "auto";
+
+            // Restart timer
+            startTimer();
         }
 
         function goMainMenu() {
