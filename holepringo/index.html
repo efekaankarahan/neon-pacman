@@ -13,6 +13,8 @@
 
         canvas {
             display: block;
+            position: relative;
+            z-index: 1;
         }
 
         #ui {
@@ -98,11 +100,13 @@
         let touchStartX = 0, touchStartY = 0;
 
         window.addEventListener("touchstart", e => {
+            if (!gameActive) return;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
 
         window.addEventListener("touchmove", e => {
+            if (!gameActive) return;
             let dx = e.touches[0].clientX - touchStartX;
             let dy = e.touches[0].clientY - touchStartY;
 
@@ -186,6 +190,7 @@
 
             if (!gameActive) {
                 document.getElementById("menuScreen").style.display = "flex";
+                canvas.style.pointerEvents = "none";
             }
         }
 
@@ -207,7 +212,7 @@
         }
 
         function goMainMenu() {
-            window.location.href = "/";
+            window.location.href = "../index.html";
         }
     </script>
 
