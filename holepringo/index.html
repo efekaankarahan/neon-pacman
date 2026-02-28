@@ -8,15 +8,16 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: #000;
+            background: #eaeaea;
         }
 
         #ui {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: white;
             font-family: Arial;
+            font-size: 18px;
+            color: #222;
         }
     </style>
 </head>
@@ -32,49 +33,78 @@
 
     <script>
         let scene = new THREE.Scene();
-        let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        scene.background = new THREE.Color(0xf0f0f0);
+
+        let camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            2000
+        );
+
         let renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        scene.background = new THREE.Color(0x111111);
+        // Top-down camera
+        camera.position.set(0, 60, 0);
+        camera.lookAt(0, 0, 0);
 
         // Light
         let light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 10, 7);
+        light.position.set(20, 50, 20);
+        light.castShadow = true;
         scene.add(light);
 
-        let ambient = new THREE.AmbientLight(0x404040);
+        let ambient = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambient);
 
-        // Player (Hole)
+        // Ground
+        let groundGeo = new THREE.PlaneGeometry(500, 500);
+        let groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        let ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Grid
+        let grid = new THREE.GridHelper(500, 50, 0xcccccc, 0xdddddd);
+        scene.add(grid);
+
+        // Player
         let playerRadius = 3;
-        let playerGeo = new THREE.SphereGeometry(playerRadius, 32, 32);
-        let playerMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        let playerGeo = new THREE.CylinderGeometry(playerRadius, playerRadius, 2, 32);
+        let playerMat = new THREE.MeshStandardMaterial({ color: 0x3333ff });
         let player = new THREE.Mesh(playerGeo, playerMat);
+        player.castShadow = true;
+        player.position.y = 1;
         scene.add(player);
 
-        player.position.y = 0;
-
-        camera.position.z = 20;
-        camera.position.y = 15;
-        camera.lookAt(player.position);
-
-        // Objects
         let objects = [];
         let score = 0;
 
-        function spawnObject() {
-            let radius = Math.random() * 2 + 0.5;
-            let geo = new THREE.SphereGeometry(radius, 16, 16);
-            let mat = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${Math.random() * 360},70%,50%)`)
-            });
-            let mesh = new THREE.Mesh(geo, mat);
+        function randomShape(radius) {
+            let type = Math.floor(Math.random() * 3);
+            let geo;
 
-            mesh.position.x = (Math.random() - 0.5) * 200;
-            mesh.position.z = (Math.random() - 0.5) * 200;
-            mesh.position.y = 0;
+            if (type === 0)
+                geo = new THREE.BoxGeometry(radius, radius, radius);
+            else if (type === 1)
+                geo = new THREE.SphereGeometry(radius, 16, 16);
+            else
+                geo = new THREE.ConeGeometry(radius, radius * 2, 16);
+
+            let mat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(`hsl(${Math.random() * 360},70%,60%)`)
+            });
+
+            let mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+
+            mesh.position.x = (Math.random() - 0.5) * 400;
+            mesh.position.z = (Math.random() - 0.5) * 400;
+            mesh.position.y = radius / 2;
 
             mesh.userData.radius = radius;
 
@@ -82,24 +112,35 @@
             objects.push(mesh);
         }
 
-        for (let i = 0; i < 200; i++) spawnObject();
+        for (let i = 0; i < 150; i++) {
+            randomShape(Math.random() * 2 + 0.5);
+        }
 
-        // Mouse control
-        let mouse = { x: 0, y: 0 };
+        // Mouse world movement
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let moveTarget = new THREE.Vector3();
 
         window.addEventListener("mousemove", e => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            let intersects = raycaster.intersectObject(ground);
+
+            if (intersects.length > 0) {
+                moveTarget.copy(intersects[0].point);
+            }
         });
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Move player
-            player.position.x += mouse.x * 0.5;
-            player.position.z += mouse.y * 0.5;
+            // Smooth movement
+            player.position.x += (moveTarget.x - player.position.x) * 0.05;
+            player.position.z += (moveTarget.z - player.position.z) * 0.05;
 
-            // Eat objects
+            // Eat
             objects.forEach((obj, index) => {
                 let dx = player.position.x - obj.position.x;
                 let dz = player.position.z - obj.position.z;
@@ -107,28 +148,28 @@
 
                 if (dist < playerRadius) {
                     let growth = obj.userData.radius / (playerRadius * 2);
-                    playerRadius += growth * 0.3;
+                    playerRadius += growth * 0.2;
 
                     scene.remove(obj);
                     objects.splice(index, 1);
-                    spawnObject();
+                    randomShape(Math.random() * 2 + 0.5);
 
                     score += Math.floor(obj.userData.radius * 10);
                     document.getElementById("score").innerText = "Score: " + score;
 
-                    // Update geometry
                     scene.remove(player);
-                    playerGeo = new THREE.SphereGeometry(playerRadius, 32, 32);
+                    playerGeo = new THREE.CylinderGeometry(playerRadius, playerRadius, 2, 32);
                     player = new THREE.Mesh(playerGeo, playerMat);
+                    player.position.y = 1;
                     scene.add(player);
                 }
             });
 
-            // Camera zoom out as grow
-            camera.position.z = 20 + playerRadius * 2;
+            // Camera follow top-down
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z;
             camera.lookAt(player.position);
 
-            // Win condition
             if (score >= 1000) {
                 document.getElementById("win").innerText = "YOU WIN!";
             }
@@ -138,7 +179,6 @@
 
         animate();
     </script>
-
 </body>
 
 </html>
