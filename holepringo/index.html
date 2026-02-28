@@ -41,8 +41,9 @@
 
     <div id="ui">
         <div id="score">Score: 0</div>
-        <div id="timer" style="position:absolute; top:20px; left:20px; font-family:Arial; font-size:20px; color:#222;">
-            Time: 120</div>
+        <div id="timer"
+            style="position:fixed; top:20px; left:20px; font-size:24px; font-family:Arial; color:#000; z-index:9999;">
+            02:00</div>
         <div id="win"></div>
     </div>
 
@@ -160,7 +161,9 @@
                     return;
                 }
                 timeLeft--;
-                timerEl.innerText = "Time: " + timeLeft;
+                let mins = Math.floor(timeLeft / 60);
+                let secs = timeLeft % 60;
+                timerEl.innerText = String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
                 if (timeLeft <= 0) {
                     gameActive = false;
                     document.getElementById("endScreen").style.display = "block";
