@@ -41,7 +41,8 @@
 
     <div id="ui">
         <div id="score">Score: 0</div>
-        <div id="timer">Time: 120</div>
+        <div id="timer" style="position:absolute; top:20px; left:20px; font-family:Arial; font-size:20px; color:#222;">
+            Time: 120</div>
         <div id="win"></div>
     </div>
 
@@ -59,6 +60,7 @@
         let objects = [];
         let score = 0;
         let timeLeft = 120;
+        const timerEl = document.getElementById("timer");
         let gameActive = true;
 
         init();
@@ -158,7 +160,7 @@
                     return;
                 }
                 timeLeft--;
-                document.getElementById("timer").innerText = "Time: " + timeLeft;
+                timerEl.innerText = "Time: " + timeLeft;
                 if (timeLeft <= 0) {
                     gameActive = false;
                     document.getElementById("endScreen").style.display = "block";
