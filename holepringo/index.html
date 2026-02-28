@@ -50,36 +50,85 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let player, objects, score, timeLeft, playing;
+        // Chunk system
+        const CHUNK_SIZE = 800;
+        const chunks = {};
+
+        function getChunkKey(cx, cy) {
+            return cx + "," + cy;
+        }
+
+        function generateChunk(cx, cy) {
+            let key = getChunkKey(cx, cy);
+            if (chunks[key]) return;
+            chunks[key] = [];
+            for (let i = 0; i < 20; i++) {
+                chunks[key].push({
+                    x: cx * CHUNK_SIZE + Math.random() * CHUNK_SIZE,
+                    y: cy * CHUNK_SIZE + Math.random() * CHUNK_SIZE,
+                    radius: Math.random() * 20 + 5,
+                    depth: Math.random() * 0.5 + 0.5,
+                    color: `hsl(${Math.random() * 360},70%,60%)`
+                });
+            }
+        }
+
+        function getVisibleChunks() {
+            let zoom = getZoom();
+            let viewW = (canvas.width / zoom) / 2 + CHUNK_SIZE;
+            let viewH = (canvas.height / zoom) / 2 + CHUNK_SIZE;
+
+            let minCX = Math.floor((player.x - viewW) / CHUNK_SIZE);
+            let maxCX = Math.floor((player.x + viewW) / CHUNK_SIZE);
+            let minCY = Math.floor((player.y - viewH) / CHUNK_SIZE);
+            let maxCY = Math.floor((player.y + viewH) / CHUNK_SIZE);
+
+            let visible = [];
+            for (let cx = minCX; cx <= maxCX; cx++) {
+                for (let cy = minCY; cy <= maxCY; cy++) {
+                    generateChunk(cx, cy);
+                    visible.push(getChunkKey(cx, cy));
+                }
+            }
+            return visible;
+        }
+
+        let player, score, timeLeft, playing;
         let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+
+        function getZoom() {
+            let zoom = 1 - player.radius * 0.0005;
+            if (zoom < 0.15) zoom = 0.15;
+            return zoom;
+        }
 
         function startGame() {
             document.getElementById("menu").style.display = "none";
 
             player = {
-                x: canvas.width / 2,
-                y: canvas.height / 2,
+                x: CHUNK_SIZE / 2,
+                y: CHUNK_SIZE / 2,
                 radius: 30
             };
 
-            objects = [];
+            // Clear all chunks
+            for (let key in chunks) delete chunks[key];
+
             score = 0;
-            timeLeft = 120; // 2 dakika
+            timeLeft = 120;
             playing = true;
 
-            for (let i = 0; i < 80; i++) spawnObject();
+            mouse.x = canvas.width / 2;
+            mouse.y = canvas.height / 2;
+
+            // Generate initial chunks around player
+            for (let cx = -1; cx <= 1; cx++) {
+                for (let cy = -1; cy <= 1; cy++) {
+                    generateChunk(cx, cy);
+                }
+            }
 
             gameLoop();
-        }
-
-        function spawnObject() {
-            objects.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: Math.random() * 20 + 5,
-                depth: Math.random() * 0.5 + 0.5,
-                color: `hsl(${Math.random() * 360},70%,60%)`
-            });
         }
 
         canvas.addEventListener("mousemove", e => {
@@ -90,46 +139,105 @@
         function update() {
             if (!playing) return;
 
-            // Smooth movement
-            player.x += (mouse.x - player.x) * 0.05;
-            player.y += (mouse.y - player.y) * 0.05;
+            // Convert mouse screen position to world direction
+            let zoom = getZoom();
+            let dx = (mouse.x - canvas.width / 2) / zoom;
+            let dy = (mouse.y - canvas.height / 2) / zoom;
 
-            objects.forEach((obj, index) => {
-                let dx = player.x - obj.x;
-                let dy = player.y - obj.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
+            // Smooth movement towards mouse direction
+            player.x += dx * 0.05;
+            player.y += dy * 0.05;
 
-                if (dist < player.radius) {
-                    player.radius += obj.radius * 0.05;
-                    score += Math.floor(obj.radius);
-                    objects.splice(index, 1);
-                    spawnObject();
+            // Check collisions in visible chunks
+            let visibleKeys = getVisibleChunks();
+            visibleKeys.forEach(key => {
+                let objs = chunks[key];
+                if (!objs) return;
+                for (let i = objs.length - 1; i >= 0; i--) {
+                    let obj = objs[i];
+                    let ddx = player.x - obj.x;
+                    let ddy = player.y - obj.y;
+                    let dist = Math.sqrt(ddx * ddx + ddy * ddy);
+
+                    if (dist < player.radius) {
+                        // Scaled growth - grows less as player gets bigger
+                        let growth = obj.radius / (player.radius * 0.5);
+                        player.radius += growth;
+                        score += Math.floor(obj.radius);
+                        objs.splice(i, 1);
+
+                        // Respawn object in same chunk
+                        let parts = key.split(",");
+                        let cx = parseInt(parts[0]);
+                        let cy = parseInt(parts[1]);
+                        objs.push({
+                            x: cx * CHUNK_SIZE + Math.random() * CHUNK_SIZE,
+                            y: cy * CHUNK_SIZE + Math.random() * CHUNK_SIZE,
+                            radius: Math.random() * 20 + 5,
+                            depth: Math.random() * 0.5 + 0.5,
+                            color: `hsl(${Math.random() * 360},70%,60%)`
+                        });
+                    }
                 }
             });
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 3D background grid feel
             ctx.fillStyle = "#111";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Objects
-            objects.forEach(obj => {
-                let gradient = ctx.createRadialGradient(
-                    obj.x, obj.y, 1,
-                    obj.x, obj.y, obj.radius
-                );
-                gradient.addColorStop(0, "white");
-                gradient.addColorStop(1, obj.color);
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
-                ctx.fill();
+            ctx.save();
+
+            // Camera: center on player with zoom
+            let zoom = getZoom();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-player.x, -player.y);
+
+            // Draw chunk grid lines (subtle)
+            let visibleKeys = getVisibleChunks();
+            ctx.strokeStyle = "rgba(255,255,255,0.05)";
+            ctx.lineWidth = 1;
+            visibleKeys.forEach(key => {
+                let parts = key.split(",");
+                let cx = parseInt(parts[0]);
+                let cy = parseInt(parts[1]);
+                ctx.strokeRect(cx * CHUNK_SIZE, cy * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
             });
 
-            // Player (hole)
+            // Draw chunk labels
+            ctx.fillStyle = "rgba(255,255,255,0.08)";
+            ctx.font = "14px Arial";
+            visibleKeys.forEach(key => {
+                let parts = key.split(",");
+                let cx = parseInt(parts[0]);
+                let cy = parseInt(parts[1]);
+                ctx.fillText("Chunk (" + cx + "," + cy + ")", cx * CHUNK_SIZE + 10, cy * CHUNK_SIZE + 20);
+            });
+
+            // Draw objects in visible chunks
+            visibleKeys.forEach(key => {
+                let objs = chunks[key];
+                if (!objs) return;
+                objs.forEach(obj => {
+                    let gradient = ctx.createRadialGradient(
+                        obj.x, obj.y, 1,
+                        obj.x, obj.y, obj.radius
+                    );
+                    gradient.addColorStop(0, "white");
+                    gradient.addColorStop(1, obj.color);
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            });
+
+            // Player (hole) with shadow
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = "black";
+
             let holeGradient = ctx.createRadialGradient(
                 player.x, player.y, 1,
                 player.x, player.y, player.radius
@@ -142,11 +250,23 @@
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // UI
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+
+            // UI (fixed on screen, not affected by camera)
             ctx.fillStyle = "white";
             ctx.font = "20px Arial";
             ctx.fillText("Score: " + score, 20, 30);
             ctx.fillText("Time: " + Math.floor(timeLeft), 20, 60);
+            ctx.fillText("Size: " + Math.floor(player.radius), 20, 90);
+
+            // Current chunk indicator
+            let pcx = Math.floor(player.x / CHUNK_SIZE);
+            let pcy = Math.floor(player.y / CHUNK_SIZE);
+            ctx.fillStyle = "rgba(255,255,255,0.5)";
+            ctx.font = "14px Arial";
+            ctx.fillText("Chunk (" + pcx + "," + pcy + ")", 20, 115);
         }
 
         function gameLoop() {
@@ -168,6 +288,7 @@
                     document.getElementById("menu").innerHTML = `
         <h1>Time's Up!</h1>
         <p>Your Score: ${score}</p>
+        <p>Final Size: ${Math.floor(player.radius)}</p>
         <button onclick="startGame()">Play Again</button>
       `;
                 }
