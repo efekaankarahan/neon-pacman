@@ -19,6 +19,21 @@
             font-size: 18px;
             color: #222;
         }
+
+        #endScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: Arial;
+            text-align: center;
+            display: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+        }
     </style>
 </head>
 
@@ -26,177 +41,164 @@
 
     <div id="ui">
         <div id="score">Score: 0</div>
+        <div id="timer">Time: 120</div>
         <div id="win"></div>
+    </div>
+
+    <div id="endScreen">
+        <h2>Time's Up!</h2>
+        <p id="finalScore"></p>
+        <button onclick="restart()">Play Again</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        let scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0);
+        let scene, camera, renderer;
+        let player, playerGeo, playerMat;
+        let objects = [];
+        let score = 0;
+        let timeLeft = 120;
+        let gameActive = true;
 
-        let camera = new THREE.PerspectiveCamera(
-            60,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            2000
-        );
+        init();
+        animate();
+        startTimer();
 
-        let renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+        function init() {
 
-        camera.position.set(0, 60, 0);
-        camera.lookAt(0, 0, 0);
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
 
-        // Light
-        let light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(20, 50, 20);
-        light.castShadow = true;
-        scene.add(light);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 60, 0);
 
-        let ambient = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambient);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
 
-        // Ground
-        let groundGeo = new THREE.PlaneGeometry(500, 500);
-        let groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        let ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
+            let light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(20, 50, 20);
+            scene.add(light);
 
-        let grid = new THREE.GridHelper(500, 50, 0xcccccc, 0xdddddd);
-        scene.add(grid);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-        // Player
-        let playerRadius = 3;
-        let playerGeo = new THREE.CylinderGeometry(playerRadius, playerRadius, 2, 32);
-        let playerMat = new THREE.MeshStandardMaterial({ color: 0x3366ff });
-        let player = new THREE.Mesh(playerGeo, playerMat);
-        player.castShadow = true;
-        player.position.y = 1;
-        scene.add(player);
+            let ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(500, 500),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
 
-        let speed = 1;
+            scene.add(new THREE.GridHelper(500, 50, 0xcccccc, 0xdddddd));
+
+            // Player
+            playerGeo = new THREE.CylinderGeometry(3, 3, 2, 32);
+            playerMat = new THREE.MeshStandardMaterial({ color: 0x3366ff });
+            player = new THREE.Mesh(playerGeo, playerMat);
+            player.position.y = 1;
+            scene.add(player);
+
+            // Spawn
+            for (let i = 0; i < 150; i++) {
+                spawn();
+            }
+
+        }
+
+        function spawn() {
+            let r = Math.random() * 2 + 0.5;
+            let geo = new THREE.SphereGeometry(r, 16, 16);
+            let mat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(`hsl(${Math.random() * 360},70%,60%)`)
+            });
+            let mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set((Math.random() - 0.5) * 400, r / 2, (Math.random() - 0.5) * 400);
+            mesh.userData.radius = r;
+            scene.add(mesh);
+            objects.push(mesh);
+        }
+
+        // CONTROLS
         let move = { x: 0, z: 0 };
 
-        // KEYBOARD CONTROLS
         window.addEventListener("keydown", e => {
             if (e.key === "ArrowUp") move.z = -1;
             if (e.key === "ArrowDown") move.z = 1;
             if (e.key === "ArrowLeft") move.x = -1;
             if (e.key === "ArrowRight") move.x = 1;
         });
-
         window.addEventListener("keyup", e => {
             if (e.key === "ArrowUp" || e.key === "ArrowDown") move.z = 0;
             if (e.key === "ArrowLeft" || e.key === "ArrowRight") move.x = 0;
         });
 
-        // TOUCH CONTROL (MOBILE DRAG)
         let touchStartX = 0, touchStartY = 0;
 
         window.addEventListener("touchstart", e => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
-
         window.addEventListener("touchmove", e => {
             let dx = e.touches[0].clientX - touchStartX;
             let dy = e.touches[0].clientY - touchStartY;
-
             move.x = dx * 0.01;
             move.z = dy * 0.01;
         });
-
         window.addEventListener("touchend", () => {
-            move.x = 0;
-            move.z = 0;
+            move.x = 0; move.z = 0;
         });
 
-        // Objects
-        let objects = [];
-        let score = 0;
-
-        function randomShape(radius) {
-            let type = Math.floor(Math.random() * 3);
-            let geo;
-
-            if (type === 0)
-                geo = new THREE.BoxGeometry(radius, radius, radius);
-            else if (type === 1)
-                geo = new THREE.SphereGeometry(radius, 16, 16);
-            else
-                geo = new THREE.ConeGeometry(radius, radius * 2, 16);
-
-            let mat = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${Math.random() * 360},70%,60%)`)
-            });
-
-            let mesh = new THREE.Mesh(geo, mat);
-            mesh.castShadow = true;
-
-            mesh.position.x = (Math.random() - 0.5) * 400;
-            mesh.position.z = (Math.random() - 0.5) * 400;
-            mesh.position.y = radius / 2;
-
-            mesh.userData.radius = radius;
-
-            scene.add(mesh);
-            objects.push(mesh);
-        }
-
-        for (let i = 0; i < 150; i++) {
-            randomShape(Math.random() * 2 + 0.5);
+        // TIMER
+        function startTimer() {
+            let interval = setInterval(() => {
+                if (!gameActive) {
+                    clearInterval(interval);
+                    return;
+                }
+                timeLeft--;
+                document.getElementById("timer").innerText = "Time: " + timeLeft;
+                if (timeLeft <= 0) {
+                    gameActive = false;
+                    document.getElementById("endScreen").style.display = "block";
+                    document.getElementById("finalScore").innerText = "Final Score: " + score;
+                }
+            }, 1000);
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Move player
-            player.position.x += move.x * speed;
-            player.position.z += move.z * speed;
+            if (gameActive) {
+                player.position.x += move.x;
+                player.position.z += move.z;
 
-            // Eat objects
-            objects.forEach((obj, index) => {
-                let dx = player.position.x - obj.position.x;
-                let dz = player.position.z - obj.position.z;
-                let dist = Math.sqrt(dx * dx + dz * dz);
+                objects.forEach((obj, index) => {
+                    let dx = player.position.x - obj.position.x;
+                    let dz = player.position.z - obj.position.z;
+                    let dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist < 3) {
+                        score += Math.floor(obj.userData.radius * 10);
+                        document.getElementById("score").innerText = "Score: " + score;
+                        scene.remove(obj);
+                        objects.splice(index, 1);
+                        spawn();
+                    }
+                });
 
-                if (dist < playerRadius) {
-                    let growth = obj.userData.radius / (playerRadius * 2);
-                    playerRadius += growth * 0.2;
-
-                    scene.remove(obj);
-                    objects.splice(index, 1);
-                    randomShape(Math.random() * 2 + 0.5);
-
-                    score += Math.floor(obj.userData.radius * 10);
-                    document.getElementById("score").innerText = "Score: " + score;
-
-                    scene.remove(player);
-                    playerGeo = new THREE.CylinderGeometry(playerRadius, playerRadius, 2, 32);
-                    player = new THREE.Mesh(playerGeo, playerMat);
-                    player.position.y = 1;
-                    scene.add(player);
-                }
-            });
-
-            // Camera follow
-            camera.position.x = player.position.x;
-            camera.position.z = player.position.z;
-            camera.lookAt(player.position);
-
-            if (score >= 1000) {
-                document.getElementById("win").innerText = "YOU WIN!";
+                camera.position.x = player.position.x;
+                camera.position.z = player.position.z;
+                camera.lookAt(player.position);
             }
 
             renderer.render(scene, camera);
         }
 
-        animate();
+        function restart() {
+            location.reload();
+        }
+
     </script>
 </body>
 
