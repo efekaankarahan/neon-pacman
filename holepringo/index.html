@@ -71,6 +71,7 @@
         let score = 0;
         let timeLeft = 120;
         let gameActive = false;
+        let gameStarted = false;
 
         let objects = [];
 
@@ -191,7 +192,7 @@
                 ctx.fill();
             });
 
-            if (!gameActive) {
+            if (!gameActive && gameStarted) {
                 document.getElementById("menuScreen").style.display = "flex";
                 canvas.style.pointerEvents = "none";
             }
@@ -208,6 +209,7 @@
         function startGame() {
             document.getElementById("startScreen").style.display = "none";
             gameActive = true;
+            gameStarted = true;
             startTimer();
         }
 
