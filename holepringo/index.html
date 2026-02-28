@@ -36,6 +36,13 @@
 
     <canvas id="game"></canvas>
 
+    <div id="menuScreen"
+        style="position:fixed; top:0; left:0; width:100%; height:100%; background:white; display:none; align-items:center; justify-content:center; flex-direction:column; font-family:Arial; z-index:9999;">
+        <h1>Time's Up!</h1>
+        <button onclick="restartGame()" style="margin:10px;padding:10px 20px;font-size:18px;">Restart</button>
+        <button onclick="goMainMenu()" style="margin:10px;padding:10px 20px;font-size:18px;">Main Menu</button>
+    </div>
+
     <script>
         const canvas = document.getElementById("game");
         const ctx = canvas.getContext("2d");
@@ -166,10 +173,7 @@
             });
 
             if (!gameActive) {
-                ctx.fillStyle = "black";
-                ctx.font = "40px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("Time's Up!", canvas.width / 2, canvas.height / 2);
+                document.getElementById("menuScreen").style.display = "flex";
             }
         }
 
@@ -180,6 +184,14 @@
         }
 
         loop();
+
+        function restartGame() {
+            location.reload();
+        }
+
+        function goMainMenu() {
+            window.location.href = "/";
+        }
     </script>
 
 </body>
