@@ -707,20 +707,7 @@
                 </button>
             </div>
 
-            <div class="bottom-nav">
-                <div class="nav-item active">
-                    <span class="nav-icon">🎮</span> Game
-                </div>
-                <div class="nav-item">
-                    <span class="nav-icon">🏆</span> Rank
-                </div>
-                <div class="nav-item">
-                    <span class="nav-icon">👥</span> Friends
-                </div>
-                <div class="nav-item">
-                    <span class="nav-icon">👤</span> Profile
-                </div>
-            </div>
+
         </div>
 
         <!-- ── END SCREEN ── -->
@@ -944,6 +931,9 @@
                 });
 
                 showToast("+" + (10 * (combo - 1)) + " " + currentWord + "!");
+
+                // Check if all placed words in grid are found, regenerate if so
+                checkAllFound();
             } else {
                 combo = 1;
                 updateComboDisplay();
@@ -975,6 +965,22 @@
                 grid[parseInt(tile.dataset.index)] = newLetter;
             });
             clearSelection();
+        }
+
+        function checkAllFound() {
+            // Check if all tiles with placed words are found (all correct)
+            const allTiles = document.querySelectorAll(".tile");
+            const correctTiles = document.querySelectorAll(".tile.correct");
+            const nonCorrectTiles = document.querySelectorAll(".tile:not(.correct)");
+
+            // If most tiles are correct or all placed words found, regenerate
+            if (correctTiles.length >= allTiles.length * 0.5 || foundWords.length >= 6) {
+                showToast("🎉 New round!");
+                setTimeout(() => {
+                    foundWords = [];
+                    createGrid();
+                }, 800);
+            }
         }
 
         function showHint() {
