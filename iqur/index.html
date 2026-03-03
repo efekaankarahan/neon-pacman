@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>IQur</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        #gameBox {
+            max-width: 400px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        input {
+            padding: 8px;
+            font-size: 18px;
+            width: 100px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="gameBox">
+
+        <h1>IQur</h1>
+
+        <div id="menu">
+            <p>
+                Answer as many math questions as you can in 60 seconds.
+                Each correct answer gives +10 points.
+                Wrong answers -5 points.
+            </p>
+            <button onclick="startGame()">Start</button>
+        </div>
+
+        <div id="game" style="display:none;">
+            <h2 id="timer">Time: 60</h2>
+            <h2 id="score">Score: 0</h2>
+            <h2 id="question"></h2>
+            <input type="number" id="answer" />
+            <br>
+            <button onclick="checkAnswer()">Submit</button>
+        </div>
+
+        <div id="endScreen" style="display:none;">
+            <h2 id="finalIQ"></h2>
+            <button onclick="restartGame()">Restart</button>
+            <button onclick="goMainMenu()">Main Menu</button>
+        </div>
+
+    </div>
+
+    <script>
+
+        let timeLeft = 60;
+        let score = 0;
+        let correctAnswer = 0;
+        let timerInterval;
+
+        function startGame() {
+            document.getElementById("menu").style.display = "none";
+            document.getElementById("game").style.display = "block";
+            score = 0;
+            timeLeft = 60;
+            document.getElementById("score").innerText = "Score: 0";
+            document.getElementById("timer").innerText = "Time: 60";
+            generateQuestion();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById("timer").innerText = "Time: " + timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                endGame();
+            }
+        }
+
+        function generateQuestion() {
+            let a = Math.floor(Math.random() * 20) + 1;
+            let b = Math.floor(Math.random() * 20) + 1;
+            correctAnswer = a + b;
+            document.getElementById("question").innerText = a + " + " + b + " = ?";
+            document.getElementById("answer").value = "";
+        }
+
+        function checkAnswer() {
+            let userAnswer = parseInt(document.getElementById("answer").value);
+
+            if (userAnswer === correctAnswer) {
+                score += 10;
+            } else {
+                score -= 5;
+                if (score < 0) score = 0;
+            }
+
+            document.getElementById("score").innerText = "Score: " + score;
+            generateQuestion();
+        }
+
+        function endGame() {
+            document.getElementById("game").style.display = "none";
+            document.getElementById("endScreen").style.display = "block";
+
+            let iq = 80 + Math.floor(score / 2);
+            document.getElementById("finalIQ").innerText = "Your IQ: " + iq;
+        }
+
+        function restartGame() {
+            document.getElementById("endScreen").style.display = "none";
+            startGame();
+        }
+
+        function goMainMenu() {
+            document.getElementById("endScreen").style.display = "none";
+            document.getElementById("menu").style.display = "block";
+        }
+
+    </script>
+
+</body>
+
+</html>
