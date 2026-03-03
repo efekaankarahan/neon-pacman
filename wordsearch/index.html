@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wordsearch</title>
+    <title>Word Catch</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <style>
@@ -638,14 +638,14 @@
         <!-- Header (visible during game & end) -->
         <div class="app-header hidden" id="appHeader">
             <button class="close-btn" onclick="goMainMenu()">✕</button>
-            <span class="title">Wordsearch</span>
+            <span class="title">Word Catch</span>
             <button class="settings-btn">⚙️</button>
         </div>
 
         <!-- ── START SCREEN ── -->
         <div class="screen" id="startScreen">
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                <h1>Wordsearch</h1>
+                <h1>Word Catch</h1>
                 <p class="subtitle">Find the hidden magic</p>
 
                 <div class="preview-grid">
@@ -1012,7 +1012,7 @@
         }
 
         function restartGame() {
-            window.location.href = "https://darkyplay.com/wordsearch";
+            window.location.href = "https://darkyplay.com/wordcatch";
         }
 
         function goMainMenu() {
