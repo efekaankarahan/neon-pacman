@@ -651,10 +651,10 @@
             const idx = Math.min(Math.round(Math.log2(val)) - 1, COLORS.length - 1);
             return COLORS[Math.max(0, idx)];
         }
-        const GRAVITY = 0.35;
+        let gravity = 0.35;
         const FRICTION = 0.85;
         const BOUNCE = 0.3;
-        const DANGER_Y = 60;
+        const DANGER_Y = 120;
         const DROP_Y = 35;
 
         // --- State ---
@@ -662,11 +662,12 @@
         let highScore = parseInt(localStorage.getItem('stratosferHighScore')) || 0;
         let objects = [];
         let activeOrb = null;
-        let nextValue = 2;
+        let nextValue = 4;
         let gameOver = false;
         let paused = false;
         let animId = null;
         let dangerTimer = 0;
+        let gravityInterval = null;
         const DANGER_GRACE = 90;
         const dropSpeed = 0.4;
         const fastDropSpeed = 8;
@@ -758,7 +759,7 @@
                 }
 
                 // settled orbs: gravity
-                this.vy += GRAVITY;
+                this.vy += gravity;
                 this.x += this.vx;
                 this.y += this.vy;
 
@@ -841,8 +842,8 @@
                     const minDist = a.radius + b.radius;
 
                     if (dist < minDist && dist > 0) {
-                        // same value? merge!
-                        if (a.value === b.value) {
+                        // same value + nearly settled? merge!
+                        if (a.value === b.value && Math.abs(a.vy) < 0.2 && Math.abs(b.vy) < 0.2) {
                             mergeOrbs(a, b);
                             return;
                         }
@@ -940,21 +941,31 @@
         let lastValue = null;
         let dropCount = 0;
 
+        // --- Weighted spawn value ---
+        function getWeightedValue() {
+            const rand = Math.random();
+            if (rand < 0.5) return 16;    // 50%
+            if (rand < 0.8) return 8;     // 30%
+            if (rand < 0.95) return 32;   // 15%
+            return 4;                     // 5%
+        }
+
         // --- Spawn new orb ---
         function spawnNewOrb() {
             if (gameOver) return;
 
             dropCount++;
-            const values = [2, 4, 8];
             let value;
 
             // Every 10th drop: repeat last value
             if (dropCount % 10 === 0 && lastValue !== null) {
                 value = lastValue;
             } else {
-                // Pick a value different from last
-                let filtered = values.filter(v => v !== lastValue);
-                value = filtered[Math.floor(Math.random() * filtered.length)];
+                value = getWeightedValue();
+                // Avoid repeating last value
+                while (value === lastValue) {
+                    value = getWeightedValue();
+                }
             }
 
             lastValue = value;
@@ -963,9 +974,8 @@
             activeOrb.vy = dropSpeed;
             objects.push(activeOrb);
 
-            // Pick next preview (also no-repeat)
-            let nextFiltered = values.filter(v => v !== value);
-            nextValue = nextFiltered[Math.floor(Math.random() * nextFiltered.length)];
+            // Next preview
+            nextValue = getWeightedValue();
             updateNextPreview();
         }
 
@@ -985,14 +995,22 @@
             dangerTimer = 0;
             lastValue = null;
             dropCount = 0;
+            gravity = 0.35;
+            if (gravityInterval) clearInterval(gravityInterval);
             scoreDisplay.textContent = '0';
             refreshHighScore();
 
-            nextValue = 2;
+            nextValue = 4;
             updateNextPreview();
 
             if (animId) cancelAnimationFrame(animId);
             spawnNewOrb();
+
+            // Gravity increases every 15 seconds
+            gravityInterval = setInterval(() => {
+                gravity += 0.1;
+            }, 15000);
+
             loop();
         }
 
@@ -1023,6 +1041,7 @@
         function endGame() {
             gameOver = true;
             if (animId) cancelAnimationFrame(animId);
+            if (gravityInterval) clearInterval(gravityInterval);
 
             const isNewBest = score > highScore;
             if (isNewBest) {
@@ -1085,6 +1104,13 @@
         function loop() {
             if (gameOver) return;
             if (!paused) {
+                // wobble orbs near top
+                objects.forEach(o => {
+                    if (o !== activeOrb && o.y < 200) {
+                        o.x += (Math.random() - 0.5) * 1.5;
+                    }
+                });
+
                 // physics substeps
                 for (let s = 0; s < 3; s++) {
                     objects.forEach(o => o.update());
