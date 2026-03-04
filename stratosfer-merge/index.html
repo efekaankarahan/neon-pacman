@@ -634,21 +634,23 @@
 
         // --- Constants ---
         const COLORS = [
-            '#00f0ff', // 0
-            '#39ff14', // 1
-            '#ffff00', // 2
-            '#ff9900', // 3
-            '#ff0033', // 4
-            '#ff00cc', // 5
-            '#ffffff', // 6
-            '#8a2be2', // 7
-            '#00ffcc', // 8
-            '#ff66ff', // 9
-            '#ff4444', // 10
-            '#ffffff'  // 11
+            '#00f0ff', // 2
+            '#39ff14', // 4
+            '#ffff00', // 8
+            '#ff9900', // 16
+            '#ff0033', // 32
+            '#ff00cc', // 64
+            '#ffffff', // 128
+            '#8a2be2', // 256
+            '#00ffcc', // 512
+            '#ff66ff', // 1024
+            '#ff4444', // 2048
+            '#ffffff'  // 4096+
         ];
-        const BASE_RADIUS = 18;
-        const RADIUS_STEP = 4;
+        function valueColor(val) {
+            const idx = Math.min(Math.round(Math.log2(val)) - 1, COLORS.length - 1);
+            return COLORS[Math.max(0, idx)];
+        }
         const GRAVITY = 0.35;
         const FRICTION = 0.85;
         const BOUNCE = 0.3;
@@ -660,14 +662,14 @@
         let highScore = parseInt(localStorage.getItem('stratosferHighScore')) || 0;
         let objects = [];
         let activeOrb = null;
-        let nextLevel = 0;
+        let nextValue = 2;
         let gameOver = false;
         let paused = false;
         let animId = null;
         let dangerTimer = 0;
-        const DANGER_GRACE = 90; // frames grace before game over
-        const dropSpeed = 0.4;      // slow auto-fall
-        const fastDropSpeed = 8;    // fast drop on click
+        const DANGER_GRACE = 90;
+        const dropSpeed = 0.4;
+        const fastDropSpeed = 8;
 
         // --- Sizing ---
         function sizeCanvas() {
@@ -676,7 +678,6 @@
             const h = wrapper.clientHeight - 8;
             canvas.width = Math.min(w, 390);
             canvas.height = Math.min(h, 520);
-            aimX = canvas.width / 2;
         }
 
         // --- Stars on start screen ---
@@ -705,18 +706,13 @@
             highScoreDisp.textContent = fmtScore(highScore);
         }
 
-        // --- Orb radius for level ---
-        function orbRadius(level) {
-            return BASE_RADIUS + level * RADIUS_STEP;
-        }
-
         // --- Orb class ---
         class Orb {
-            constructor(x, y, level) {
+            constructor(x, y, value) {
                 this.x = x;
                 this.y = y;
-                this.level = Math.min(level, COLORS.length - 1);
-                this.radius = orbRadius(this.level);
+                this.value = value;
+                this.radius = 20 + Math.log2(value) * 4;
                 this.vx = 0;
                 this.vy = 0;
                 this.settled = false;
@@ -793,7 +789,7 @@
 
             draw() {
                 ctx.save();
-                const color = COLORS[this.level];
+                const color = valueColor(this.value);
 
                 // glow
                 const glowAmount = 15 + this.glow * 30;
@@ -815,12 +811,13 @@
 
                 ctx.shadowBlur = 0;
 
-                // level number
+                // value number
+                const fontSize = this.value >= 1000 ? 9 : this.value >= 100 ? 11 : 14;
                 ctx.fillStyle = color;
-                ctx.font = `bold ${Math.max(12, this.radius * 0.7)}px "Press Start 2P"`;
+                ctx.font = `bold ${fontSize}px "Press Start 2P"`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(this.level + 1, this.x, this.y + 1);
+                ctx.fillText(this.value, this.x, this.y + 1);
 
                 ctx.restore();
             }
@@ -844,10 +841,10 @@
                     const minDist = a.radius + b.radius;
 
                     if (dist < minDist && dist > 0) {
-                        // same level? merge!
-                        if (a.level === b.level && a.level < COLORS.length - 1) {
+                        // same value? merge!
+                        if (a.value === b.value) {
                             mergeOrbs(a, b);
-                            return; // restart loop after merge
+                            return;
                         }
 
                         // push apart
@@ -881,22 +878,22 @@
             a.merging = true;
             b.merging = true;
 
-            const newLevel = a.level + 1;
+            const newValue = a.value * 2;
             const nx = (a.x + b.x) / 2;
             const ny = (a.y + b.y) / 2;
 
             // create particles effect on canvas
-            spawnParticles(nx, ny, COLORS[a.level]);
+            spawnParticles(nx, ny, valueColor(a.value));
 
             objects = objects.filter(o => o !== a && o !== b);
 
-            const newOrb = new Orb(nx, ny, newLevel);
+            const newOrb = new Orb(nx, ny, newValue);
             newOrb.glow = 1;
             newOrb.vy = -2;
             objects.push(newOrb);
 
             // score
-            score += 20 * (newLevel + 1);
+            score += newValue;
             scoreDisplay.textContent = fmtScore(score);
         }
 
@@ -939,25 +936,21 @@
             });
         }
 
-        // --- Pick next level (weighted toward lower) ---
-        function pickLevel() {
-            const r = Math.random();
-            if (r < 0.40) return 0;
-            if (r < 0.70) return 1;
-            if (r < 0.88) return 2;
-            if (r < 0.96) return 3;
-            return 4;
+        // --- Pick random spawn value ---
+        function pickValue() {
+            const possible = [2, 4, 8];
+            return possible[Math.floor(Math.random() * possible.length)];
         }
 
         // --- Spawn new orb ---
         function spawnNewOrb() {
             if (gameOver) return;
-            const level = pickLevel();
-            activeOrb = new Orb(canvas.width / 2, DROP_Y, level);
+            const value = pickValue();
+            activeOrb = new Orb(canvas.width / 2, DROP_Y, value);
             activeOrb.vy = dropSpeed;
             objects.push(activeOrb);
 
-            nextLevel = pickLevel();
+            nextValue = pickValue();
             updateNextPreview();
         }
 
@@ -978,7 +971,7 @@
             scoreDisplay.textContent = '0';
             refreshHighScore();
 
-            nextLevel = pickLevel();
+            nextValue = pickValue();
             updateNextPreview();
 
             if (animId) cancelAnimationFrame(animId);
@@ -987,10 +980,10 @@
         }
 
         function updateNextPreview() {
-            nextPreview.textContent = nextLevel + 1;
-            nextPreview.style.color = COLORS[nextLevel];
-            nextPreview.style.borderColor = COLORS[nextLevel];
-            nextPreview.style.border = '2px solid ' + COLORS[nextLevel];
+            const color = valueColor(nextValue);
+            nextPreview.textContent = nextValue;
+            nextPreview.style.color = color;
+            nextPreview.style.border = '2px solid ' + color;
         }
 
         // --- Check danger ---
@@ -1039,7 +1032,7 @@
         // --- Draw aim guide ---
         function drawAim() {
             if (!activeOrb) return;
-            const color = COLORS[activeOrb.level];
+            const color = valueColor(activeOrb.value);
 
             // dashed drop line
             ctx.save();
