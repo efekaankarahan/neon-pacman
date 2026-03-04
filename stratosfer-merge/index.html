@@ -810,23 +810,24 @@
                     const minDist = a.radius + b.radius;
 
                     if (dist < minDist && dist > 0) {
-                        // same level? merge!
-                        if (a.level === b.level && a.level < COLORS.length - 1) {
+                        // same level + nearly settled? merge!
+                        if (a.level === b.level && a.level < COLORS.length - 1 && Math.abs(a.vy) < 0.5 && Math.abs(b.vy) < 0.5) {
                             mergeOrbs(a, b);
                             return; // restart loop after merge
                         }
 
-                        // push apart
+                        // push apart using angle
+                        const angle = Math.atan2(dy, dx);
                         const overlap = minDist - dist;
-                        const nx = dx / dist;
-                        const ny = dy / dist;
 
-                        a.x -= nx * overlap * 0.5;
-                        a.y -= ny * overlap * 0.5;
-                        b.x += nx * overlap * 0.5;
-                        b.y += ny * overlap * 0.5;
+                        a.x -= Math.cos(angle) * overlap * 0.5;
+                        a.y -= Math.sin(angle) * overlap * 0.5;
+                        b.x += Math.cos(angle) * overlap * 0.5;
+                        b.y += Math.sin(angle) * overlap * 0.5;
 
                         // simple elastic
+                        const nx = dx / dist;
+                        const ny = dy / dist;
                         const relVx = a.vx - b.vx;
                         const relVy = a.vy - b.vy;
                         const relVn = relVx * nx + relVy * ny;
@@ -961,7 +962,7 @@
             updateNextPreview();
 
             canDrop = false;
-            setTimeout(() => { canDrop = true; }, 500);
+            setTimeout(() => { canDrop = true; }, 600);
         }
 
         // --- Check danger ---
