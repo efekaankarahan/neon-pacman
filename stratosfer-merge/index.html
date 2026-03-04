@@ -936,21 +936,36 @@
             });
         }
 
-        // --- Pick random spawn value ---
-        function pickValue() {
-            const possible = [2, 4, 8];
-            return possible[Math.floor(Math.random() * possible.length)];
-        }
+        // --- Spawn tracking ---
+        let lastValue = null;
+        let dropCount = 0;
 
         // --- Spawn new orb ---
         function spawnNewOrb() {
             if (gameOver) return;
-            const value = pickValue();
+
+            dropCount++;
+            const values = [2, 4, 8];
+            let value;
+
+            // Every 10th drop: repeat last value
+            if (dropCount % 10 === 0 && lastValue !== null) {
+                value = lastValue;
+            } else {
+                // Pick a value different from last
+                let filtered = values.filter(v => v !== lastValue);
+                value = filtered[Math.floor(Math.random() * filtered.length)];
+            }
+
+            lastValue = value;
+
             activeOrb = new Orb(canvas.width / 2, DROP_Y, value);
             activeOrb.vy = dropSpeed;
             objects.push(activeOrb);
 
-            nextValue = pickValue();
+            // Pick next preview (also no-repeat)
+            let nextFiltered = values.filter(v => v !== value);
+            nextValue = nextFiltered[Math.floor(Math.random() * nextFiltered.length)];
             updateNextPreview();
         }
 
@@ -968,10 +983,12 @@
             gameOver = false;
             paused = false;
             dangerTimer = 0;
+            lastValue = null;
+            dropCount = 0;
             scoreDisplay.textContent = '0';
             refreshHighScore();
 
-            nextValue = pickValue();
+            nextValue = 2;
             updateNextPreview();
 
             if (animId) cancelAnimationFrame(animId);
