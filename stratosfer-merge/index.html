@@ -634,16 +634,21 @@
 
         // --- Constants ---
         const COLORS = [
-            '#00f0ff', // level 0 — cyan
-            '#39ff14', // level 1 — green
-            '#ffff00', // level 2 — yellow
-            '#ff9900', // level 3 — orange
-            '#ff0033', // level 4 — red
-            '#ff00cc', // level 5 — magenta
-            '#ffffff'  // level 6 — white
+            '#00f0ff', // 0
+            '#39ff14', // 1
+            '#ffff00', // 2
+            '#ff9900', // 3
+            '#ff0033', // 4
+            '#ff00cc', // 5
+            '#ffffff', // 6
+            '#8a2be2', // 7
+            '#00ffcc', // 8
+            '#ff66ff', // 9
+            '#ff4444', // 10
+            '#ffffff'  // 11
         ];
         const BASE_RADIUS = 18;
-        const RADIUS_STEP = 7;
+        const RADIUS_STEP = 4;
         const GRAVITY = 0.35;
         const FRICTION = 0.85;
         const BOUNCE = 0.3;
@@ -857,7 +862,7 @@
             objects.push(newOrb);
 
             // score
-            score += 10 * (newLevel + 1);
+            score += 20 * (newLevel + 1);
             scoreDisplay.textContent = fmtScore(score);
         }
 
@@ -964,7 +969,7 @@
             // only check settled orbs
             for (const o of objects) {
                 if (o.merging) continue;
-                if (o.y - o.radius < DANGER_Y && Math.abs(o.vy) < 1) {
+                if (o.y - o.radius <= DANGER_Y - 5 && Math.abs(o.vy) < 1) {
                     dangerTimer++;
                     if (dangerTimer > DANGER_GRACE) {
                         endGame();
