@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stratosfer Merge - DarkyPlay</title>
+    <meta name="description"
+        content="Stratosfer Merge - Drop and merge neon orbs in the stratosphere! A fun arcade puzzle game on DarkyPlay.">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b0e1a;
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ====== WRAPPER ====== */
+        #wrapper {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 780px;
+            position: relative;
+            overflow: hidden;
+            background: #0b0e1a;
+            border-left: 2px solid #1a2040;
+            border-right: 2px solid #1a2040;
+        }
+
+        /* ====== START SCREEN ====== */
+        #startScreen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            background: #0b0e1a;
+        }
+
+        .start-stars {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .start-stars span {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% {
+                opacity: 0.2;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .start-icons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            z-index: 2;
+        }
+
+        .start-icons span {
+            font-size: 14px;
+            color: #ff00cc;
+        }
+
+        .start-title {
+            font-size: 28px;
+            color: #00f0ff;
+            text-shadow: 0 0 10px #00f0ff, 0 0 30px #00f0ff;
+            z-index: 2;
+            letter-spacing: 2px;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .start-title .merge {
+            color: #ff00cc;
+            text-shadow: 0 0 10px #ff00cc, 0 0 30px #ff00cc;
+            display: block;
+            font-size: 32px;
+        }
+
+        #startBtn {
+            margin-top: 30px;
+            padding: 16px 40px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: #ff00cc;
+            background: transparent;
+            border: 3px solid #ff00cc;
+            cursor: pointer;
+            z-index: 2;
+            text-shadow: 0 0 6px #ff00cc;
+            box-shadow: 0 0 15px rgba(255, 0, 204, 0.3);
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+
+        #startBtn:hover {
+            background: rgba(255, 0, 204, 0.15);
+            box-shadow: 0 0 30px rgba(255, 0, 204, 0.5);
+            transform: scale(1.05);
+        }
+
+        .menu-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            z-index: 2;
+        }
+
+        .menu-btn {
+            width: 48px;
+            height: 48px;
+            background: #111528;
+            border: 2px solid #00f0ff;
+            color: #00f0ff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .menu-btn:hover {
+            background: #00f0ff;
+            color: #0b0e1a;
+        }
+
+        .high-score-display {
+            margin-top: 20px;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .high-score-display .label {
+            font-size: 9px;
+            color: #39ff14;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .high-score-display .value {
+            font-size: 22px;
+            color: #39ff14;
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+            letter-spacing: 3px;
+        }
+
+        .server-status {
+            margin-top: 14px;
+            font-size: 7px;
+            color: #39ff14;
+            z-index: 2;
+            opacity: 0.7;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .server-dot {
+            width: 6px;
+            height: 6px;
+            background: #39ff14;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #39ff14;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* ====== GAMEPLAY SCREEN ====== */
+        #gameScreen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            z-index: 50;
+            background: #0b0e1a;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+        }
+
+        .game-header .score-area {
+            text-align: left;
+        }
+
+        .game-header .score-label {
+            font-size: 8px;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        .game-header .score-value {
+            font-size: 22px;
+            color: #39ff14;
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .pause-btn {
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: 2px solid #555;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .pause-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 12px;
+            position: relative;
+        }
+
+        #game {
+            background: #0d1220;
+            border: 2px solid #00f0ff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+            display: block;
+            touch-action: none;
+        }
+
+        .game-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+        }
+
+        .next-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .next-label {
+            font-size: 8px;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        .next-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-family: 'Press Start 2P', cursive;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .highscore-area {
+            text-align: right;
+        }
+
+        .highscore-label {
+            font-size: 7px;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        .highscore-value {
+            font-size: 14px;
+            color: #ff9900;
+            text-shadow: 0 0 6px rgba(255, 153, 0, 0.5);
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 4px 0;
+        }
+
+        .dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+        }
+
+        .dots span.active {
+            background: #00f0ff;
+            box-shadow: 0 0 6px #00f0ff;
+        }
+
+        #dropBtn {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 0 16px 14px;
+            padding: 14px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 13px;
+            color: #00f0ff;
+            background: transparent;
+            border: 2px solid #00f0ff;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+            transition: all 0.2s;
+        }
+
+        #dropBtn:hover {
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+        }
+
+        #dropBtn:active {
+            transform: scale(0.97);
+        }
+
+        /* ====== END SCREEN ====== */
+        #endScreen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            background: #0b0e1a;
+        }
+
+        .warning-bar {
+            position: absolute;
+            top: 30px;
+            width: 80%;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ff003366;
+            background: rgba(255, 0, 51, 0.08);
+        }
+
+        .warning-text {
+            font-size: 7px;
+            color: #ff0033;
+            letter-spacing: 3px;
+            animation: warningBlink 1.5s infinite;
+        }
+
+        @keyframes warningBlink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .end-title {
+            font-size: 22px;
+            color: #ff0033;
+            text-shadow: 0 0 20px rgba(255, 0, 51, 0.6), 0 0 60px rgba(255, 0, 51, 0.3);
+            line-height: 1.5;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+        }
+
+        .final-score-box {
+            border: 2px solid #00f0ff33;
+            background: rgba(0, 240, 255, 0.05);
+            padding: 20px 40px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .final-label {
+            font-size: 8px;
+            color: #888;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+        }
+
+        .final-value {
+            font-size: 32px;
+            color: #39ff14;
+            text-shadow: 0 0 15px rgba(57, 255, 20, 0.6);
+            letter-spacing: 4px;
+        }
+
+        .new-best {
+            font-size: 8px;
+            color: #ff9900;
+            margin-top: 8px;
+            letter-spacing: 3px;
+            display: none;
+        }
+
+        .end-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 70%;
+        }
+
+        .end-btn {
+            padding: 14px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            cursor: pointer;
+            border: 2px solid #00f0ff;
+            background: transparent;
+            color: #00f0ff;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+        }
+
+        .end-btn:hover {
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+            transform: scale(1.03);
+        }
+
+        .version-tag {
+            position: absolute;
+            bottom: 16px;
+            font-size: 6px;
+            color: #333;
+            letter-spacing: 3px;
+        }
+
+        /* ====== PARTICLES ====== */
+        .merge-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFly 0.6s ease-out forwards;
+        }
+
+        @keyframes particleFly {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0) translate(var(--tx), var(--ty));
+            }
+        }
+
+        /* ====== RESPONSIVE ====== */
+        @media(max-height:650px) {
+            .start-title {
+                font-size: 22px;
+            }
+
+            .start-title .merge {
+                font-size: 26px;
+            }
+
+            #startBtn {
+                padding: 12px 30px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- ====== START SCREEN ====== -->
+        <div id="startScreen">
+            <div class="start-stars" id="stars"></div>
+            <div class="start-icons">
+                <span>⭐</span><span>🏠</span><span>✨</span>
+            </div>
+            <div class="start-title">
+                STRATOSFER
+                <span class="merge">MERGE</span>
+            </div>
+            <button id="startBtn">START GAME</button>
+            <div class="menu-btns">
+                <button class="menu-btn" title="Settings">⚙️</button>
+                <button class="menu-btn" title="Stats">📊</button>
+                <button class="menu-btn" title="Controls">⌨️</button>
+            </div>
+            <div class="high-score-display">
+                <div class="label">PERSONAL HIGH SCORE</div>
+                <div class="value" id="menuHighScore">000,000,000</div>
+            </div>
+            <div class="server-status">
+                <span class="server-dot"></span> SERVER CONNECTED
+            </div>
+        </div>
+
+        <!-- ====== GAMEPLAY SCREEN ====== -->
+        <div id="gameScreen">
+            <div class="game-header">
+                <div class="score-area">
+                    <div class="score-label">SCORE</div>
+                    <div class="score-value" id="scoreDisplay">0</div>
+                </div>
+                <button class="pause-btn" id="pauseBtn">⏸</button>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="game"></canvas>
+            </div>
+            <div class="game-footer">
+                <div class="next-area">
+                    <div class="next-label">NEXT</div>
+                    <div class="next-preview" id="nextPreview">1</div>
+                </div>
+                <div class="dots">
+                    <span class="active"></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="highscore-area">
+                    <div class="highscore-label">HIGH SCORE</div>
+                    <div class="highscore-value" id="highScoreDisplay">0</div>
+                </div>
+            </div>
+            <button id="dropBtn">DROP ORB</button>
+        </div>
+
+        <!-- ====== END SCREEN ====== -->
+        <div id="endScreen">
+            <div class="warning-bar">
+                <div class="warning-text">WARNING: ALTITUDE LOST</div>
+            </div>
+            <div class="end-title">
+                STRATOSPHERE<br>COLLAPSED
+            </div>
+            <div class="final-score-box">
+                <div class="final-label">FINAL SCORE</div>
+                <div class="final-value" id="finalScore">0</div>
+                <div class="new-best" id="newBest">NEW BEST</div>
+            </div>
+            <div class="end-buttons">
+                <button class="end-btn" onclick="restartGame()">↻ RESTART</button>
+                <button class="end-btn" onclick="mainMenu()">🏠 MAIN MENU</button>
+            </div>
+            <div class="version-tag">STRATOSFER MERGE V1.4.2</div>
+        </div>
+
+    </div>
+
+    <script>
+        // =========================================
+        //  STRATOSFER MERGE — GAME ENGINE
+        // =========================================
+
+        // --- Elements ---
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const endScreen = document.getElementById('endScreen');
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const highScoreDisp = document.getElementById('highScoreDisplay');
+        const menuHighScore = document.getElementById('menuHighScore');
+        const nextPreview = document.getElementById('nextPreview');
+        const finalScoreEl = document.getElementById('finalScore');
+        const newBestEl = document.getElementById('newBest');
+        const dropBtn = document.getElementById('dropBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        // --- Constants ---
+        const COLORS = [
+            '#00f0ff', // level 0 — cyan
+            '#39ff14', // level 1 — green
+            '#ffff00', // level 2 — yellow
+            '#ff9900', // level 3 — orange
+            '#ff0033', // level 4 — red
+            '#ff00cc', // level 5 — magenta
+            '#ffffff'  // level 6 — white
+        ];
+        const BASE_RADIUS = 18;
+        const RADIUS_STEP = 7;
+        const GRAVITY = 0.35;
+        const FRICTION = 0.85;
+        const BOUNCE = 0.3;
+        const DANGER_Y = 60;
+        const DROP_Y = 35;
+
+        // --- State ---
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('stratosferHighScore')) || 0;
+        let objects = [];
+        let currentLevel = 0;
+        let nextLevel = 0;
+        let aimX = 0;
+        let canDrop = true;
+        let gameOver = false;
+        let paused = false;
+        let animId = null;
+        let dangerTimer = 0;
+        const DANGER_GRACE = 90; // frames grace before game over
+
+        // --- Sizing ---
+        function sizeCanvas() {
+            const wrapper = document.querySelector('.canvas-wrapper');
+            const w = wrapper.clientWidth - 24;
+            const h = wrapper.clientHeight - 8;
+            canvas.width = Math.min(w, 390);
+            canvas.height = Math.min(h, 520);
+            aimX = canvas.width / 2;
+        }
+
+        // --- Stars on start screen ---
+        function createStars() {
+            const container = document.getElementById('stars');
+            container.innerHTML = '';
+            for (let i = 0; i < 60; i++) {
+                const s = document.createElement('span');
+                s.style.left = Math.random() * 100 + '%';
+                s.style.top = Math.random() * 100 + '%';
+                s.style.animationDelay = Math.random() * 3 + 's';
+                s.style.width = s.style.height = (1 + Math.random() * 2) + 'px';
+                container.appendChild(s);
+            }
+        }
+
+        // --- Format score ---
+        function fmtScore(n) {
+            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // --- Init high score display ---
+        function refreshHighScore() {
+            highScore = parseInt(localStorage.getItem('stratosferHighScore')) || 0;
+            menuHighScore.textContent = fmtScore(highScore).padStart(11, '0');
+            highScoreDisp.textContent = fmtScore(highScore);
+        }
+
+        // --- Orb radius for level ---
+        function orbRadius(level) {
+            return BASE_RADIUS + level * RADIUS_STEP;
+        }
+
+        // --- Orb class ---
+        class Orb {
+            constructor(x, y, level) {
+                this.x = x;
+                this.y = y;
+                this.level = Math.min(level, COLORS.length - 1);
+                this.radius = orbRadius(this.level);
+                this.vx = 0;
+                this.vy = 0;
+                this.settled = false;
+                this.merging = false;
+                this.glow = 0;
+            }
+
+            update() {
+                if (this.merging) return;
+
+                // gravity
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // friction on horizontal
+                this.vx *= FRICTION;
+
+                // floor
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.vy *= -BOUNCE;
+                    if (Math.abs(this.vy) < 0.5) this.vy = 0;
+                    this.vx *= 0.9;
+                }
+
+                // walls
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx *= -0.5;
+                }
+                if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.vx *= -0.5;
+                }
+
+                // glow fade
+                if (this.glow > 0) this.glow -= 0.03;
+            }
+
+            draw() {
+                ctx.save();
+                const color = COLORS[this.level];
+
+                // glow
+                const glowAmount = 15 + this.glow * 30;
+                ctx.shadowBlur = glowAmount;
+                ctx.shadowColor = color;
+
+                // circle
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.25;
+                ctx.fill();
+
+                // border ring
+                ctx.globalAlpha = 1;
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = color;
+                ctx.stroke();
+
+                ctx.shadowBlur = 0;
+
+                // level number
+                ctx.fillStyle = color;
+                ctx.font = `bold ${Math.max(12, this.radius * 0.7)}px "Press Start 2P"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.level + 1, this.x, this.y + 1);
+
+                ctx.restore();
+            }
+
+            isSettled() {
+                return Math.abs(this.vy) < 1 && Math.abs(this.vx) < 0.5 &&
+                    this.y + this.radius >= canvas.height - 2;
+            }
+        }
+
+        // --- Collision resolution ---
+        function resolveCollisions() {
+            for (let i = 0; i < objects.length; i++) {
+                for (let j = i + 1; j < objects.length; j++) {
+                    const a = objects[i], b = objects[j];
+                    if (a.merging || b.merging) continue;
+
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = a.radius + b.radius;
+
+                    if (dist < minDist && dist > 0) {
+                        // same level? merge!
+                        if (a.level === b.level && a.level < COLORS.length - 1) {
+                            mergeOrbs(a, b);
+                            return; // restart loop after merge
+                        }
+
+                        // push apart
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+
+                        a.x -= nx * overlap * 0.5;
+                        a.y -= ny * overlap * 0.5;
+                        b.x += nx * overlap * 0.5;
+                        b.y += ny * overlap * 0.5;
+
+                        // simple elastic
+                        const relVx = a.vx - b.vx;
+                        const relVy = a.vy - b.vy;
+                        const relVn = relVx * nx + relVy * ny;
+
+                        if (relVn > 0) {
+                            a.vx -= relVn * nx * 0.5;
+                            a.vy -= relVn * ny * 0.5;
+                            b.vx += relVn * nx * 0.5;
+                            b.vy += relVn * ny * 0.5;
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Merge ---
+        function mergeOrbs(a, b) {
+            a.merging = true;
+            b.merging = true;
+
+            const newLevel = a.level + 1;
+            const nx = (a.x + b.x) / 2;
+            const ny = (a.y + b.y) / 2;
+
+            // create particles effect on canvas
+            spawnParticles(nx, ny, COLORS[a.level]);
+
+            objects = objects.filter(o => o !== a && o !== b);
+
+            const newOrb = new Orb(nx, ny, newLevel);
+            newOrb.glow = 1;
+            newOrb.vy = -2;
+            objects.push(newOrb);
+
+            // score
+            score += 10 * (newLevel + 1);
+            scoreDisplay.textContent = fmtScore(score);
+        }
+
+        // --- Particles (simple canvas-drawn) ---
+        let particles = [];
+        function spawnParticles(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                const angle = (Math.PI * 2 / 12) * i;
+                const speed = 2 + Math.random() * 3;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color,
+                    radius: 2 + Math.random() * 3
+                });
+            }
+        }
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.04;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius * p.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // --- Pick next level (weighted toward lower) ---
+        function pickLevel() {
+            const r = Math.random();
+            if (r < 0.40) return 0;
+            if (r < 0.70) return 1;
+            if (r < 0.88) return 2;
+            if (r < 0.96) return 3;
+            return 4;
+        }
+
+        // --- Start ---
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            endScreen.style.display = 'none';
+
+            sizeCanvas();
+            score = 0;
+            objects = [];
+            particles = [];
+            gameOver = false;
+            paused = false;
+            canDrop = true;
+            dangerTimer = 0;
+            scoreDisplay.textContent = '0';
+            refreshHighScore();
+
+            currentLevel = pickLevel();
+            nextLevel = pickLevel();
+            updateNextPreview();
+            aimX = canvas.width / 2;
+
+            if (animId) cancelAnimationFrame(animId);
+            loop();
+        }
+
+        function updateNextPreview() {
+            nextPreview.textContent = nextLevel + 1;
+            nextPreview.style.color = COLORS[nextLevel];
+            nextPreview.style.borderColor = COLORS[nextLevel];
+            nextPreview.style.border = '2px solid ' + COLORS[nextLevel];
+        }
+
+        // --- Drop ---
+        function dropOrb() {
+            if (!canDrop || gameOver || paused) return;
+
+            const orb = new Orb(aimX, DROP_Y, currentLevel);
+            orb.vy = 1;
+            objects.push(orb);
+
+            currentLevel = nextLevel;
+            nextLevel = pickLevel();
+            updateNextPreview();
+
+            canDrop = false;
+            setTimeout(() => { canDrop = true; }, 500);
+        }
+
+        // --- Check danger ---
+        function checkDanger() {
+            // only check settled orbs
+            for (const o of objects) {
+                if (o.merging) continue;
+                if (o.y - o.radius < DANGER_Y && Math.abs(o.vy) < 1) {
+                    dangerTimer++;
+                    if (dangerTimer > DANGER_GRACE) {
+                        endGame();
+                    }
+                    return;
+                }
+            }
+            dangerTimer = 0;
+        }
+
+        // --- End Game ---
+        function endGame() {
+            gameOver = true;
+            if (animId) cancelAnimationFrame(animId);
+
+            const isNewBest = score > highScore;
+            if (isNewBest) {
+                highScore = score;
+                localStorage.setItem('stratosferHighScore', highScore);
+            }
+
+            finalScoreEl.textContent = fmtScore(score);
+            newBestEl.style.display = isNewBest ? 'block' : 'none';
+
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'flex';
+        }
+
+        function restartGame() {
+            endScreen.style.display = 'none';
+            startGame();
+        }
+
+        function mainMenu() {
+            window.location.href = '../index.html';
+        }
+
+        // --- Draw aim guide ---
+        function drawAim() {
+            if (!canDrop) return;
+            const r = orbRadius(currentLevel);
+            const color = COLORS[currentLevel];
+
+            // dashed line
+            ctx.save();
+            ctx.setLineDash([5, 8]);
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = 0.25;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(aimX, DROP_Y + r);
+            ctx.lineTo(aimX, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // preview orb
+            ctx.globalAlpha = 0.5;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.arc(aimX, DROP_Y, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.15;
+            ctx.fill();
+            ctx.globalAlpha = 0.6;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+
+            // number
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = color;
+            ctx.font = `bold ${Math.max(12, r * 0.7)}px "Press Start 2P"`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(currentLevel + 1, aimX, DROP_Y + 1);
+
+            ctx.restore();
+        }
+
+        // --- Draw danger line ---
+        function drawDangerLine() {
+            ctx.save();
+            const blink = (dangerTimer > 0) ? (Math.sin(Date.now() * 0.01) * 0.3 + 0.7) : 0.5;
+            ctx.strokeStyle = '#ff0033';
+            ctx.globalAlpha = blink;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 6]);
+            ctx.beginPath();
+            ctx.moveTo(0, DANGER_Y);
+            ctx.lineTo(canvas.width, DANGER_Y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        // --- Main loop ---
+        function loop() {
+            if (gameOver) return;
+            if (!paused) {
+                // physics substeps
+                for (let s = 0; s < 3; s++) {
+                    objects.forEach(o => o.update());
+                    resolveCollisions();
+                }
+                updateParticles();
+                checkDanger();
+            }
+
+            // draw
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawDangerLine();
+            drawAim();
+            objects.forEach(o => o.draw());
+            drawParticles();
+
+            animId = requestAnimationFrame(loop);
+        }
+
+        // --- Input: mouse/touch to move aim ---
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            aimX = e.clientX - rect.left;
+            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+        });
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            aimX = e.touches[0].clientX - rect.left;
+            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+        }, { passive: false });
+
+        // click/tap on canvas also drops
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            aimX = e.clientX - rect.left;
+            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+            dropOrb();
+        });
+        canvas.addEventListener('touchstart', e => {
+            const rect = canvas.getBoundingClientRect();
+            aimX = e.touches[0].clientX - rect.left;
+            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+        });
+
+        // drop button
+        dropBtn.addEventListener('click', dropOrb);
+
+        // pause
+        pauseBtn.addEventListener('click', () => {
+            paused = !paused;
+            pauseBtn.textContent = paused ? '▶' : '⏸';
+        });
+
+        // start button
+        startBtn.addEventListener('click', startGame);
+
+        // resize
+        window.addEventListener('resize', () => {
+            if (gameScreen.style.display !== 'none') sizeCanvas();
+        });
+
+        // --- Init ---
+        createStars();
+        refreshHighScore();
+
+    </script>
+</body>
+
+</html>
