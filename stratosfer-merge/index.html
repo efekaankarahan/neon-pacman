@@ -659,15 +659,15 @@
         let score = 0;
         let highScore = parseInt(localStorage.getItem('stratosferHighScore')) || 0;
         let objects = [];
-        let currentLevel = 0;
+        let activeOrb = null;
         let nextLevel = 0;
-        let aimX = 0;
-        let canDrop = true;
         let gameOver = false;
         let paused = false;
         let animId = null;
         let dangerTimer = 0;
         const DANGER_GRACE = 90; // frames grace before game over
+        const dropSpeed = 0.4;      // slow auto-fall
+        const fastDropSpeed = 8;    // fast drop on click
 
         // --- Sizing ---
         function sizeCanvas() {
@@ -727,7 +727,41 @@
             update() {
                 if (this.merging) return;
 
-                // gravity
+                // active orb: controlled fall, no gravity
+                if (this === activeOrb) {
+                    this.y += this.vy;
+
+                    // floor: settle and release
+                    if (this.y + this.radius >= canvas.height) {
+                        this.y = canvas.height - this.radius;
+                        this.vy = 0;
+                        activeOrb = null;
+                        setTimeout(spawnNewOrb, 500);
+                    }
+
+                    // collision with other orbs: settle on top
+                    for (const o of objects) {
+                        if (o === this || o.merging) continue;
+                        const dx = this.x - o.x;
+                        const dy = this.y - o.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < this.radius + o.radius) {
+                            this.y = o.y - (this.radius + o.radius) * (dy / (dist || 1));
+                            if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius;
+                            this.vy = 0;
+                            activeOrb = null;
+                            setTimeout(spawnNewOrb, 500);
+                            break;
+                        }
+                    }
+
+                    // walls
+                    if (this.x - this.radius < 0) this.x = this.radius;
+                    if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius;
+                    return;
+                }
+
+                // settled orbs: gravity
                 this.vy += GRAVITY;
                 this.x += this.vx;
                 this.y += this.vy;
@@ -915,6 +949,18 @@
             return 4;
         }
 
+        // --- Spawn new orb ---
+        function spawnNewOrb() {
+            if (gameOver) return;
+            const level = pickLevel();
+            activeOrb = new Orb(canvas.width / 2, DROP_Y, level);
+            activeOrb.vy = dropSpeed;
+            objects.push(activeOrb);
+
+            nextLevel = pickLevel();
+            updateNextPreview();
+        }
+
         // --- Start ---
         function startGame() {
             startScreen.style.display = 'none';
@@ -925,19 +971,18 @@
             score = 0;
             objects = [];
             particles = [];
+            activeOrb = null;
             gameOver = false;
             paused = false;
-            canDrop = true;
             dangerTimer = 0;
             scoreDisplay.textContent = '0';
             refreshHighScore();
 
-            currentLevel = pickLevel();
             nextLevel = pickLevel();
             updateNextPreview();
-            aimX = canvas.width / 2;
 
             if (animId) cancelAnimationFrame(animId);
+            spawnNewOrb();
             loop();
         }
 
@@ -946,22 +991,6 @@
             nextPreview.style.color = COLORS[nextLevel];
             nextPreview.style.borderColor = COLORS[nextLevel];
             nextPreview.style.border = '2px solid ' + COLORS[nextLevel];
-        }
-
-        // --- Drop ---
-        function dropOrb() {
-            if (!canDrop || gameOver || paused) return;
-
-            const orb = new Orb(aimX, DROP_Y, currentLevel);
-            orb.vy = 1;
-            objects.push(orb);
-
-            currentLevel = nextLevel;
-            nextLevel = pickLevel();
-            updateNextPreview();
-
-            canDrop = false;
-            setTimeout(() => { canDrop = true; }, 500);
         }
 
         // --- Check danger ---
@@ -1009,45 +1038,20 @@
 
         // --- Draw aim guide ---
         function drawAim() {
-            if (!canDrop) return;
-            const r = orbRadius(currentLevel);
-            const color = COLORS[currentLevel];
+            if (!activeOrb) return;
+            const color = COLORS[activeOrb.level];
 
-            // dashed line
+            // dashed drop line
             ctx.save();
             ctx.setLineDash([5, 8]);
             ctx.strokeStyle = color;
-            ctx.globalAlpha = 0.25;
+            ctx.globalAlpha = 0.2;
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(aimX, DROP_Y + r);
-            ctx.lineTo(aimX, canvas.height);
+            ctx.moveTo(activeOrb.x, activeOrb.y + activeOrb.radius);
+            ctx.lineTo(activeOrb.x, canvas.height);
             ctx.stroke();
             ctx.setLineDash([]);
-
-            // preview orb
-            ctx.globalAlpha = 0.5;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = color;
-            ctx.beginPath();
-            ctx.arc(aimX, DROP_Y, r, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.globalAlpha = 0.15;
-            ctx.fill();
-            ctx.globalAlpha = 0.6;
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = color;
-            ctx.stroke();
-
-            // number
-            ctx.shadowBlur = 0;
-            ctx.globalAlpha = 0.7;
-            ctx.fillStyle = color;
-            ctx.font = `bold ${Math.max(12, r * 0.7)}px "Press Start 2P"`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(currentLevel + 1, aimX, DROP_Y + 1);
-
             ctx.restore();
         }
 
@@ -1090,34 +1094,41 @@
             animId = requestAnimationFrame(loop);
         }
 
-        // --- Input: mouse/touch to move aim ---
+        // --- Input: mouse/touch to move active orb ---
         canvas.addEventListener('mousemove', e => {
-            const rect = canvas.getBoundingClientRect();
-            aimX = e.clientX - rect.left;
-            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+            if (activeOrb) {
+                const rect = canvas.getBoundingClientRect();
+                activeOrb.x = e.clientX - rect.left;
+                activeOrb.x = Math.max(activeOrb.radius, Math.min(canvas.width - activeOrb.radius, activeOrb.x));
+            }
         });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            aimX = e.touches[0].clientX - rect.left;
-            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+            if (activeOrb) {
+                const rect = canvas.getBoundingClientRect();
+                activeOrb.x = e.touches[0].clientX - rect.left;
+                activeOrb.x = Math.max(activeOrb.radius, Math.min(canvas.width - activeOrb.radius, activeOrb.x));
+            }
         }, { passive: false });
 
-        // click/tap on canvas also drops
-        canvas.addEventListener('click', e => {
-            const rect = canvas.getBoundingClientRect();
-            aimX = e.clientX - rect.left;
-            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
-            dropOrb();
+        // click/tap to fast-drop active orb
+        canvas.addEventListener('click', () => {
+            if (activeOrb) {
+                activeOrb.vy = fastDropSpeed;
+            }
         });
-        canvas.addEventListener('touchstart', e => {
-            const rect = canvas.getBoundingClientRect();
-            aimX = e.touches[0].clientX - rect.left;
-            aimX = Math.max(orbRadius(currentLevel), Math.min(canvas.width - orbRadius(currentLevel), aimX));
+        canvas.addEventListener('touchstart', () => {
+            if (activeOrb) {
+                activeOrb.vy = fastDropSpeed;
+            }
         });
 
-        // drop button
-        dropBtn.addEventListener('click', dropOrb);
+        // drop button also fast-drops
+        dropBtn.addEventListener('click', () => {
+            if (activeOrb) {
+                activeOrb.vy = fastDropSpeed;
+            }
+        });
 
         // pause
         pauseBtn.addEventListener('click', () => {
