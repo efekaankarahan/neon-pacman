@@ -236,10 +236,10 @@
             if (screen) screen.classList.add("active");
         }
 
+        let currentTheme = null;
+
         function showMenu() {
-            state = "menu";
-            setOverlay(menuScreen);
-            menuCoins.textContent = "Toplam Coin: " + totalCoins;
+            window.location.href = "https://darkyplay.com";
         }
 
         let state = "menu";
@@ -291,16 +291,16 @@
 
         const levelConfigs = [
             null,
-            { speed: 6.0, target: 1200, police: false, policeSpeed: 0, spawnBase: 90 },
-            { speed: 6.6, target: 1300, police: true, policeSpeed: 3.3, spawnBase: 88 },
-            { speed: 7.0, target: 1400, police: true, policeSpeed: 3.45, spawnBase: 84 },
-            { speed: 7.4, target: 1500, police: true, policeSpeed: 3.6, spawnBase: 80 },
-            { speed: 7.8, target: 1600, police: true, policeSpeed: 3.8, spawnBase: 76 },
-            { speed: 8.1, target: 1700, police: true, policeSpeed: 4.0, spawnBase: 72 },
-            { speed: 8.4, target: 1800, police: true, policeSpeed: 4.2, spawnBase: 69 },
-            { speed: 8.8, target: 1900, police: true, policeSpeed: 4.35, spawnBase: 66 },
-            { speed: 9.1, target: 2000, police: true, policeSpeed: 4.5, spawnBase: 63 },
-            { speed: 9.5, target: 2200, police: true, policeSpeed: 4.7, spawnBase: 60 }
+            { speed: 6.0, target: 1400, police: false, policeSpeed: 0, spawnBase: 105 },
+            { speed: 6.3, target: 1500, police: true, policeSpeed: 2.2, spawnBase: 102 },
+            { speed: 6.6, target: 1600, police: true, policeSpeed: 2.25, spawnBase: 98 },
+            { speed: 6.9, target: 1700, police: true, policeSpeed: 2.3, spawnBase: 95 },
+            { speed: 7.2, target: 1800, police: true, policeSpeed: 2.35, spawnBase: 92 },
+            { speed: 7.5, target: 1900, police: true, policeSpeed: 2.4, spawnBase: 89 },
+            { speed: 7.8, target: 2000, police: true, policeSpeed: 2.45, spawnBase: 86 },
+            { speed: 8.1, target: 2100, police: true, policeSpeed: 2.5, spawnBase: 83 },
+            { speed: 8.4, target: 2200, police: true, policeSpeed: 2.55, spawnBase: 80 },
+            { speed: 8.7, target: 2350, police: true, policeSpeed: 2.6, spawnBase: 77 }
         ];
 
         function resetPlayer() {
@@ -315,7 +315,7 @@
 
         function resetPolice(enabled, pSpeed) {
             police.active = enabled;
-            police.x = -160;
+            police.x = -260;
             police.y = groundY - police.h;
             police.chaseSpeed = pSpeed;
             police.siren = 0;
@@ -325,12 +325,30 @@
             buildingBands = [];
             streetLights = [];
 
+            const themeByLevel = [
+                null,
+                { skyTop: "#07101f", skyMid: "#0f1b35", skyBottom: "#161a22", moon: "#d7edff", light: "#ffd36b" },
+                { skyTop: "#10141f", skyMid: "#1c223a", skyBottom: "#24181d", moon: "#ffd9c9", light: "#ffb36b" },
+                { skyTop: "#0a1224", skyMid: "#13294a", skyBottom: "#10202d", moon: "#c9ecff", light: "#7ee0ff" },
+                { skyTop: "#150f1f", skyMid: "#2a1845", skyBottom: "#1c1024", moon: "#f0d1ff", light: "#d37cff" },
+                { skyTop: "#07171a", skyMid: "#0d3030", skyBottom: "#102222", moon: "#d8fff4", light: "#6effd8" },
+                { skyTop: "#1a1208", skyMid: "#3b2412", skyBottom: "#22160f", moon: "#ffe1ad", light: "#ffbf69" },
+                { skyTop: "#0d0d18", skyMid: "#1e1e38", skyBottom: "#151522", moon: "#d7d7ff", light: "#9aa7ff" },
+                { skyTop: "#08131e", skyMid: "#103049", skyBottom: "#0b1a24", moon: "#b8f1ff", light: "#52cfff" },
+                { skyTop: "#180b14", skyMid: "#3a1027", skyBottom: "#220d16", moon: "#ffd0e0", light: "#ff6f91" },
+                { skyTop: "#05070f", skyMid: "#10182a", skyBottom: "#1a1010", moon: "#f5f5f5", light: "#ff5252" }
+            ];
+
+            currentTheme = themeByLevel[currentLevel];
+
             for (let layer = 0; layer < 3; layer++) {
                 const band = [];
                 let x = 0;
+
                 while (x < canvas.width + 300) {
                     const w = 60 + Math.random() * 110;
                     const h = 100 + Math.random() * (layer === 0 ? 60 : layer === 1 ? 120 : 180);
+
                     band.push({
                         x,
                         w,
@@ -338,8 +356,10 @@
                         speedFactor: 0.18 + layer * 0.1,
                         windows: Math.random() > 0.4
                     });
+
                     x += w + 16 + Math.random() * 28;
                 }
+
                 buildingBands.push(band);
             }
 
@@ -679,9 +699,10 @@
 
         function drawSky() {
             const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, "#07101f");
-            grad.addColorStop(0.55, "#0f1b35");
-            grad.addColorStop(1, "#161a22");
+            grad.addColorStop(0, currentTheme?.skyTop || "#07101f");
+            grad.addColorStop(0.55, currentTheme?.skyMid || "#0f1b35");
+            grad.addColorStop(1, currentTheme?.skyBottom || "#161a22");
+
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -692,22 +713,27 @@
                 ctx.fillStyle = "#dbe8ff";
                 ctx.fillRect(sx, sy, 2, 2);
             }
+
             ctx.globalAlpha = 1;
         }
 
         function drawMoon() {
+            const moonColor = currentTheme?.moon || "#d7edff";
+
             ctx.save();
+
             ctx.globalAlpha = 0.14;
-            ctx.fillStyle = "#b9ddff";
+            ctx.fillStyle = moonColor;
             ctx.beginPath();
             ctx.arc(canvas.width - 120, 100, 42, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.globalAlpha = 0.25;
-            ctx.fillStyle = "#d7edff";
+            ctx.fillStyle = moonColor;
             ctx.beginPath();
             ctx.arc(canvas.width - 130, 94, 28, 0, Math.PI * 2);
             ctx.fill();
+
             ctx.restore();
         }
 
@@ -744,14 +770,36 @@
                 ctx.fillStyle = "#2b3344";
                 ctx.fillRect(light.x, groundY - light.height, 4, light.height);
 
+                ctx.fillStyle = currentTheme?.light || "#ffd36b";
                 ctx.beginPath();
                 ctx.arc(light.x + 2, groundY - light.height, 6, 0, Math.PI * 2);
-                ctx.fillStyle = "#ffd36b";
                 ctx.fill();
 
-                const glow = ctx.createRadialGradient(light.x + 2, groundY - light.height, 0, light.x + 2, groundY - light.height, 34);
-                glow.addColorStop(0, "rgba(255,211,107,0.22)");
-                glow.addColorStop(1, "rgba(255,211,107,0)");
+                const glow = ctx.createRadialGradient(
+                    light.x + 2,
+                    groundY - light.height,
+                    0,
+                    light.x + 2,
+                    groundY - light.height,
+                    34
+                );
+
+                const glowColor = currentTheme?.light || "#ffd36b";
+                const rgb =
+                    glowColor === "#ffb36b" ? "255,179,107" :
+                        glowColor === "#7ee0ff" ? "126,224,255" :
+                            glowColor === "#d37cff" ? "211,124,255" :
+                                glowColor === "#6effd8" ? "110,255,216" :
+                                    glowColor === "#ffbf69" ? "255,191,105" :
+                                        glowColor === "#9aa7ff" ? "154,167,255" :
+                                            glowColor === "#52cfff" ? "82,207,255" :
+                                                glowColor === "#ff6f91" ? "255,111,145" :
+                                                    glowColor === "#ff5252" ? "255,82,82" :
+                                                        "255,211,107";
+
+                glow.addColorStop(0, `rgba(${rgb},0.22)`);
+                glow.addColorStop(1, `rgba(${rgb},0)`);
+
                 ctx.fillStyle = glow;
                 ctx.beginPath();
                 ctx.arc(light.x + 2, groundY - light.height, 34, 0, Math.PI * 2);
