@@ -1037,7 +1037,9 @@
         resizeCanvas();
         resetPlayer();
         buildBackground();
-        showMenu();
+        state = "menu";
+        setOverlay(menuScreen);
+        menuCoins.textContent = "Toplam Coin: " + totalCoins;
         loop();
     </script>
 </body>
