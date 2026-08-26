@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
@@ -135,11 +135,11 @@
         <div class="panel">
             <h1>Prime Escape</h1>
             <p>
-                Ninja olarak gecenin içinde kaç. İlk level öğrenme bölümü.
-                Sonraki levellerde polis peşine düşecek.
+                Run through the night as a ninja. The first level is a tutorial.
+                In the next levels, the police will chase you.
             </p>
-            <div class="sub">Kontrol: Space / Mouse / Dokun</div>
-            <div class="coins-big" id="menuCoins">Toplam Coin: 0</div>
+            <div class="sub">Controls: Space / Mouse / Tap</div>
+            <div class="coins-big" id="menuCoins">Total Coins: 0</div>
             <div class="btns">
                 <button class="primary" id="startBtn">Start</button>
             </div>
@@ -149,7 +149,7 @@
     <div class="overlay" id="levelCompleteScreen">
         <div class="panel">
             <h2 id="levelCompleteTitle">Level Complete</h2>
-            <p id="levelCompleteText">Harika. Sonraki levele geçmeye hazırsın.</p>
+            <p id="levelCompleteText">Great job! You're ready for the next level.</p>
             <div class="coins-big" id="levelCompleteCoins">Coin: 0</div>
             <div class="btns">
                 <button class="primary" id="nextLevelBtn">Next Level</button>
@@ -161,7 +161,7 @@
     <div class="overlay" id="gameOverScreen">
         <div class="panel">
             <h1>Game Over</h1>
-            <p id="gameOverText">Bu sefer olmadı. Bir daha dene.</p>
+            <p id="gameOverText">Not this time. Try again!</p>
             <div class="coins-big" id="gameOverCoins">Coin: 0</div>
             <div class="btns">
                 <button class="danger" id="playAgainBtn">Play Again</button>
@@ -173,7 +173,7 @@
     <div class="overlay" id="winScreen">
         <div class="panel">
             <h1>You Win!</h1>
-            <p>Tebrikler! 10 levelin hepsini bitirdin.</p>
+            <p>Congratulations! You completed all 10 levels.</p>
             <div class="coins-big" id="winCoins">Coin: 0</div>
             <div class="btns">
                 <button class="primary" id="winPlayAgainBtn">Play Again</button>
@@ -528,7 +528,7 @@
             state = "gameOver";
             totalCoins += coinsThisRun;
             gameOverText.textContent = reason;
-            gameOverCoins.textContent = "Toplam Coin: " + totalCoins;
+            gameOverCoins.textContent = "Total Coins: " + totalCoins;
             setOverlay(gameOverScreen);
         }
 
@@ -537,13 +537,13 @@
 
             if (currentLevel >= 10) {
                 state = "win";
-                winCoins.textContent = "Toplam Coin: " + totalCoins;
+                winCoins.textContent = "Total Coins: " + totalCoins;
                 setOverlay(winScreen);
             } else {
                 state = "levelComplete";
                 levelCompleteTitle.textContent = "Level " + currentLevel + " Complete";
-                levelCompleteText.textContent = "Harika! Şimdi Level " + (currentLevel + 1) + " başlıyor.";
-                levelCompleteCoins.textContent = "Toplam Coin: " + totalCoins;
+                levelCompleteText.textContent = "Great! Level " + (currentLevel + 1) + " is starting.";
+                levelCompleteCoins.textContent = "Total Coins: " + totalCoins;
                 setOverlay(levelCompleteScreen);
             }
         }
@@ -625,7 +625,7 @@
                 o.x -= worldSpeed;
 
                 if (rectsCollide(player, o)) {
-                    failRun("Bir engele çarptın.");
+                    failRun("You hit an obstacle!");
                     return;
                 }
 
@@ -678,7 +678,7 @@
                 };
 
                 if (rectsCollide(player, policeRect)) {
-                    failRun("Polis seni yakaladı.");
+                    failRun("The police caught you!");
                     return;
                 }
             }
@@ -999,12 +999,12 @@
             if (currentLevel === 1) {
                 ctx.fillStyle = "rgba(255,255,255,0.85)";
                 ctx.font = "15px Arial";
-                ctx.fillText("Tap to jump • Polis henüz yok", 28, 118);
+                ctx.fillText("Tap to jump • No police yet", 28, 118);
             } else {
                 const d = Math.max(0, Math.floor(player.x - police.x));
                 ctx.fillStyle = d < 150 ? "#ff8a8a" : "rgba(255,255,255,0.85)";
                 ctx.font = "15px Arial";
-                ctx.fillText("Polis mesafesi: " + d, 28, 118);
+                ctx.fillText("Police distance: " + d, 28, 118);
             }
         }
 
@@ -1039,7 +1039,7 @@
         buildBackground();
         state = "menu";
         setOverlay(menuScreen);
-        menuCoins.textContent = "Toplam Coin: " + totalCoins;
+        menuCoins.textContent = "Total Coins: " + totalCoins;
         loop();
     </script>
 </body>
