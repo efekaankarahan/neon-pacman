@@ -450,8 +450,19 @@
             }
         });
 
-        window.addEventListener("mousedown", jump);
+        // Taps on the overlay panels must reach their buttons: preventDefault
+        // on touchstart cancels the synthesised click, which used to leave
+        // Start / Next Level / Play Again / Main Menu dead on phones.
+        function isUiTap(e) {
+            return !!(e.target.closest && e.target.closest("button, .overlay"));
+        }
+
+        window.addEventListener("mousedown", (e) => {
+            if (isUiTap(e)) return;
+            jump();
+        });
         window.addEventListener("touchstart", (e) => {
+            if (isUiTap(e)) return;
             e.preventDefault();
             jump();
         }, { passive: false });
