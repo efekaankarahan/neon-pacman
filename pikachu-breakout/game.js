@@ -355,7 +355,3 @@ showStartScreen();
 menuBtn.addEventListener('click', () => {
     window.location.href = '../index.html';
 });
-
-document.getElementById('home-btn').addEventListener('click', () => {
-    window.location.href = '../index.html';
-});
