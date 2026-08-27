@@ -1,10 +1,15 @@
 /*
- * DarkyPlay local leaderboard
- * ---------------------------
- * Keeps a top-10 per game, on this device, under one player name shared by
- * every game on the site. There is no server behind darkyplay.com, so these
- * boards are per-device: everyone playing on the same phone or computer
- * competes on the same list.
+ * DarkyPlay leaderboard
+ * -------------------
+ * Keeps a top-10 per game under one player name shared by every game on the
+ * site.
+ *
+ * Two modes, decided by the REMOTE constant below:
+ *   REMOTE empty  - boards are per-device; everyone on the same phone or
+ *                   computer competes on one list
+ *   REMOTE set    - boards are worldwide, backed by a Firebase Realtime
+ *                   Database over plain REST, with the device list kept as
+ *                   a mirror so an offline player still sees something
  *
  * Usage - one line per game, at the end of <body>:
  *   <script src="../shared/scores.js" data-game="long-towers"></script>
@@ -15,10 +20,37 @@
 (function () {
     'use strict';
 
+    // ---------------------------------------------------------------
+    // GLOBAL LEADERBOARD
+    // ---------------------------------------------------------------
+    // Paste your Firebase Realtime Database URL here and every board on the
+    // site becomes worldwide. Leave it empty and the site falls back to the
+    // per-device boards, which is also what happens whenever the network is
+    // down, so the games never break because of this.
+    //
+    //   var REMOTE = 'https://darkyplay-xxxx-default-rtdb.firebaseio.com';
+    //
+    // Setup is four steps, all free, in the Firebase console:
+    //   1. Create a project
+    //   2. Build -> Realtime Database -> Create Database
+    //   3. Paste the rules from shared/firebase-rules.json into the Rules tab
+    //   4. Copy the database URL shown at the top of the Data tab into REMOTE
+    var REMOTE = '';
+
     var NAME_KEY = 'darkyplayName';
     var DATA_KEY = 'darkyplayScores';
     var MAX_ROWS = 10;
     var MAX_NAME = 12;
+    var FETCH_TIMEOUT = 6000;
+
+    // Highest believable score per game. A global board is writable by anyone,
+    // so this at least keeps the obvious garbage off the top of the list.
+    var SANE_MAX = {
+        'neon-pacman': 100000, 'fired-space-shooter': 500000, 'snake': 5000,
+        'pikachu-breakout': 100000, 'spyro-taxi': 100000, 'holepringo': 100000,
+        'iqur': 300, 'wordsearch': 50000, 'stratosfer-merge': 1000000,
+        'prime-escape': 100000, 'happy-bird': 2000, 'long-towers': 2000
+    };
 
     var GAMES = {
         'neon-pacman': 'Neon Pacman',
@@ -65,6 +97,27 @@
         try { return localStorage.getItem(NAME_KEY) || ''; } catch (e) { return ''; }
     }
 
+    // A public board means these names are shown to strangers, including
+    // children. Not a real moderation system - just the obvious stuff.
+    var BANNED = [
+        'amk', 'aq', 'oc', 'orospu', 'piç', 'pic', 'sik', 'sok', 'yarrak',
+        'gavat', 'gotveren', 'göt', 'got', 'ibne', 'pezevenk', 'siktir',
+        'fuck', 'shit', 'cunt', 'bitch', 'dick', 'nigg', 'rape', 'porn',
+        'hitler', 'nazi'
+    ];
+
+    function looksBanned(s) {
+        // fold leetspeak and spacing so "s1k" and "s i k" are caught too
+        var f = String(s || '').toLowerCase()
+            .replace(/[0@]/g, 'o').replace(/[1!|]/g, 'i').replace(/3/g, 'e')
+            .replace(/4/g, 'a').replace(/5\$/g, 's').replace(/7/g, 't')
+            .replace(/[^a-zçğıöşü]/g, '');
+        for (var i = 0; i < BANNED.length; i++) {
+            if (f.indexOf(BANNED[i].replace(/[^a-zçğıöşü]/g, '')) !== -1) return true;
+        }
+        return false;
+    }
+
     function cleanName(s) {
         return String(s || '')
             .replace(/[<>]/g, '')     // never let markup into a name
@@ -90,6 +143,60 @@
         var i = 0;
         while (i < rows.length && rows[i].s >= score) i++;
         return (i < MAX_ROWS) ? i + 1 : 0;
+    }
+
+    // ---------------------------------------------------------------
+    // Remote (Firebase Realtime Database over plain REST - no SDK, no CDN)
+    // ---------------------------------------------------------------
+    var isGlobal = function () { return !!REMOTE; };
+
+    function withTimeout(promise, ms) {
+        return new Promise(function (resolve, reject) {
+            var done = false;
+            var t = setTimeout(function () {
+                if (!done) { done = true; reject(new Error('timeout')); }
+            }, ms);
+            promise.then(function (v) {
+                if (!done) { done = true; clearTimeout(t); resolve(v); }
+            }, function (e) {
+                if (!done) { done = true; clearTimeout(t); reject(e); }
+            });
+        });
+    }
+
+    function remoteTop(gameId) {
+        var url = REMOTE.replace(/\/+$/, '') + '/scores/' + encodeURIComponent(gameId)
+            + '.json?orderBy=%22s%22&limitToLast=' + MAX_ROWS;
+        return withTimeout(fetch(url, { cache: 'no-store' }), FETCH_TIMEOUT)
+            .then(function (r) {
+                if (!r.ok) throw new Error('http ' + r.status);
+                return r.json();
+            })
+            .then(function (obj) {
+                var out = [];
+                if (obj && typeof obj === 'object') {
+                    Object.keys(obj).forEach(function (k) {
+                        var v = obj[k];
+                        if (v && typeof v.s === 'number') {
+                            out.push({ n: String(v.n || 'Player').slice(0, MAX_NAME), s: v.s, t: v.t || 0 });
+                        }
+                    });
+                }
+                out.sort(function (a, b) { return (b.s - a.s) || (a.t - b.t); });
+                return out.slice(0, MAX_ROWS);
+            });
+    }
+
+    function remoteSubmit(gameId, score, name) {
+        var url = REMOTE.replace(/\/+$/, '') + '/scores/' + encodeURIComponent(gameId) + '.json';
+        return withTimeout(fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ n: name, s: score, t: { '.sv': 'timestamp' } })
+        }), FETCH_TIMEOUT).then(function (r) {
+            if (!r.ok) throw new Error('http ' + r.status);
+            return true;
+        });
     }
 
     function record(gameId, score, name) {
@@ -201,27 +308,51 @@
         return n;
     }
 
+    function paintRows(host, gameId, rows, highlightIndex) {
+        if (!rows.length) {
+            host.appendChild(el('div', 'dsc-empty', 'No scores yet. Be the first!'));
+            return;
+        }
+        var unit = UNITS[gameId] || '';
+        var me = getName();
+        var list = el('ul', 'dsc-list');
+        rows.forEach(function (r, i) {
+            // on a worldwide board, mark every row this player owns
+            var mine = (i === highlightIndex) || (isGlobal() && me && r.n === me);
+            var li = el('li', 'dsc-row p' + (i + 1) + (mine ? ' me' : ''));
+            li.appendChild(el('span', 'dsc-pos', (i + 1) + '.'));
+            li.appendChild(el('span', 'dsc-nm', r.n || 'Player'));
+            li.appendChild(el('span', 'dsc-sc', unit ? (r.s + ' ' + unit) : String(r.s)));
+            list.appendChild(li);
+        });
+        host.appendChild(list);
+    }
+
     function showBoard(gameId, highlightIndex) {
         ensureOverlay();
         panel.innerHTML = '';
 
-        panel.appendChild(el('div', 'dsc-title', 'Best on this device'));
+        var title = el('div', 'dsc-title', isGlobal() ? 'Worldwide' : 'Best on this device');
+        panel.appendChild(title);
         panel.appendChild(el('div', 'dsc-h', GAMES[gameId] || gameId));
 
-        var rows = top(gameId, MAX_ROWS);
-        if (!rows.length) {
-            panel.appendChild(el('div', 'dsc-empty', 'No scores yet. Be the first!'));
-        } else {
-            var unit = UNITS[gameId] || '';
-            var list = el('ul', 'dsc-list');
-            rows.forEach(function (r, i) {
-                var li = el('li', 'dsc-row p' + (i + 1) + (i === highlightIndex ? ' me' : ''));
-                li.appendChild(el('span', 'dsc-pos', (i + 1) + '.'));
-                li.appendChild(el('span', 'dsc-nm', r.n || 'Player'));
-                li.appendChild(el('span', 'dsc-sc', unit ? (r.s + ' ' + unit) : String(r.s)));
-                list.appendChild(li);
+        var body = el('div');
+        panel.appendChild(body);
+
+        if (isGlobal()) {
+            body.appendChild(el('div', 'dsc-empty', 'Loading the world board…'));
+            remoteTop(gameId).then(function (rows) {
+                body.innerHTML = '';
+                paintRows(body, gameId, rows, -1);
+            }, function () {
+                // offline or the database is unreachable - never leave the
+                // player staring at a spinner, show what this device knows
+                body.innerHTML = '';
+                title.textContent = 'Offline · best on this device';
+                paintRows(body, gameId, top(gameId, MAX_ROWS), highlightIndex);
             });
-            panel.appendChild(list);
+        } else {
+            paintRows(body, gameId, top(gameId, MAX_ROWS), highlightIndex);
         }
 
         var foot = el('div', 'dsc-foot');
@@ -245,6 +376,10 @@
 
         panel.appendChild(el('div', 'dsc-title', 'Leaderboard'));
         panel.appendChild(el('div', 'dsc-h', 'Who is playing?'));
+        if (isGlobal()) {
+            panel.appendChild(el('div', 'dsc-empty',
+                'This name is shown to everyone playing Darky Play.'));
+        }
 
         var input = document.createElement('input');
         input.className = 'dsc-input';
@@ -256,10 +391,22 @@
         input.setAttribute('autocorrect', 'off');
         panel.appendChild(input);
 
+        var warn = el('div', 'dsc-empty', '');
+        warn.style.color = '#ff8a8a';
+        warn.style.display = 'none';
+        panel.appendChild(warn);
+
         function save() {
-            var n = setName(input.value) || 'Player';
+            var typed = cleanName(input.value);
+            if (typed && looksBanned(typed)) {
+                warn.textContent = 'Please pick a different name.';
+                warn.style.display = 'block';
+                return;
+            }
+            var n = setName(typed) || 'Player';
             if (pendingScore != null) {
                 var pos = record(gameId, pendingScore, n);
+                if (isGlobal()) remoteSubmit(gameId, pendingScore, n).catch(function () { });
                 showBoard(gameId, pos ? pos - 1 : -1);
             } else {
                 showBoard(gameId, -1);
@@ -288,9 +435,12 @@
     function submit(gameId, score) {
         score = Math.max(0, Math.floor(Number(score) || 0));
         if (!gameId || score <= 0) return 0;
+        if (score > (SANE_MAX[gameId] || Infinity)) return 0;
 
+        // On a worldwide board every run is worth sending - it might place
+        // globally even when it cannot beat this device's own top ten.
         var wouldRank = rankFor(gameId, score);
-        if (!wouldRank) return 0;              // did not make the board, stay quiet
+        if (!wouldRank && !isGlobal()) return 0;   // stay quiet on a local miss
 
         var name = getName();
 
@@ -300,7 +450,9 @@
             setTimeout(function () { askName(gameId, score, null); }, 900);
             return wouldRank;
         }
-        var pos = record(gameId, score, name);
+
+        var pos = record(gameId, score, name);   // local copy always, even offline
+        if (isGlobal()) remoteSubmit(gameId, score, name).catch(function () { });
         setTimeout(function () { showBoard(gameId, pos ? pos - 1 : -1); }, 900);
         return pos;
     }
@@ -323,26 +475,12 @@
     }
 
     // Hub listing: one row per game that has a score, best first.
-    function renderHub(host) {
-        if (!host) return;
-        injectStyles();
-        host.innerHTML = '';
-
-        var data = readAll();
-        var rows = [];
-        Object.keys(GAMES).forEach(function (id) {
-            var list = data[id];
-            if (list && list.length) rows.push({ id: id, best: list[0] });
-        });
-
+    function paintHubRows(host, rows) {
         if (!rows.length) {
-            var none = el('div', 'dsh-empty', 'No records yet - play a game and set the first one.');
-            host.appendChild(none);
+            host.appendChild(el('div', 'dsh-empty',
+                'No records yet - play a game and set the first one.'));
             return;
         }
-
-        rows.sort(function (a, b) { return b.best.t - a.best.t; }); // newest record first
-
         var list = el('div', 'dsh-list');
         rows.forEach(function (r) {
             var unit = UNITS[r.id] || '';
@@ -355,6 +493,46 @@
             list.appendChild(row);
         });
         host.appendChild(list);
+    }
+
+    function localHubRows() {
+        var data = readAll();
+        var rows = [];
+        Object.keys(GAMES).forEach(function (id) {
+            var l = data[id];
+            if (l && l.length) rows.push({ id: id, best: l[0] });
+        });
+        rows.sort(function (a, b) { return b.best.t - a.best.t; }); // newest record first
+        return rows;
+    }
+
+    function renderHub(host) {
+        if (!host) return;
+        injectStyles();
+        host.innerHTML = '';
+
+        if (!isGlobal()) {
+            paintHubRows(host, localHubRows());
+            return;
+        }
+
+        host.appendChild(el('div', 'dsh-empty', 'Loading the world records…'));
+        var ids = Object.keys(GAMES);
+        Promise.all(ids.map(function (id) {
+            return remoteTop(id).then(function (rows) {
+                return rows.length ? { id: id, best: rows[0] } : null;
+            }, function () { return null; });
+        })).then(function (res) {
+            var rows = res.filter(Boolean);
+            host.innerHTML = '';
+            if (!rows.length) {
+                // every request failed, or nobody has played yet
+                paintHubRows(host, localHubRows());
+                return;
+            }
+            rows.sort(function (a, b) { return b.best.s - a.best.s; });
+            paintHubRows(host, rows);
+        });
     }
 
     var tag = document.currentScript ||
