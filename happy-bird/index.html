@@ -491,6 +491,10 @@
             hillScroll = (hillScroll + sceneSpeed * 0.18 * dt) % 70;
             if (state !== 'over') groundScroll = (groundScroll + sceneSpeed * dt) % 48;
 
+            // Once the game-over panel is up the bird stays where it landed -
+            // without this it keeps accelerating and sinks through the floor.
+            if (state === 'over') return;
+
             if (state === 'menu' || state === 'ready') {
                 const period = state === 'menu' ? 380 : 300;
                 const amp = state === 'menu' ? 9 : 11;
