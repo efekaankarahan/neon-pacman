@@ -44,6 +44,18 @@
     // drums: k = kick, s = snare, h = hat, o = open hat, . = rest
     // ---------------------------------------------------------------
     var TRACKS = {
+        // Hub theme - the arcade's front door. Bright, welcoming, E minor
+        // with a major lift in the second half so it does not feel gloomy.
+        hub: {
+            bpm: 124, lead: 'square', bassWave: 'triangle', gain: 0.14,
+            melody: P(
+                'E5 . B4 . E5 G5 . F#5 E5 . B4 . D5 . B4 . ' +
+                'C5 . G5 . E5 . C5 . D5 . F#5 . A5 . G5 F#5'
+            ),
+            bass: P('E2 . E2 . B2 . B2 . C3 . C3 . D3 . D3 .'),
+            drums: 'k . h . s . h k k . h . s . h o'
+        },
+
         // Bouncy arcade chase, A minor
         pacman: {
             bpm: 138, lead: 'square', bassWave: 'triangle', gain: 0.16,
