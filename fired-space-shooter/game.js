@@ -477,6 +477,7 @@ function gameOver(isBossDeath = false) {
         title.innerText = "LOSER";
     }
     gameOverScreen.classList.remove('hidden');
+    if (window.DarkyScores) DarkyScores.submit('fired-space-shooter', score);
 }
 
 function winGame() {

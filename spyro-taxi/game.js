@@ -213,6 +213,7 @@ function gameOver() {
     isPlaying = false;
     gameOverScreen.classList.remove('hidden');
     finalScoreEl.innerText = score;
+    if (window.DarkyScores) DarkyScores.submit('spyro-taxi', score);
 }
 
 // Input Handling

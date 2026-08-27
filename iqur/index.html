@@ -795,6 +795,7 @@
             document.getElementById("endScreen").classList.remove("hidden");
 
             document.getElementById("finalScore").innerText = score;
+            if (window.DarkyScores) DarkyScores.submit('iqur', score);
 
             // Accuracy
             let accuracy = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
@@ -841,6 +842,10 @@
     </script>
 
     <script src="../shared/chiptune.js?v=4" data-track="iqur"></script>
+
+
+    <script src="../shared/scores.js?v=1" data-game="iqur"></script>
+
 
 
 </body>

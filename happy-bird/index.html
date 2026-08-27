@@ -474,6 +474,7 @@
             medalIconEl.innerHTML = icon;
             medalLabelEl.textContent = label;
 
+            if (window.DarkyScores) DarkyScores.submit('happy-bird', score);
             gameOverScreen.classList.add('active');
         }
 
@@ -916,6 +917,9 @@
         requestAnimationFrame(loop);
     </script>
     <script src="../shared/chiptune.js?v=4" data-track="happybird"></script>
+
+    <script src="../shared/scores.js?v=1" data-game="happy-bird"></script>
+
 
 </body>
 

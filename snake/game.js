@@ -260,4 +260,5 @@ function endGame() {
     clearTimeout(restoreTimeout);
     finalScoreEl.innerText = score;
     gameOverScreen.classList.remove('hidden');
+    if (window.DarkyScores) DarkyScores.submit('snake', score);
 }

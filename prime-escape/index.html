@@ -542,6 +542,7 @@
             gameOverText.textContent = reason;
             gameOverCoins.textContent = "Total Coins: " + totalCoins;
             setOverlay(gameOverScreen);
+            if (window.DarkyScores) DarkyScores.submit('prime-escape', totalCoins);
         }
 
         function completeLevel() {
@@ -551,6 +552,7 @@
                 state = "win";
                 winCoins.textContent = "Total Coins: " + totalCoins;
                 setOverlay(winScreen);
+                if (window.DarkyScores) DarkyScores.submit('prime-escape', totalCoins);
             } else {
                 state = "levelComplete";
                 levelCompleteTitle.textContent = "Level " + currentLevel + " Complete";
@@ -1055,6 +1057,9 @@
         loop();
     </script>
     <script src="../shared/chiptune.js?v=4" data-track="primeescape"></script>
+
+    <script src="../shared/scores.js?v=1" data-game="prime-escape"></script>
+
 
 </body>
 

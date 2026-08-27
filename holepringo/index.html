@@ -152,6 +152,8 @@
                 document.getElementById("time").innerText = timeLeft;
                 if (timeLeft <= 0) {
                     gameActive = false;
+                    clearInterval(timerInterval);
+                    if (window.DarkyScores) DarkyScores.submit('holepringo', score);
                 }
             }, 1000);
         }
@@ -271,6 +273,10 @@
     </script>
 
     <script src="../shared/chiptune.js?v=4" data-track="holepringo"></script>
+
+
+    <script src="../shared/scores.js?v=1" data-game="holepringo"></script>
+
 
 
 </body>

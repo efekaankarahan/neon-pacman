@@ -1075,6 +1075,7 @@
             cancelAnimationFrame(gameLoopId);
             gameOverScreen.classList.remove('hidden');
             finalScoreEl.innerText = score;
+            if (window.DarkyScores) DarkyScores.submit('neon-pacman', score);
         }
 
         function win() {
@@ -1089,6 +1090,7 @@
             } else {
                 winScreen.classList.remove('hidden');
                 winScoreEl.innerText = score;
+                if (window.DarkyScores) DarkyScores.submit('neon-pacman', score);
             }
         }
 
@@ -1281,6 +1283,9 @@
         &copy; 2026 - Efe Kaan Karahan
     </div>
     <script src="../shared/chiptune.js?v=4" data-track="pacman"></script>
+
+    <script src="../shared/scores.js?v=1" data-game="neon-pacman"></script>
+
 
 </body>
 

@@ -163,6 +163,33 @@
         }
 
 
+        /* Records board */
+        .records {
+            /* this page has no global box-sizing reset, so set it here or the
+               side padding is added to the 100% width and the page overflows */
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 800px;
+            margin: 60px auto 0;
+            padding: 0 20px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .records h2 {
+            font-size: 1.1rem;
+            color: #ffee00;
+            text-shadow: 0 0 10px #ffee00;
+            margin-bottom: 10px;
+        }
+
+        .records-note {
+            font-size: 0.55rem;
+            color: #888;
+            line-height: 1.8;
+            margin-bottom: 18px;
+        }
+
         /* Background Animation */
         .background-container {
             position: absolute;
@@ -354,10 +381,20 @@
         </a>
     </div>
 
+    <section class="records">
+        <h2>&#127942; RECORDS</h2>
+        <p class="records-note">Best scores on this device</p>
+        <div id="recordsBox"></div>
+    </section>
+
     <div class="site-footer">
         &copy; 2026 - Efe Kaan Karahan
     </div>
     <script src="shared/chiptune.js?v=4" data-track="hub"></script>
+    <script src="shared/scores.js?v=1"></script>
+    <script>
+        DarkyScores.renderHub(document.getElementById('recordsBox'));
+    </script>
 </body>
 
 </html>

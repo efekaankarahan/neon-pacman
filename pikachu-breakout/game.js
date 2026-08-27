@@ -326,6 +326,7 @@ function endGame(win) {
     } else {
         showLoseScreen();
     }
+    if (window.DarkyScores) DarkyScores.submit('pikachu-breakout', score);
 }
 
 function startGame() {
