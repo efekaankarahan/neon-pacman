@@ -13,11 +13,29 @@ camera.position.set(0, 5, 10);
 camera.lookAt(0, 2, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(800, 400);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
 // Insert renderer canvas before UI
 const uiLayer = document.getElementById('ui-layer');
 container.insertBefore(renderer.domElement, uiLayer);
+
+// The board is a fixed 2:1 strip that fills whatever width the phone gives us,
+// and the UI overlay is parked exactly on top of the canvas.
+function resizeGame() {
+    const w = Math.max(240, Math.min(container.clientWidth - 16, 900));
+    const h = Math.round(w / 2);
+
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+
+    const canvasEl = renderer.domElement;
+    uiLayer.style.top = canvasEl.offsetTop + 'px';
+    uiLayer.style.height = canvasEl.offsetHeight + 'px';
+}
+resizeGame();
+window.addEventListener('resize', resizeGame);
+window.addEventListener('orientationchange', () => setTimeout(resizeGame, 200));
 
 // Lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -218,15 +236,26 @@ function handleInput(e) {
     }
 }
 
-window.addEventListener('keydown', handleInput);
-window.addEventListener('click', () => {
+function tapInput() {
     if (isPlaying && !isGameOver && !isJumping) {
         isJumping = true;
         velocityY = JUMP_FORCE;
     } else if (!isPlaying && !isGameOver) {
         startGame();
     }
-});
+}
+
+window.addEventListener('keydown', handleInput);
+window.addEventListener('click', tapInput);
+
+// touchstart responds immediately instead of waiting for the synthesised
+// click; preventDefault stops iOS double-tap zoom and the duplicate click.
+// Buttons are excluded so REPLAY / MAIN MENU still work.
+window.addEventListener('touchstart', (e) => {
+    if (e.target.closest && e.target.closest('button')) return;
+    e.preventDefault();
+    tapInput();
+}, { passive: false });
 
 // Start loop
 animate();

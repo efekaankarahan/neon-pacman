@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IQur - Test Your Brain</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -17,8 +17,13 @@
             font-family: 'Inter', sans-serif;
             background: #f0f2f5;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
+            /* no grey flash or double-tap zoom on the answer buttons */
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            overscroll-behavior-y: none;
         }
 
         /* ── Navbar ── */

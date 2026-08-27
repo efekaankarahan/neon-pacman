@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Pacman - Play Free on Darky Play</title>
     <meta name="description"
         content="Experience the classic Pacman with a glowing neon twist. Play Neon Pacman for free on Darky Play. Eat dots, avoid ghosts, and survive!">
@@ -34,10 +34,20 @@
             color: var(--text-color);
             font-family: 'Press Start 2P', cursive;
             display: flex;
+            /* column, or the D-pad sits BESIDE the board and overflows phones */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 8px;
+            padding: 8px;
+            width: 100%;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .game-container {
@@ -92,20 +102,43 @@
         (pointer: coarse) {
             .d-pad {
                 display: grid;
+                margin-top: 0;
+                margin-bottom: 0;
+                gap: 8px;
             }
 
             canvas {
-                max-width: 100%;
-                height: auto;
+                /* leave room for the header and the D-pad below it */
+                max-height: 52dvh;
             }
 
             .game-container {
                 border-width: 2px;
                 padding: 5px;
+                /* allow the board to shrink inside the flex column */
+                min-height: 0;
             }
 
             h1 {
                 font-size: 18px;
+            }
+
+            .d-btn {
+                width: 56px;
+                height: 56px;
+            }
+        }
+
+        /* Short phones in landscape: shrink the D-pad so the board still fits */
+        @media (max-height: 520px) and (pointer: coarse) {
+            .d-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+
+            canvas {
+                max-height: 62dvh;
             }
         }
 
@@ -123,6 +156,13 @@
             background-color: #000;
             display: block;
             box-shadow: inset 0 0 10px #222;
+            /* canvas is a replaced element, so auto + both maxes keeps the
+               aspect ratio while fitting whatever the phone gives us */
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 74dvh;
+            touch-action: none;
         }
 
         .overlay {
@@ -161,16 +201,19 @@
         #start-screen h1 {
             color: #000;
             text-shadow: none;
-            font-size: 32px;
-            margin-bottom: 40px;
+            /* ID beats the media query, so size fluidly or it overflows
+               the board on narrow phones */
+            font-size: clamp(15px, 7vw, 32px);
+            margin-bottom: clamp(14px, 5vw, 40px);
             text-transform: uppercase;
+            max-width: 100%;
         }
 
         #play-btn {
             background: #000;
             color: var(--neon-green);
-            padding: 15px 40px;
-            font-size: 20px;
+            padding: clamp(9px, 3vw, 15px) clamp(20px, 8vw, 40px);
+            font-size: clamp(13px, 4.5vw, 20px);
             border: 4px solid #000;
             cursor: pointer;
             font-family: inherit;
