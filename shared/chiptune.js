@@ -284,8 +284,17 @@
     function start() {
         if (playing || !track) return;
         if (!makeCtx()) return;
-        if (ctx.state === 'suspended') ctx.resume();
+        // Never schedule against a suspended clock - currentTime is frozen
+        // there, so every note would land in the past once it resumes.
+        if (ctx.state !== 'running') {
+            try {
+                var r = ctx.resume();
+                if (r && r.then) r.then(function () { start(); }, function () { });
+            } catch (e) { }
+            return;
+        }
         playing = true;
+        if (!muted) startSilentLoop(); // also re-arms it after returning from background
         stepIdx = 0;
         nextNoteTime = ctx.currentTime + 0.08;
         applyVolume();
@@ -297,6 +306,7 @@
         playing = false;
         if (timer) { clearInterval(timer); timer = null; }
         if (ctx) master.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        stopSilentLoop();
     }
 
     function setMuted(v) {
@@ -304,6 +314,10 @@
         try { localStorage.setItem(STORE_KEY, muted ? '1' : '0'); } catch (e) { }
         applyVolume();
         paintButton();
+        // setMuted always runs from the button tap, so this is inside a
+        // gesture and iOS will let the media element start again.
+        if (muted) stopSilentLoop();
+        else if (unlocked) startSilentLoop();
     }
 
     // ---------------------------------------------------------------
@@ -333,7 +347,9 @@
             e.preventDefault();
             e.stopPropagation();
             setMuted(!muted);
-            if (!muted && !playing) start();
+            // go through the full unlock path - this tap is itself a gesture,
+            // and may be the one that finally gets iOS to open the context
+            if (!muted) unlock();
         }
         btn.addEventListener('click', toggle);
         btn.addEventListener('touchstart', toggle, { passive: false });
@@ -344,14 +360,91 @@
     // ---------------------------------------------------------------
     // Boot - mobile browsers refuse to make noise before a gesture
     // ---------------------------------------------------------------
-    function unlock() {
-        if (unlocked) return;
-        unlocked = true;
-        ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(function (evt) {
+    // iOS is fussiest on touchend; keep the others as fallbacks.
+    var UNLOCK_EVENTS = ['touchend', 'touchstart', 'pointerup', 'pointerdown',
+        'mousedown', 'click', 'keydown'];
+
+    function dropUnlockListeners() {
+        UNLOCK_EVENTS.forEach(function (evt) {
             window.removeEventListener(evt, unlock, true);
         });
-        if (!muted) start();
-        else makeCtx();
+    }
+
+    // A one-sample silent buffer played inside the gesture. iOS will not
+    // consider a context usable until it has actually rendered something.
+    function primeSilence() {
+        try {
+            var s = ctx.createBufferSource();
+            s.buffer = ctx.createBuffer(1, 1, 22050);
+            s.connect(ctx.destination);
+            s.start(0);
+        } catch (e) { }
+    }
+
+    // On iOS the hardware ringer switch silences WebAudio, but NOT media
+    // played through an <audio> element. Looping a silent clip alongside it
+    // moves the page into the media session, so the music survives the switch.
+    var silentEl = null;
+
+    function silentWavUrl() {
+        var rate = 8000, n = rate; // one second
+        var buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+        function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
+        str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE');
+        str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+        v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+        v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+        str(36, 'data'); v.setUint32(40, n * 2, true);
+        var bytes = new Uint8Array(buf), bin = '';
+        for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return 'data:audio/wav;base64,' + btoa(bin);
+    }
+
+    function startSilentLoop() {
+        try {
+            if (!silentEl) {
+                silentEl = document.createElement('audio');
+                silentEl.setAttribute('playsinline', '');
+                silentEl.setAttribute('webkit-playsinline', '');
+                silentEl.loop = true;
+                silentEl.volume = 0.001; // some browsers skip media at exactly 0
+                silentEl.src = silentWavUrl();
+                silentEl.style.display = 'none';
+                document.body.appendChild(silentEl);
+            }
+            var p = silentEl.play();
+            if (p && p.catch) p.catch(function () { });
+        } catch (e) { }
+    }
+
+    // Holding the media session pauses whatever the listener had playing, so
+    // let go of it whenever our own music is not actually sounding.
+    function stopSilentLoop() {
+        try { if (silentEl) silentEl.pause(); } catch (e) { }
+    }
+
+    // Called on every gesture until the context is genuinely running. The old
+    // version dropped the listeners on the FIRST gesture regardless of whether
+    // resume() had actually taken effect - and since resume() is async, on iOS
+    // it usually had not, which left the page silent with no way to retry.
+    function unlock() {
+        if (!makeCtx()) { dropUnlockListeners(); return; }
+
+        primeSilence();
+        if (!muted) startSilentLoop();
+
+        function settle() {
+            if (ctx.state !== 'running') return; // leave listeners armed, retry next gesture
+            unlocked = true;
+            dropUnlockListeners();
+            if (!muted && !playing) start();
+        }
+
+        try {
+            var r = ctx.resume();
+            if (r && r.then) r.then(settle, function () { });
+        } catch (e) { }
+        settle();
     }
 
     // document.currentScript is only valid while this script is executing,
@@ -363,7 +456,7 @@
     function boot() {
         makeButton();
 
-        ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(function (evt) {
+        UNLOCK_EVENTS.forEach(function (evt) {
             window.addEventListener(evt, unlock, true);
         });
 
@@ -387,6 +480,16 @@
         setMuted: setMuted,
         isMuted: function () { return muted; },
         isPlaying: function () { return playing; },
-        tracks: Object.keys(TRACKS)
+        tracks: Object.keys(TRACKS),
+        // handy when diagnosing a phone that stays silent
+        state: function () {
+            return {
+                ctx: ctx ? ctx.state : 'none',
+                unlocked: unlocked,
+                playing: playing,
+                muted: muted,
+                silentLoop: !!silentEl && !silentEl.paused
+            };
+        }
     };
 })();
