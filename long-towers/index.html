@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Long Towers - Stack the Neon Skyline on Darky Play</title>
+    <meta name="description"
+        content="Play Long Towers free on Darky Play. Tap to drop each block, keep the stack aligned and build the tallest neon tower you can. No download required." />
+    <meta name="keywords"
+        content="long towers, stacking game, tower game, darkyplay, arcade game, browser game, free game, tap game" />
+    <meta name="robots" content="index, follow" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a1e;
+            font-family: 'Inter', Arial, Helvetica, sans-serif;
+            overscroll-behavior: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            touch-action: none;
+        }
+
+        /* ---------- HUD ---------- */
+        .hud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+
+        .hud.active {
+            display: block;
+        }
+
+        .score {
+            position: absolute;
+            top: 6vh;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 62px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 18px rgba(0, 240, 255, 0.75), 0 3px 0 rgba(0, 0, 0, 0.35);
+            letter-spacing: 1px;
+        }
+
+        .combo {
+            position: absolute;
+            top: calc(6vh + 68px);
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #4dffc3;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .combo.show {
+            opacity: 1;
+        }
+
+        .sound-btn {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 8;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.14);
+            color: #dff6ff;
+            font-size: 19px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ---------- Overlays ---------- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(6, 8, 26, 0.62);
+            z-index: 10;
+            padding: 24px;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .panel {
+            width: min(92vw, 400px);
+            background: rgba(18, 22, 48, 0.97);
+            border: 2px solid rgba(0, 240, 255, 0.28);
+            border-radius: 26px;
+            padding: 26px 22px;
+            color: #eaf4ff;
+            text-align: center;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 240, 255, 0.08);
+        }
+
+        .panel h1 {
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            color: #1de9b6;
+            text-shadow: 0 0 22px rgba(29, 233, 182, 0.5);
+        }
+
+        .panel h2 {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .panel p {
+            font-size: 15px;
+            line-height: 1.55;
+            opacity: 0.8;
+            margin-bottom: 14px;
+        }
+
+        .tower-emoji {
+            font-size: 44px;
+            margin-bottom: 6px;
+        }
+
+        .rank {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #1de9b6;
+            margin-bottom: 12px;
+        }
+
+        .scores {
+            display: flex;
+            gap: 12px;
+            margin: 4px 0 16px;
+        }
+
+        .score-box {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 12px 8px;
+        }
+
+        .score-box .label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.55;
+        }
+
+        .score-box .value {
+            font-size: 30px;
+            font-weight: 900;
+        }
+
+        .score-box.best .value {
+            color: #1de9b6;
+        }
+
+        .new-best {
+            font-size: 13px;
+            font-weight: 800;
+            color: #ffd93b;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .btns {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+            margin-top: 6px;
+        }
+
+        button {
+            border: none;
+            border-radius: 16px;
+            padding: 15px 18px;
+            font-size: 16px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.12s ease, opacity 0.12s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            opacity: 0.95;
+        }
+
+        .primary {
+            background: linear-gradient(135deg, #1de9b6, #00b8d4);
+            color: #04202a;
+            box-shadow: 0 5px 0 #0b8f77;
+        }
+
+        .primary:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #0b8f77;
+        }
+
+        .secondary {
+            background: rgba(255, 255, 255, 0.09);
+            color: #cfe6f5;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="game"></canvas>
+
+    <button class="sound-btn" id="soundBtn" title="Sound effects on/off">&#128266;</button>
+
+    <div class="hud" id="hud">
+        <div class="score" id="score">0</div>
+        <div class="combo" id="combo">Perfect &times;0</div>
+    </div>
+
+    <div class="overlay active" id="menuScreen">
+        <div class="panel">
+            <div class="tower-emoji">&#128508;</div>
+            <h1>LONG TOWERS</h1>
+            <p>A block slides across the top. Tap to drop it.<br />
+                Whatever hangs over the edge gets sliced off &mdash; so line it up.</p>
+            <div class="scores">
+                <div class="score-box best">
+                    <div class="label">Tallest</div>
+                    <div class="value" id="menuBest">0</div>
+                </div>
+            </div>
+            <div class="btns">
+                <button class="primary" id="startBtn">Build</button>
+                <button class="secondary" id="menuHomeBtn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="gameOverScreen">
+        <div class="panel">
+            <div class="tower-emoji" id="rankIcon">&#127959;</div>
+            <div class="rank" id="rankLabel">Foundation</div>
+            <h2>Tower Down</h2>
+            <div class="new-best" id="newBest" style="display:none;">&#11088; NEW RECORD!</div>
+            <div class="scores">
+                <div class="score-box">
+                    <div class="label">Floors</div>
+                    <div class="value" id="finalScore">0</div>
+                </div>
+                <div class="score-box best">
+                    <div class="label">Tallest</div>
+                    <div class="value" id="finalBest">0</div>
+                </div>
+            </div>
+            <div class="btns">
+                <button class="primary" id="retryBtn">Build Again</button>
+                <button class="secondary" id="overHomeBtn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------------
+        // Long Towers - fixed 400x640 world, letterboxed and centred, so the
+        // difficulty is identical on every screen.
+        // ---------------------------------------------------------------
+        const W = 400;
+        const H = 640;
+
+        const BLOCK_H = 26;
+        const BASE_W = 190;
+        const PERFECT_SNAP = 4;    // world px of slack that still counts as perfect
+        const REWARD_AFTER = 3;    // perfects in a row before the block grows back
+        const REWARD_W = 6;
+        const GROUND_Y = H - 70;
+        const CAM_REST = H * 0.56; // how far down the screen the live block sits
+
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+
+        let scale = 1, offX = 0, offY = 0;
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            const cw = window.innerWidth, ch = window.innerHeight;
+            canvas.width = Math.floor(cw * dpr);
+            canvas.height = Math.floor(ch * dpr);
+            scale = Math.min(cw / W, ch / H);
+            offX = (cw - W * scale) / 2;
+            offY = (ch - H * scale) / 2;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+        resize();
+
+        // ---------------------------------------------------------------
+        // Sound effects (the background music is the shared chiptune engine)
+        // ---------------------------------------------------------------
+        let audioCtx = null;
+        let sfxOn = true;
+        try { sfxOn = localStorage.getItem('longTowersMuted') !== '1'; } catch (e) { }
+
+        function blip(freq, dur, type, gain, slideTo) {
+            if (!sfxOn) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+                g.gain.setValueAtTime(gain, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g).connect(audioCtx.destination);
+                o.start(t);
+                o.stop(t + dur);
+            } catch (e) { }
+        }
+
+        const sndPlace = () => blip(300, 0.09, 'square', 0.05, 200);
+        const sndPerfect = (n) => blip(680 + Math.min(n, 8) * 70, 0.14, 'triangle', 0.08, 1400);
+        const sndSlice = () => blip(180, 0.16, 'sawtooth', 0.05, 70);
+        const sndFail = () => blip(220, 0.4, 'sawtooth', 0.09, 50);
+
+        const soundBtn = document.getElementById('soundBtn');
+        function paintSoundBtn() { soundBtn.innerHTML = sfxOn ? '&#128266;' : '&#128263;'; }
+        paintSoundBtn();
+        soundBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sfxOn = !sfxOn;
+            paintSoundBtn();
+            try { localStorage.setItem('longTowersMuted', sfxOn ? '0' : '1'); } catch (err) { }
+        });
+
+        // ---------------------------------------------------------------
+        // Persistent best
+        // ---------------------------------------------------------------
+        let best = 0;
+        try { best = parseInt(localStorage.getItem('longTowersBest')) || 0; } catch (e) { }
+        function saveBest() {
+            try { localStorage.setItem('longTowersBest', String(best)); } catch (e) { }
+        }
+
+        // ---------------------------------------------------------------
+        // State
+        // ---------------------------------------------------------------
+        let state = 'menu';   // menu | playing | falling | over
+        let stack, current, debris, sparks;
+        let score, combo, bestCombo;
+        let camY, camTarget, shake, overTimer;
+
+        const stars = [];
+        for (let i = 0; i < 70; i++) {
+            stars.push({
+                x: Math.random() * W,
+                y: Math.random() * H,
+                r: 0.5 + Math.random() * 1.3,
+                tw: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Each floor gets its own hue so the tower reads as a gradient.
+        const hueOf = (i) => (185 + i * 7) % 360;
+
+        function blockSpeed() {
+            return 165 + Math.min(210, score * 4.5);
+        }
+
+        function spawnBlock() {
+            const top = stack[stack.length - 1];
+            const fromLeft = stack.length % 2 === 0;
+            current = {
+                left: fromLeft ? -top.w : W,
+                w: top.w,
+                dir: fromLeft ? 1 : -1,
+                hue: hueOf(stack.length)
+            };
+        }
+
+        function resetRun() {
+            stack = [{ left: (W - BASE_W) / 2, w: BASE_W, hue: hueOf(0) }];
+            debris = [];
+            sparks = [];
+            score = 0;
+            combo = 0;
+            bestCombo = 0;
+            camY = 0;
+            camTarget = 0;
+            shake = 0;
+            overTimer = 0;
+            scoreEl.textContent = '0';
+            comboEl.classList.remove('show');
+            spawnBlock();
+        }
+
+        // Screen Y of the top edge of floor i (0 = the base slab)
+        const floorY = (i) => GROUND_Y - (i + 1) * BLOCK_H + camY;
+        const liveY = () => floorY(stack.length);
+
+        function addSparks(x, y, n, hue) {
+            for (let i = 0; i < n; i++) {
+                sparks.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 220,
+                    vy: -40 - Math.random() * 200,
+                    life: 0.6, max: 0.6,
+                    r: 1.5 + Math.random() * 2.5,
+                    hue: hue
+                });
+            }
+        }
+
+        function drop() {
+            if (state !== 'playing') return;
+
+            const top = stack[stack.length - 1];
+            const l = Math.max(current.left, top.left);
+            const r = Math.min(current.left + current.w, top.left + top.w);
+            const overlap = r - l;
+
+            if (overlap <= 0) {
+                // missed the tower entirely
+                debris.push({
+                    x: current.left, y: liveY(), w: current.w, h: BLOCK_H,
+                    vx: current.dir * 40, vy: -60, rot: 0,
+                    vr: (Math.random() - 0.5) * 4, hue: current.hue, life: 3
+                });
+                state = 'falling';
+                shake = 10;
+                combo = 0;
+                comboEl.classList.remove('show');
+                sndFail();
+                return;
+            }
+
+            const delta = Math.abs(current.left - top.left);
+
+            if (delta <= PERFECT_SNAP) {
+                // clean hit - keep the full width, and grow it back a little
+                // once the player strings a few together
+                combo++;
+                bestCombo = Math.max(bestCombo, combo);
+                let w = current.w;
+                if (combo >= REWARD_AFTER) w = Math.min(BASE_W, w + REWARD_W);
+                stack.push({ left: top.left, w: w, hue: current.hue, perfect: true });
+                addSparks(top.left + w / 2, liveY(), 14, current.hue);
+                shake = Math.min(7, 2 + combo * 0.6);
+                sndPerfect(combo);
+                comboEl.textContent = 'Perfect ×' + combo;
+                comboEl.classList.add('show');
+            } else {
+                // slice the overhang off and let it tumble away
+                const cutLeft = current.left < top.left;
+                debris.push({
+                    x: cutLeft ? current.left : r,
+                    y: liveY(),
+                    w: cutLeft ? (l - current.left) : (current.left + current.w - r),
+                    h: BLOCK_H,
+                    vx: cutLeft ? -70 : 70, vy: -30, rot: 0,
+                    vr: (cutLeft ? -1 : 1) * (1.5 + Math.random()),
+                    hue: current.hue, life: 2.4
+                });
+                stack.push({ left: l, w: overlap, hue: current.hue });
+                combo = 0;
+                comboEl.classList.remove('show');
+                sndPlace();
+                sndSlice();
+            }
+
+            score++;
+            scoreEl.textContent = score;
+            camTarget = Math.max(0, (stack.length - 1) * BLOCK_H - (H - CAM_REST) + 120);
+            spawnBlock();
+        }
+
+        function gameOver() {
+            state = 'over';
+            const isNew = score > best;
+            if (isNew) { best = score; saveBest(); }
+            finalScoreEl.textContent = score;
+            finalBestEl.textContent = best;
+            menuBestEl.textContent = best;
+            newBestEl.style.display = isNew && score > 0 ? 'block' : 'none';
+
+            let icon = '&#127959;', label = 'Foundation';
+            if (score >= 60) { icon = '&#128507;'; label = 'Orbital'; }
+            else if (score >= 40) { icon = '&#127983;'; label = 'Skyscraper'; }
+            else if (score >= 25) { icon = '&#128508;'; label = 'High rise'; }
+            else if (score >= 12) { icon = '&#127970;'; label = 'Office block'; }
+            rankIconEl.innerHTML = icon;
+            rankLabelEl.textContent = label;
+
+            hud.classList.remove('active');
+            gameOverScreen.classList.add('active');
+        }
+
+        // ---------------------------------------------------------------
+        // Update
+        // ---------------------------------------------------------------
+        function update(dt) {
+            for (const s of stars) s.tw += dt * 2;
+
+            if (state === 'playing') {
+                const sp = blockSpeed();
+                current.left += current.dir * sp * dt;
+                // bounce a little past the edges so the timing window is fair
+                if (current.left + current.w > W + 20) {
+                    current.left = W + 20 - current.w;
+                    current.dir = -1;
+                } else if (current.left < -20) {
+                    current.left = -20;
+                    current.dir = 1;
+                }
+            }
+
+            camY += (camTarget - camY) * Math.min(1, dt * 6);
+
+            for (let i = debris.length - 1; i >= 0; i--) {
+                const d = debris[i];
+                d.vy += 900 * dt;
+                d.x += d.vx * dt;
+                d.y += d.vy * dt;
+                d.rot += d.vr * dt;
+                d.life -= dt;
+                if (d.life <= 0 || d.y > H + 200) debris.splice(i, 1);
+            }
+
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const s = sparks[i];
+                s.vy += 520 * dt;
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.life -= dt;
+                if (s.life <= 0) sparks.splice(i, 1);
+            }
+
+            if (shake > 0) shake = Math.max(0, shake - dt * 40);
+
+            if (state === 'falling') {
+                overTimer += dt;
+                if (overTimer > 0.9) gameOver();
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Draw
+        // ---------------------------------------------------------------
+        function drawSky() {
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+            g.addColorStop(0, '#080a24');
+            g.addColorStop(0.45, '#131a45');
+            g.addColorStop(1, '#2a1b4d');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+
+            for (const s of stars) {
+                ctx.globalAlpha = 0.35 + Math.sin(s.tw) * 0.3;
+                ctx.fillStyle = '#dff6ff';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            // moon
+            ctx.save();
+            const mg = ctx.createRadialGradient(320, 92, 4, 320, 92, 60);
+            mg.addColorStop(0, 'rgba(220,240,255,0.5)');
+            mg.addColorStop(1, 'rgba(220,240,255,0)');
+            ctx.fillStyle = mg;
+            ctx.fillRect(250, 20, 145, 145);
+            ctx.fillStyle = '#e8f4ff';
+            ctx.beginPath();
+            ctx.arc(320, 92, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Distant skyline, parked at the bottom so the tower has a city to grow out of
+        function drawSkyline() {
+            ctx.fillStyle = 'rgba(12,16,44,0.9)';
+            const seed = [40, 74, 26, 96, 55, 120, 34, 66, 88, 30];
+            let x = -10;
+            for (let i = 0; i < seed.length; i++) {
+                const w = 34 + (i % 3) * 12;
+                ctx.fillRect(x, H - 60 - seed[i], w, seed[i] + 60);
+                x += w + 8;
+            }
+            ctx.fillStyle = 'rgba(255,220,140,0.35)';
+            for (let i = 0; i < 40; i++) {
+                const wx = (i * 37) % W, wy = H - 60 - ((i * 53) % 90) - 8;
+                ctx.fillRect(wx, wy, 3, 4);
+            }
+        }
+
+        function drawBlock(left, y, w, hue, perfect) {
+            const g = ctx.createLinearGradient(left, y, left + w, y + BLOCK_H);
+            g.addColorStop(0, 'hsl(' + hue + ',85%,62%)');
+            g.addColorStop(1, 'hsl(' + ((hue + 30) % 360) + ',80%,44%)');
+
+            ctx.save();
+            ctx.shadowColor = 'hsla(' + hue + ',90%,60%,0.75)';
+            ctx.shadowBlur = perfect ? 22 : 12;
+            ctx.fillStyle = g;
+            ctx.fillRect(left, y, w, BLOCK_H);
+            ctx.restore();
+
+            // top highlight and a dark base edge give the slab some depth
+            ctx.fillStyle = 'hsla(' + hue + ',95%,78%,0.85)';
+            ctx.fillRect(left, y, w, 3);
+            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            ctx.fillRect(left, y + BLOCK_H - 4, w, 4);
+        }
+
+        function draw() {
+            const cw = window.innerWidth, ch = window.innerHeight;
+            ctx.fillStyle = '#06081a';
+            ctx.fillRect(0, 0, cw, ch);
+
+            ctx.save();
+            const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+            const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+            ctx.translate(offX + sx, offY + sy);
+            ctx.scale(scale, scale);
+            ctx.beginPath();
+            ctx.rect(0, 0, W, H);
+            ctx.clip();
+
+            drawSky();
+            drawSkyline();
+
+            // ground slab
+            ctx.fillStyle = '#1b2350';
+            ctx.fillRect(0, GROUND_Y + camY, W, H);
+            ctx.fillStyle = 'rgba(0,240,255,0.25)';
+            ctx.fillRect(0, GROUND_Y + camY, W, 2);
+
+            // only paint the floors that can actually be on screen
+            for (let i = 0; i < stack.length; i++) {
+                const y = floorY(i);
+                if (y > H + BLOCK_H || y < -BLOCK_H * 2) continue;
+                drawBlock(stack[i].left, y, stack[i].w, stack[i].hue, stack[i].perfect);
+            }
+
+            if (state === 'playing') {
+                drawBlock(current.left, liveY(), current.w, current.hue, false);
+                // guide line down from the live block, so the eye can line it up
+                ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+                ctx.setLineDash([4, 6]);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(current.left + current.w / 2, liveY() + BLOCK_H);
+                ctx.lineTo(current.left + current.w / 2, floorY(stack.length - 1));
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            for (const d of debris) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1, d.life));
+                ctx.translate(d.x + d.w / 2, d.y + d.h / 2);
+                ctx.rotate(d.rot);
+                ctx.fillStyle = 'hsl(' + d.hue + ',80%,55%)';
+                ctx.fillRect(-d.w / 2, -d.h / 2, d.w, d.h);
+                ctx.restore();
+            }
+
+            for (const s of sparks) {
+                ctx.globalAlpha = Math.max(0, s.life / s.max);
+                ctx.fillStyle = 'hsl(' + s.hue + ',95%,72%)';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+
+            ctx.strokeStyle = 'rgba(0,240,255,0.18)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(offX, offY, W * scale, H * scale);
+        }
+
+        // ---------------------------------------------------------------
+        // Loop
+        // ---------------------------------------------------------------
+        let last = performance.now();
+        function loop(now) {
+            let dt = (now - last) / 1000;
+            last = now;
+            if (dt > 1 / 30) dt = 1 / 30;   // guard against tab-switch jumps
+            update(dt);
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // ---------------------------------------------------------------
+        // UI
+        // ---------------------------------------------------------------
+        const hud = document.getElementById('hud');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const menuBestEl = document.getElementById('menuBest');
+        const finalScoreEl = document.getElementById('finalScore');
+        const finalBestEl = document.getElementById('finalBest');
+        const newBestEl = document.getElementById('newBest');
+        const rankIconEl = document.getElementById('rankIcon');
+        const rankLabelEl = document.getElementById('rankLabel');
+
+        menuBestEl.textContent = best;
+
+        function startGame() {
+            menuScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            resetRun();
+            hud.classList.add('active');
+            state = 'playing';
+        }
+
+        function goHome() {
+            window.location.href = '../index.html';
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('retryBtn').addEventListener('click', startGame);
+        document.getElementById('menuHomeBtn').addEventListener('click', goHome);
+        document.getElementById('overHomeBtn').addEventListener('click', goHome);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'Enter') {
+                e.preventDefault();
+                if (state === 'menu' || state === 'over') startGame();
+                else drop();
+            }
+        });
+
+        // Listeners live on the canvas, so taps on the overlay buttons and the
+        // sound button are never swallowed.
+        canvas.addEventListener('mousedown', (e) => { e.preventDefault(); drop(); });
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drop(); }, { passive: false });
+
+        resetRun();
+        state = 'menu';
+        requestAnimationFrame(loop);
+    </script>
+
+    <script src="../shared/chiptune.js?v=4" data-track="longtowers"></script>
+</body>
+
+</html>

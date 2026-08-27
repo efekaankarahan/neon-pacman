@@ -56,6 +56,18 @@
             drums: 'k . h . s . h k k . h . s . h o'
         },
 
+        // Patient, climbing arpeggios in C# minor - it keeps rising, like the
+        // tower, and stays out of the way of a game about timing a single tap.
+        longtowers: {
+            bpm: 116, lead: 'triangle', bassWave: 'sine', gain: 0.13,
+            melody: P(
+                'C#5 . E5 . G#5 . E5 . B4 . D#5 . F#5 . D#5 . ' +
+                'A4 . C#5 . E5 . C#5 . B4 . D#5 . F#5 . G#5 .'
+            ),
+            bass: P('C#3 . . . G#2 . . . A2 . . . B2 . . .'),
+            drums: 'k . . h s . . . k . . h s . h .'
+        },
+
         // Bouncy arcade chase, A minor
         pacman: {
             bpm: 138, lead: 'square', bassWave: 'triangle', gain: 0.16,
