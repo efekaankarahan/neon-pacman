@@ -48,7 +48,7 @@
     var SANE_MAX = {
         'neon-pacman': 100000, 'fired-space-shooter': 500000, 'snake': 5000,
         'pikachu-breakout': 100000, 'spyro-taxi': 100000, 'holepringo': 100000,
-        'iqur': 300, 'wordsearch': 50000, 'stratosfer-merge': 1000000,
+        'iqur': 300, 'wordsearch': 50000,
         'prime-escape': 100000, 'happy-bird': 2000, 'long-towers': 2000,
         'nba-stack': 2000, 'pic-pac-poe': 500
     };
@@ -62,7 +62,6 @@
         'holepringo': 'Holepringo',
         'iqur': 'IQur',
         'wordsearch': 'Word Catch',
-        'stratosfer-merge': 'Stratosfer Merge',
         'prime-escape': 'Prime Escape',
         'happy-bird': 'Happy Bird',
         'long-towers': 'Long Towers',

@@ -180,17 +180,6 @@
             drums: 'k . . h . . s . k . . h . . h .'
         },
 
-        // Dreamy and floaty, D major
-        stratosfer: {
-            bpm: 112, lead: 'sine', bassWave: 'triangle', gain: 0.13,
-            melody: P(
-                'D5 . F#5 . A5 . F#5 . E5 . C#5 . D5 . . . ' +
-                'B4 . D5 . F#5 . D5 . A4 . B4 . D5 . . .'
-            ),
-            bass: P('D3 . . . A2 . . . B2 . . . G2 . . .'),
-            drums: 'k . . . s . . h k . . h s . . .'
-        },
-
         // Night-time chase, B minor
         primeescape: {
             bpm: 140, lead: 'square', bassWave: 'sawtooth', gain: 0.13,
