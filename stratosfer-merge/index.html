@@ -685,7 +685,9 @@
         let animId = null;
         let dangerTimer = 0;
         let gravityInterval = null;
-        const DANGER_GRACE = 90;
+        // ~0.5s at 60fps: long enough that a single bounce off a merge does not
+        // end the run, short enough that a genuine overflow does.
+        const DANGER_GRACE = 30;
         const dropSpeed = 0.4;
         const fastDropSpeed = 8;
 
@@ -859,8 +861,11 @@
                     const minDist = a.radius + b.radius;
 
                     if (dist < minDist && dist > 0) {
-                        // same value + nearly settled? merge!
-                        if (a.value === b.value && Math.abs(a.vy) < 0.2 && Math.abs(b.vy) < 0.2) {
+                        // Same value touching = merge, wherever they are.
+                        // This used to wait for both orbs to be almost still,
+                        // so a pair could sit against each other mid-pile and
+                        // refuse to combine.
+                        if (a.value === b.value) {
                             mergeOrbs(a, b);
                             return;
                         }
@@ -1040,10 +1045,15 @@
 
         // --- Check danger ---
         function checkDanger() {
-            // only check settled orbs
             for (const o of objects) {
                 if (o.merging) continue;
-                if (o.y - o.radius <= DANGER_Y - 5 && Math.abs(o.vy) < 1) {
+                // The orb still under the player's control spawns above the
+                // line by design, so it can never be the one that ends the run.
+                if (o === activeOrb) continue;
+                // Any orb in the pile that crosses the line counts, moving or
+                // not. The old version also required |vy| < 1, so a jostling
+                // pile reset the timer every frame and the game never ended.
+                if (o.y - o.radius <= DANGER_Y) {
                     dangerTimer++;
                     if (dangerTimer > DANGER_GRACE) {
                         endGame();
