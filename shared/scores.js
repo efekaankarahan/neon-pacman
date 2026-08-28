@@ -66,7 +66,7 @@
         'prime-escape': 'Prime Escape',
         'happy-bird': 'Happy Bird',
         'long-towers': 'Long Towers',
-        'nba-stack': 'Hoop Stack'
+        'nba-stack': 'NBA Stack'
     };
 
     // What one point means, so the board does not just say "score" everywhere
