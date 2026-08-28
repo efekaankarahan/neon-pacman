@@ -68,6 +68,18 @@
             drums: 'k . . h s . . . k . . h s . h .'
         },
 
+        // Arena funk in E minor - a bouncing, on-the-beat groove that sounds
+        // like a pre-game hype loop without ever getting busy.
+        hoopstack: {
+            bpm: 128, lead: 'square', bassWave: 'sawtooth', gain: 0.13,
+            melody: P(
+                'E5 . E5 G5 . D5 . B4 . E5 . G5 A5 . G5 E5 ' +
+                'D5 . D5 F#5 . A5 . F#5 E5 . B4 . D5 . E5 .'
+            ),
+            bass: P('E2 E2 . E2 D2 . D2 . C3 C3 . C3 B2 . B2 .'),
+            drums: 'k h s h k h s o k h s h k k s h'
+        },
+
         // Bouncy arcade chase, A minor
         pacman: {
             bpm: 138, lead: 'square', bassWave: 'triangle', gain: 0.16,

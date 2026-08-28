@@ -49,7 +49,8 @@
         'neon-pacman': 100000, 'fired-space-shooter': 500000, 'snake': 5000,
         'pikachu-breakout': 100000, 'spyro-taxi': 100000, 'holepringo': 100000,
         'iqur': 300, 'wordsearch': 50000, 'stratosfer-merge': 1000000,
-        'prime-escape': 100000, 'happy-bird': 2000, 'long-towers': 2000
+        'prime-escape': 100000, 'happy-bird': 2000, 'long-towers': 2000,
+        'nba-stack': 2000
     };
 
     var GAMES = {
@@ -64,13 +65,15 @@
         'stratosfer-merge': 'Stratosfer Merge',
         'prime-escape': 'Prime Escape',
         'happy-bird': 'Happy Bird',
-        'long-towers': 'Long Towers'
+        'long-towers': 'Long Towers',
+        'nba-stack': 'Hoop Stack'
     };
 
     // What one point means, so the board does not just say "score" everywhere
     var UNITS = {
         'iqur': 'IQ',
         'long-towers': 'floors',
+        'nba-stack': 'high',
         'prime-escape': 'coins',
         'snake': 'length',
         'wordsearch': 'points'

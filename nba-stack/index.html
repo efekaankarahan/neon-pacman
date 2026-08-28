@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Hoop Stack - Balance the Basketball Badges on Darky Play</title>
+    <meta name="description"
+        content="Play Hoop Stack free on Darky Play. Drop each basketball badge onto the tower without knocking it over. Keep it balanced and stack as high as you can." />
+    <meta name="keywords"
+        content="hoop stack, basketball game, stacking game, balance game, darkyplay, arcade game, browser game, free game" />
+    <meta name="robots" content="index, follow" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #170d08;
+            font-family: 'Inter', Arial, Helvetica, sans-serif;
+            overscroll-behavior: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            touch-action: none;
+        }
+
+        /* ---------- HUD ---------- */
+        .hud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+
+        .hud.active {
+            display: block;
+        }
+
+        .score {
+            position: absolute;
+            top: 5vh;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 60px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 18px rgba(255, 145, 40, 0.7), 0 3px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .lives {
+            position: absolute;
+            top: calc(5vh + 66px);
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 20px;
+            letter-spacing: 4px;
+        }
+
+        .combo {
+            position: absolute;
+            top: calc(5vh + 96px);
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ffc46b;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .combo.show {
+            opacity: 1;
+        }
+
+        .sound-btn {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 8;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffe6cc;
+            font-size: 19px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ---------- Overlays ---------- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(14, 8, 4, 0.68);
+            z-index: 10;
+            padding: 24px;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .panel {
+            width: min(92vw, 400px);
+            background: rgba(34, 20, 12, 0.97);
+            border: 2px solid rgba(255, 145, 40, 0.32);
+            border-radius: 26px;
+            padding: 26px 22px;
+            color: #ffeede;
+            text-align: center;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+        }
+
+        .panel h1 {
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            color: #ff9128;
+            text-shadow: 0 0 22px rgba(255, 145, 40, 0.45);
+        }
+
+        .panel h2 {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .panel p {
+            font-size: 15px;
+            line-height: 1.55;
+            opacity: 0.82;
+            margin-bottom: 14px;
+        }
+
+        .ball-emoji {
+            font-size: 44px;
+            margin-bottom: 6px;
+        }
+
+        .rank {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ff9128;
+            margin-bottom: 12px;
+        }
+
+        .scores {
+            display: flex;
+            gap: 12px;
+            margin: 4px 0 16px;
+        }
+
+        .score-box {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 12px 8px;
+        }
+
+        .score-box .label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.55;
+        }
+
+        .score-box .value {
+            font-size: 30px;
+            font-weight: 900;
+        }
+
+        .score-box.best .value {
+            color: #ff9128;
+        }
+
+        .new-best {
+            font-size: 13px;
+            font-weight: 800;
+            color: #ffd93b;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .btns {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+            margin-top: 6px;
+        }
+
+        button {
+            border: none;
+            border-radius: 16px;
+            padding: 15px 18px;
+            font-size: 16px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.12s ease, opacity 0.12s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            opacity: 0.95;
+        }
+
+        .primary {
+            background: linear-gradient(135deg, #ff9128, #e0620c);
+            color: #2a1200;
+            box-shadow: 0 5px 0 #a8480a;
+        }
+
+        .primary:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #a8480a;
+        }
+
+        .secondary {
+            background: rgba(255, 255, 255, 0.09);
+            color: #f0d9c6;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="game"></canvas>
+
+    <button class="sound-btn" id="soundBtn" title="Sound effects on/off">&#128266;</button>
+
+    <div class="hud" id="hud">
+        <div class="score" id="score">0</div>
+        <div class="lives" id="lives"></div>
+        <div class="combo" id="combo">Swish &times;0</div>
+    </div>
+
+    <div class="overlay active" id="menuScreen">
+        <div class="panel">
+            <div class="ball-emoji">&#127936;</div>
+            <h1>HOOP STACK</h1>
+            <p>A badge swings across the rim. Tap to drop it.<br />
+                Land it off-centre and the tower leans &mdash; lean too far and the whole thing goes down.</p>
+            <div class="scores">
+                <div class="score-box best">
+                    <div class="label">Tallest</div>
+                    <div class="value" id="menuBest">0</div>
+                </div>
+            </div>
+            <div class="btns">
+                <button class="primary" id="startBtn">Tip Off</button>
+                <button class="secondary" id="menuHomeBtn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="gameOverScreen">
+        <div class="panel">
+            <div class="ball-emoji" id="rankIcon">&#127936;</div>
+            <div class="rank" id="rankLabel">Benchwarmer</div>
+            <h2 id="overTitle">Tower Down</h2>
+            <div class="new-best" id="newBest" style="display:none;">&#11088; NEW RECORD!</div>
+            <div class="scores">
+                <div class="score-box">
+                    <div class="label">Stacked</div>
+                    <div class="value" id="finalScore">0</div>
+                </div>
+                <div class="score-box best">
+                    <div class="label">Tallest</div>
+                    <div class="value" id="finalBest">0</div>
+                </div>
+            </div>
+            <div class="btns">
+                <button class="primary" id="retryBtn">Run It Back</button>
+                <button class="secondary" id="overHomeBtn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------------
+        // Hoop Stack - fixed 400x640 world, letterboxed and centred, so the
+        // difficulty is identical on every screen.
+        //
+        // Every badge here is drawn from scratch: invented monograms and
+        // colour pairs. No real team's marks are used anywhere.
+        // ---------------------------------------------------------------
+        const W = 400;
+        const H = 640;
+
+        const R = 26;              // badge radius
+        const STEP = 40;           // vertical spacing between badges
+        const FLOOR_Y = H - 86;    // top of the hardwood
+        const CAM_REST = H * 0.60;
+
+        const MISS_DIST = R * 1.55;  // further off than this and it slides away
+        const SWISH = 4.5;           // within this counts as a perfect drop
+        const MAX_LEAN = 132;        // total signed offset the tower can carry
+        const MAX_TILT = 0.2;        // radians at full lean
+        const GRAVITY = 1500;
+        const START_LIVES = 3;
+
+        // Invented badges - monogram, two-tone colours. Nothing real.
+        const BADGES = [
+            { m: 'VLT', a: '#ffd23b', b: '#1b2a6b' },
+            { m: 'CMT', a: '#ff6b3d', b: '#1d1d2b' },
+            { m: 'RIM', a: '#3ddc97', b: '#0f3b30' },
+            { m: 'ARC', a: '#7c5cff', b: '#221046' },
+            { m: 'JET', a: '#00c2ff', b: '#052a3d' },
+            { m: 'FOX', a: '#ff9128', b: '#3a1704' },
+            { m: 'OWL', a: '#e8ecf2', b: '#2b3140' },
+            { m: 'BOLT', a: '#f5f062', b: '#4a3c05' },
+            { m: 'TDE', a: '#43b0ff', b: '#0a2340' },
+            { m: 'PEAK', a: '#ff5d8f', b: '#3d0f24' },
+            { m: 'ASH', a: '#c9d1d9', b: '#1c1f24' },
+            { m: 'DUNE', a: '#e8c37a', b: '#4a3416' }
+        ];
+
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+
+        let scale = 1, offX = 0, offY = 0;
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            const cw = window.innerWidth, ch = window.innerHeight;
+            canvas.width = Math.floor(cw * dpr);
+            canvas.height = Math.floor(ch * dpr);
+            scale = Math.min(cw / W, ch / H);
+            offX = (cw - W * scale) / 2;
+            offY = (ch - H * scale) / 2;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+        resize();
+
+        // ---------------------------------------------------------------
+        // Sound effects
+        // ---------------------------------------------------------------
+        let audioCtx = null;
+        let sfxOn = true;
+        try { sfxOn = localStorage.getItem('hoopStackMuted') !== '1'; } catch (e) { }
+
+        function blip(freq, dur, type, gain, slideTo) {
+            if (!sfxOn) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+                g.gain.setValueAtTime(gain, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g).connect(audioCtx.destination);
+                o.start(t);
+                o.stop(t + dur);
+            } catch (e) { }
+        }
+
+        const sndLand = () => blip(240, 0.09, 'square', 0.05, 170);
+        const sndSwish = (n) => blip(700 + Math.min(n, 8) * 65, 0.15, 'triangle', 0.08, 1500);
+        const sndMiss = () => blip(200, 0.25, 'sawtooth', 0.07, 70);
+        const sndFall = () => blip(260, 0.5, 'sawtooth', 0.09, 45);
+
+        const soundBtn = document.getElementById('soundBtn');
+        function paintSoundBtn() { soundBtn.innerHTML = sfxOn ? '&#128266;' : '&#128263;'; }
+        paintSoundBtn();
+        soundBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sfxOn = !sfxOn;
+            paintSoundBtn();
+            try { localStorage.setItem('hoopStackMuted', sfxOn ? '0' : '1'); } catch (err) { }
+        });
+
+        // ---------------------------------------------------------------
+        // Persistent best
+        // ---------------------------------------------------------------
+        let best = 0;
+        try { best = parseInt(localStorage.getItem('hoopStackBest')) || 0; } catch (e) { }
+        function saveBest() {
+            try { localStorage.setItem('hoopStackBest', String(best)); } catch (e) { }
+        }
+
+        // ---------------------------------------------------------------
+        // State
+        // ---------------------------------------------------------------
+        let state = 'menu';   // menu | swinging | dropping | toppling | over
+        let stack, live, debris, sparks;
+        let score, lives, combo, lean, tilt;
+        let camY, camTarget, shake, overTimer, toppleDir;
+
+        // Spectators sit in a band just above the floor. They drift with the
+        // camera at a fraction of its speed, so the arena reads as one place
+        // rather than confetti floating over the tower.
+        const crowd = [];
+        for (let i = 0; i < 120; i++) {
+            crowd.push({
+                x: Math.random() * (W + 30) - 15,
+                y: -6 - Math.random() * 74,   // offset above the floor line
+                r: 4 + Math.random() * 4,
+                hue: Math.random() * 360,
+                bob: Math.random() * Math.PI * 2
+            });
+        }
+
+        function swingSpeed() {
+            return 150 + Math.min(190, score * 4);
+        }
+
+        function spawnLive() {
+            const fromLeft = stack.length % 2 === 0;
+            live = {
+                x: fromLeft ? R + 6 : W - R - 6,
+                y: 0,           // set from camera each frame while swinging
+                vy: 0,
+                dir: fromLeft ? 1 : -1,
+                badge: BADGES[stack.length % BADGES.length]
+            };
+        }
+
+        function resetRun() {
+            stack = [{ x: W / 2, badge: BADGES[0] }];
+            debris = [];
+            sparks = [];
+            score = 0;
+            lives = START_LIVES;
+            combo = 0;
+            lean = 0;
+            tilt = 0;
+            camY = 0;
+            camTarget = 0;
+            shake = 0;
+            overTimer = 0;
+            toppleDir = 1;
+            scoreEl.textContent = '0';
+            paintLives();
+            comboEl.classList.remove('show');
+            spawnLive();
+        }
+
+        function paintLives() {
+            let s = '';
+            for (let i = 0; i < START_LIVES; i++) s += (i < lives ? '🏀' : '·');
+            livesEl.textContent = s;
+        }
+
+        // Screen Y of badge i (0 = the one resting on the floor)
+        const badgeY = (i) => FLOOR_Y - R - i * STEP + camY;
+        const liveY = () => badgeY(stack.length) - 92;
+
+        function addSparks(x, y, n, color) {
+            for (let i = 0; i < n; i++) {
+                sparks.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 200,
+                    vy: -50 - Math.random() * 180,
+                    life: 0.6, max: 0.6,
+                    r: 1.5 + Math.random() * 2.5,
+                    color: color
+                });
+            }
+        }
+
+        function drop() {
+            if (state !== 'swinging') return;
+            state = 'dropping';
+            live.y = liveY();
+            live.vy = 0;
+        }
+
+        function loseLife(reason) {
+            lives--;
+            paintLives();
+            combo = 0;
+            comboEl.classList.remove('show');
+            if (lives <= 0) {
+                startTopple(reason);
+            } else {
+                state = 'swinging';
+                spawnLive();
+            }
+        }
+
+        function land() {
+            const top = stack[stack.length - 1];
+            const d = live.x - top.x;
+
+            if (Math.abs(d) > MISS_DIST) {
+                // clipped the edge and slid off
+                debris.push({
+                    x: live.x, y: badgeY(stack.length), vx: (d > 0 ? 1 : -1) * 120,
+                    vy: -60, rot: 0, vr: (d > 0 ? 1 : -1) * 3,
+                    badge: live.badge, life: 2.2
+                });
+                shake = 8;
+                sndMiss();
+                loseLife('miss');
+                return;
+            }
+
+            if (Math.abs(d) <= SWISH) {
+                // dead centre: the crowd loves it and the tower straightens up
+                combo++;
+                lean *= 0.72;
+                stack.push({ x: top.x, badge: live.badge, swish: true });
+                addSparks(top.x, badgeY(stack.length - 1), 16, live.badge.a);
+                shake = Math.min(6, 2 + combo * 0.5);
+                sndSwish(combo);
+                comboEl.textContent = 'Swish ×' + combo;
+                comboEl.classList.add('show');
+            } else {
+                combo = 0;
+                comboEl.classList.remove('show');
+                lean += d;
+                stack.push({ x: live.x, badge: live.badge });
+                sndLand();
+            }
+
+            score++;
+            scoreEl.textContent = score;
+
+            if (Math.abs(lean) > MAX_LEAN) {
+                startTopple('lean');
+                return;
+            }
+
+            camTarget = Math.max(0, (stack.length - 1) * STEP - (H - CAM_REST) + 150);
+            state = 'swinging';
+            spawnLive();
+        }
+
+        function startTopple(reason) {
+            state = 'toppling';
+            overTimer = 0;
+            toppleDir = lean >= 0 ? 1 : -1;
+            shake = 12;
+            sndFall();
+            overTitleEl.textContent = reason === 'miss' ? 'Airball' : 'Tower Down';
+        }
+
+        function gameOver() {
+            state = 'over';
+            const isNew = score > best;
+            if (isNew) { best = score; saveBest(); }
+            finalScoreEl.textContent = score;
+            finalBestEl.textContent = best;
+            menuBestEl.textContent = best;
+            newBestEl.style.display = isNew && score > 0 ? 'block' : 'none';
+
+            let icon = '🏀', label = 'Benchwarmer';
+            if (score >= 60) { icon = '🐐'; label = 'Hall of Fame'; }
+            else if (score >= 40) { icon = '🏆'; label = 'All Star'; }
+            else if (score >= 25) { icon = '🔥'; label = 'Starter'; }
+            else if (score >= 12) { icon = '👟'; label = 'Rookie'; }
+            rankIconEl.innerHTML = icon;
+            rankLabelEl.textContent = label;
+
+            hud.classList.remove('active');
+            gameOverScreen.classList.add('active');
+            if (window.DarkyScores) DarkyScores.submit('nba-stack', score);
+        }
+
+        // ---------------------------------------------------------------
+        // Update
+        // ---------------------------------------------------------------
+        function update(dt) {
+            for (const c of crowd) c.bob += dt * 3;
+
+            if (state === 'swinging') {
+                const sp = swingSpeed();
+                live.x += live.dir * sp * dt;
+                if (live.x > W - R - 6) { live.x = W - R - 6; live.dir = -1; }
+                else if (live.x < R + 6) { live.x = R + 6; live.dir = 1; }
+                live.y = liveY();
+            } else if (state === 'dropping') {
+                live.vy += GRAVITY * dt;
+                live.y += live.vy * dt;
+                if (live.y >= badgeY(stack.length)) {
+                    live.y = badgeY(stack.length);
+                    land();
+                }
+            } else if (state === 'toppling') {
+                overTimer += dt;
+                tilt += toppleDir * dt * 2.6;   // the whole tower swings over
+                if (overTimer > 1.15) gameOver();
+            }
+
+            // the tower leans toward whichever side is carrying the weight
+            if (state !== 'toppling') {
+                const target = (lean / MAX_LEAN) * MAX_TILT;
+                tilt += (target - tilt) * Math.min(1, dt * 5);
+            }
+
+            camY += (camTarget - camY) * Math.min(1, dt * 6);
+
+            for (let i = debris.length - 1; i >= 0; i--) {
+                const d = debris[i];
+                d.vy += GRAVITY * dt;
+                d.x += d.vx * dt;
+                d.y += d.vy * dt;
+                d.rot += d.vr * dt;
+                d.life -= dt;
+                if (d.life <= 0 || d.y > H + 200) debris.splice(i, 1);
+            }
+
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const s = sparks[i];
+                s.vy += 500 * dt;
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.life -= dt;
+                if (s.life <= 0) sparks.splice(i, 1);
+            }
+
+            if (shake > 0) shake = Math.max(0, shake - dt * 40);
+        }
+
+        // ---------------------------------------------------------------
+        // Draw
+        // ---------------------------------------------------------------
+        function drawArena() {
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+            g.addColorStop(0, '#120a06');
+            g.addColorStop(0.5, '#241309');
+            g.addColorStop(1, '#3a1e0c');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+
+            // two spotlights washing down from the rafters
+            [110, 290].forEach(function (x) {
+                const s = ctx.createRadialGradient(x, -40, 10, x, -40, 360);
+                s.addColorStop(0, 'rgba(255,214,150,0.20)');
+                s.addColorStop(1, 'rgba(255,214,150,0)');
+                ctx.fillStyle = s;
+                ctx.fillRect(x - 360, -40, 720, 520);
+            });
+
+            // Stand behind the court, drifting at a fraction of the camera
+            const standY = FLOOR_Y + camY * 0.35;
+            ctx.fillStyle = 'rgba(18,10,6,0.75)';
+            ctx.fillRect(0, standY - 92, W, 92);
+
+            for (const c of crowd) {
+                ctx.fillStyle = 'hsla(' + c.hue + ',38%,45%,0.55)';
+                ctx.beginPath();
+                ctx.arc(c.x, standY + c.y + Math.sin(c.bob) * 2, c.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // rail along the front of the stand
+            ctx.fillStyle = 'rgba(255,190,120,0.18)';
+            ctx.fillRect(0, standY - 6, W, 3);
+        }
+
+        function drawCourt() {
+            const g = ctx.createLinearGradient(0, FLOOR_Y + camY, 0, H);
+            g.addColorStop(0, '#c98b45');
+            g.addColorStop(1, '#8d5a26');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, FLOOR_Y + camY, W, H);
+
+            ctx.strokeStyle = 'rgba(255,240,220,0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, FLOOR_Y + camY + 2);
+            ctx.lineTo(W, FLOOR_Y + camY + 2);
+            ctx.stroke();
+
+            // the centre circle, drawn flat as a wide ellipse
+            ctx.beginPath();
+            ctx.ellipse(W / 2, FLOOR_Y + camY + 42, 92, 22, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // floorboards
+            ctx.strokeStyle = 'rgba(90,55,20,0.35)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < W; x += 26) {
+                ctx.beginPath();
+                ctx.moveTo(x, FLOOR_Y + camY);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+        }
+
+        // The rim the live badge swings under
+        function drawRim(y) {
+            ctx.save();
+            ctx.strokeStyle = '#8a8f9c';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ff6b1a';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(live ? live.x - 34 : 0, y + 10);
+            ctx.lineTo(live ? live.x + 34 : 0, y + 10);
+            ctx.stroke();
+
+            // net
+            ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+            ctx.lineWidth = 1.4;
+            for (let i = -3; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(live.x + i * 11, y + 12);
+                ctx.lineTo(live.x + i * 5, y + 34);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawBadge(x, y, badge, swish) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 3;
+
+            // outer ring in the accent colour
+            ctx.fillStyle = badge.a;
+            ctx.beginPath();
+            ctx.arc(0, 0, R, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+
+            // inner disc in the deep colour
+            ctx.fillStyle = badge.b;
+            ctx.beginPath();
+            ctx.arc(0, 0, R - 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // basketball seams across the inner disc
+            ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.arc(0, 0, R - 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-(R - 5), 0);
+            ctx.lineTo(R - 5, 0);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(0, 0, (R - 5) * 0.42, R - 5, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // monogram
+            ctx.fillStyle = badge.a;
+            ctx.font = '900 ' + (badge.m.length > 3 ? 12 : 14) + 'px Inter, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(badge.m, 0, 1);
+
+            if (swish) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, R + 3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function draw() {
+            const cw = window.innerWidth, ch = window.innerHeight;
+            ctx.fillStyle = '#0d0704';
+            ctx.fillRect(0, 0, cw, ch);
+
+            ctx.save();
+            const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+            const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+            ctx.translate(offX + sx, offY + sy);
+            ctx.scale(scale, scale);
+            ctx.beginPath();
+            ctx.rect(0, 0, W, H);
+            ctx.clip();
+
+            drawArena();
+            drawCourt();
+
+            // The whole tower pivots around its base, so the lean is visible
+            ctx.save();
+            const pivotX = stack.length ? stack[0].x : W / 2;
+            const pivotY = FLOOR_Y + camY;
+            ctx.translate(pivotX, pivotY);
+            ctx.rotate(tilt);
+            ctx.translate(-pivotX, -pivotY);
+
+            for (let i = 0; i < stack.length; i++) {
+                const y = badgeY(i);
+                if (y > H + STEP * 2 || y < -STEP * 2) continue;
+                drawBadge(stack[i].x, y, stack[i].badge, stack[i].swish);
+            }
+            ctx.restore();
+
+            if (state === 'swinging' || state === 'dropping') {
+                if (state === 'swinging') drawRim(liveY() - R - 30);
+                drawBadge(live.x, live.y, live.badge, false);
+            }
+
+            for (const d of debris) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1, d.life));
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rot);
+                drawBadge(0, 0, d.badge, false);
+                ctx.restore();
+            }
+
+            for (const s of sparks) {
+                ctx.globalAlpha = Math.max(0, s.life / s.max);
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            // lean meter, so the danger is readable before the collapse
+            if (state === 'swinging' || state === 'dropping') {
+                const f = Math.max(-1, Math.min(1, lean / MAX_LEAN));
+                const bw = 150, bx = (W - bw) / 2, by = H - 34;
+                // dark backing, or the meter disappears into the crowd.
+                // roundRect only landed in Safari 16, so fall back to a
+                // plain rect on anything older rather than throwing.
+                ctx.fillStyle = 'rgba(10,6,3,0.72)';
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(bx - 10, by - 9, bw + 20, 24, 12);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(bx - 10, by - 9, bw + 20, 24);
+                }
+                ctx.fillStyle = 'rgba(255,255,255,0.14)';
+                ctx.fillRect(bx, by, bw, 6);
+                ctx.fillStyle = Math.abs(f) > 0.72 ? '#ff5252'
+                    : (Math.abs(f) > 0.45 ? '#ffb300' : '#3ddc97');
+                const half = bw / 2;
+                ctx.fillRect(bx + half, by, f * half, 6);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillRect(bx + half - 1, by - 3, 2, 12);
+            }
+
+            ctx.restore();
+
+            ctx.strokeStyle = 'rgba(255,145,40,0.2)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(offX, offY, W * scale, H * scale);
+        }
+
+        // ---------------------------------------------------------------
+        // Loop
+        // ---------------------------------------------------------------
+        let last = performance.now();
+        function loop(now) {
+            let dt = (now - last) / 1000;
+            last = now;
+            if (dt > 1 / 30) dt = 1 / 30;
+            update(dt);
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // ---------------------------------------------------------------
+        // UI
+        // ---------------------------------------------------------------
+        const hud = document.getElementById('hud');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const comboEl = document.getElementById('combo');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const menuBestEl = document.getElementById('menuBest');
+        const finalScoreEl = document.getElementById('finalScore');
+        const finalBestEl = document.getElementById('finalBest');
+        const newBestEl = document.getElementById('newBest');
+        const rankIconEl = document.getElementById('rankIcon');
+        const rankLabelEl = document.getElementById('rankLabel');
+        const overTitleEl = document.getElementById('overTitle');
+
+        menuBestEl.textContent = best;
+
+        function startGame() {
+            menuScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            resetRun();
+            hud.classList.add('active');
+            state = 'swinging';
+        }
+
+        function goHome() {
+            window.location.href = '../index.html';
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('retryBtn').addEventListener('click', startGame);
+        document.getElementById('menuHomeBtn').addEventListener('click', goHome);
+        document.getElementById('overHomeBtn').addEventListener('click', goHome);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'Enter') {
+                e.preventDefault();
+                if (state === 'menu' || state === 'over') startGame();
+                else drop();
+            }
+        });
+
+        // On the canvas, not the window, so taps on the overlay buttons and
+        // the sound button are never swallowed.
+        canvas.addEventListener('mousedown', (e) => { e.preventDefault(); drop(); });
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drop(); }, { passive: false });
+
+        resetRun();
+        state = 'menu';
+        requestAnimationFrame(loop);
+    </script>
+
+    <script src="../shared/chiptune.js?v=5" data-track="hoopstack"></script>
+    <script src="../shared/scores.js?v=3" data-game="nba-stack"></script>
+</body>
+
+</html>
