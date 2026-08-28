@@ -975,40 +975,64 @@
         let dropCount = 0;
 
         // --- Weighted spawn value ---
-        function getWeightedValue() {
-            const rand = Math.random();
-            if (rand < 0.5) return 16;    // 50%
-            if (rand < 0.8) return 8;     // 30%
-            if (rand < 0.95) return 32;   // 15%
-            return 4;                     // 5%
+        const SPAWN_WEIGHTS = [[16, 50], [8, 30], [32, 15], [4, 5]];
+        const SPAWN_VALUES = SPAWN_WEIGHTS.map(w => w[0]);
+
+        // Weighted pick restricted to a candidate list, so the caller can ask
+        // for "any value except the ones already on the board" and still get
+        // the normal 50/30/15/5 distribution across whatever is left.
+        function weightedPick(pool) {
+            const cands = SPAWN_WEIGHTS.filter(w => pool.indexOf(w[0]) !== -1);
+            if (!cands.length) return 16;
+            let total = 0;
+            for (const c of cands) total += c[1];
+            let r = Math.random() * total;
+            for (const c of cands) {
+                r -= c[1];
+                if (r <= 0) return c[0];
+            }
+            return cands[cands.length - 1][0];
         }
 
-        // How often the game refuses to hand you a value that is already
-        // sitting on the board. With only four spawn values and instant
-        // merging, nearly every drop used to find a partner and the board
-        // cleared itself; this is what puts the pressure back.
-        const AVOID_MATCH_CHANCE = 0.7;
+        function getWeightedValue() {
+            return weightedPick(SPAWN_VALUES);
+        }
+
+        // Share of drops that are deliberately allowed to match something
+        // already on the board. Every other drop is steered away from a
+        // match. This is the rate itself, not a nudge: at 0.03 roughly three
+        // drops in a hundred arrive mergeable.
+        const MATCH_CHANCE = 0.03;
 
         function pickSpawnValue() {
-            let v = getWeightedValue();
-            let guard = 0;
-            while (v === lastValue && guard++ < 8) v = getWeightedValue();
-
             const onBoard = new Set();
             for (const o of objects) {
                 if (o === activeOrb || o.merging) continue;
                 onBoard.add(o.value);
             }
 
-            if (onBoard.has(v) && Math.random() < AVOID_MATCH_CHANCE) {
-                for (let i = 0; i < 8; i++) {
-                    const alt = getWeightedValue();
-                    if (!onBoard.has(alt) && alt !== lastValue) { v = alt; break; }
-                }
-                // If every spawn value is already down there, the fallback is
-                // the original roll - by then the board is crowded anyway.
+            if (onBoard.size === 0) {
+                let v = getWeightedValue();
+                let g = 0;
+                while (v === lastValue && g++ < 8) v = getWeightedValue();
+                return v;
             }
-            return v;
+
+            if (Math.random() < MATCH_CHANCE) {
+                // the rare gift: pick something that is definitely down there
+                const arr = Array.from(onBoard);
+                return arr[Math.floor(Math.random() * arr.length)];
+            }
+
+            // Pick straight out of the values the board does NOT hold. Rolling
+            // and re-rolling instead would drift far above MATCH_CHANCE as the
+            // board filled up, because the one safe value is often the rarest.
+            const safe = SPAWN_VALUES.filter(v => !onBoard.has(v));
+            if (safe.length) return weightedPick(safe);
+
+            // Every spawn value is on the board - there is nothing
+            // non-matching left to give.
+            return getWeightedValue();
         }
 
         // --- Spawn new orb ---
