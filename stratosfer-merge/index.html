@@ -983,6 +983,34 @@
             return 4;                     // 5%
         }
 
+        // How often the game refuses to hand you a value that is already
+        // sitting on the board. With only four spawn values and instant
+        // merging, nearly every drop used to find a partner and the board
+        // cleared itself; this is what puts the pressure back.
+        const AVOID_MATCH_CHANCE = 0.7;
+
+        function pickSpawnValue() {
+            let v = getWeightedValue();
+            let guard = 0;
+            while (v === lastValue && guard++ < 8) v = getWeightedValue();
+
+            const onBoard = new Set();
+            for (const o of objects) {
+                if (o === activeOrb || o.merging) continue;
+                onBoard.add(o.value);
+            }
+
+            if (onBoard.has(v) && Math.random() < AVOID_MATCH_CHANCE) {
+                for (let i = 0; i < 8; i++) {
+                    const alt = getWeightedValue();
+                    if (!onBoard.has(alt) && alt !== lastValue) { v = alt; break; }
+                }
+                // If every spawn value is already down there, the fallback is
+                // the original roll - by then the board is crowded anyway.
+            }
+            return v;
+        }
+
         // --- Spawn new orb ---
         function spawnNewOrb() {
             if (gameOver) return;
@@ -992,27 +1020,19 @@
             if (activeOrb) return;
 
             dropCount++;
-            let value;
 
-            // Every 10th drop: repeat last value
-            if (dropCount % 10 === 0 && lastValue !== null) {
-                value = lastValue;
-            } else {
-                value = getWeightedValue();
-                // Avoid repeating last value
-                while (value === lastValue) {
-                    value = getWeightedValue();
-                }
-            }
-
+            // The orb that drops is the one NEXT was showing. It used to roll
+            // a fresh value here and roll another for the preview, so the
+            // preview was decorative - you planned around a value that never
+            // arrived.
+            const value = nextValue;
             lastValue = value;
 
             activeOrb = new Orb(canvas.width / 2, DROP_Y, value);
             activeOrb.vy = dropSpeed;
             objects.push(activeOrb);
 
-            // Next preview
-            nextValue = getWeightedValue();
+            nextValue = pickSpawnValue();
             updateNextPreview();
         }
 
@@ -1037,7 +1057,8 @@
             scoreDisplay.textContent = '0';
             refreshHighScore();
 
-            nextValue = 4;
+            // board is empty here, so this is just a weighted roll
+            nextValue = pickSpawnValue();
             updateNextPreview();
 
             if (animId) cancelAnimationFrame(animId);
