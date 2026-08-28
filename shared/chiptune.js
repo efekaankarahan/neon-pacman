@@ -80,6 +80,18 @@
             drums: 'k h s h k h s o k h s h k k s h'
         },
 
+        // Cool, unhurried thinking music in A minor - a duel across a board,
+        // not a chase. Sparse enough to leave room for the player's own pace.
+        picpacpoe: {
+            bpm: 100, lead: 'square', bassWave: 'triangle', gain: 0.11,
+            melody: P(
+                'A4 . . E5 . . C5 . B4 . . D5 . . A4 . ' +
+                'G4 . . D5 . . B4 . E4 . . A4 . . . .'
+            ),
+            bass: P('A2 . . . F2 . . . G2 . . . E2 . . .'),
+            drums: 'k . . h . . s . k . . h . . h .'
+        },
+
         // Bouncy arcade chase, A minor
         pacman: {
             bpm: 138, lead: 'square', bassWave: 'triangle', gain: 0.16,

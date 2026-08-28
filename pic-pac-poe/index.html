@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Pic Pac Poe - Tic Tac Toe vs the Computer on Darky Play</title>
+    <meta name="description"
+        content="Play Pic Pac Poe free on Darky Play. Tic tac toe against a computer that gets sharper every time you beat it. How long can you keep the streak alive?" />
+    <meta name="keywords"
+        content="pic pac poe, tic tac toe, noughts and crosses, xox, darkyplay, arcade game, browser game, free game" />
+    <meta name="robots" content="index, follow" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: #10071c;
+            font-family: 'Inter', Arial, Helvetica, sans-serif;
+            color: #f0e6ff;
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-x: hidden;
+            background:
+                radial-gradient(circle at 20% 10%, rgba(255, 45, 85, 0.14), transparent 45%),
+                radial-gradient(circle at 80% 85%, rgba(0, 224, 255, 0.13), transparent 45%),
+                #10071c;
+        }
+
+        .wrap {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: clamp(26px, 8vw, 38px);
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-bottom: 4px;
+            background: linear-gradient(90deg, #00e0ff, #ff2d55);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .tagline {
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-bottom: 18px;
+        }
+
+        /* ---------- Stat strip ---------- */
+        .stats {
+            display: flex;
+            gap: 9px;
+            margin-bottom: 14px;
+        }
+
+        .stat {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            padding: 9px 6px;
+        }
+
+        .stat .k {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.5;
+        }
+
+        .stat .v {
+            font-size: 21px;
+            font-weight: 900;
+            margin-top: 2px;
+        }
+
+        .stat.streak .v {
+            color: #ffd93b;
+        }
+
+        .stat.level .v {
+            font-size: 14px;
+            padding-top: 5px;
+            color: #ff2d55;
+        }
+
+        /* ---------- Board ---------- */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.035);
+            font-family: inherit;
+            font-size: clamp(38px, 13vw, 58px);
+            font-weight: 900;
+            line-height: 1;
+            cursor: pointer;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+
+        .cell:disabled {
+            cursor: default;
+        }
+
+        .cell.free:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cell.free:active {
+            transform: scale(0.96);
+        }
+
+        .cell.x {
+            color: #00e0ff;
+            text-shadow: 0 0 18px rgba(0, 224, 255, 0.6);
+            border-color: rgba(0, 224, 255, 0.35);
+        }
+
+        .cell.o {
+            color: #ff2d55;
+            text-shadow: 0 0 18px rgba(255, 45, 85, 0.6);
+            border-color: rgba(255, 45, 85, 0.35);
+        }
+
+        .cell.win {
+            background: rgba(255, 217, 59, 0.16);
+            border-color: #ffd93b;
+            animation: pop 0.4s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
+        .board.shake {
+            animation: shake 0.35s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-7px); }
+            75% { transform: translateX(7px); }
+        }
+
+        /* ---------- Status ---------- */
+        .status {
+            min-height: 26px;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .status .who-x { color: #00e0ff; }
+        .status .who-o { color: #ff2d55; }
+
+        .btns {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button.action {
+            border: none;
+            border-radius: 15px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            min-height: 46px;
+            transition: transform 0.1s, opacity 0.12s;
+        }
+
+        button.action:hover {
+            transform: translateY(-1px);
+        }
+
+        .primary {
+            background: linear-gradient(135deg, #00e0ff, #0090c9);
+            color: #032430;
+            box-shadow: 0 4px 0 #026f96;
+        }
+
+        .primary:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #026f96;
+        }
+
+        .secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d9cbf0;
+        }
+
+        /* ---------- Overlay ---------- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 4, 20, 0.72);
+            z-index: 10;
+            padding: 24px;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .panel {
+            width: min(92vw, 380px);
+            background: rgba(28, 14, 46, 0.97);
+            border: 2px solid rgba(255, 45, 85, 0.3);
+            border-radius: 26px;
+            padding: 26px 22px;
+            text-align: center;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+        }
+
+        .panel .emoji {
+            font-size: 44px;
+            margin-bottom: 6px;
+        }
+
+        .panel h2 {
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .panel p {
+            font-size: 14px;
+            line-height: 1.55;
+            opacity: 0.8;
+            margin-bottom: 14px;
+        }
+
+        .rank {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ffd93b;
+            margin-bottom: 12px;
+        }
+
+        .new-best {
+            font-size: 13px;
+            font-weight: 800;
+            color: #ffd93b;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>PIC PAC POE</h1>
+        <div class="tagline">You vs the machine</div>
+
+        <div class="stats">
+            <div class="stat streak">
+                <div class="k">Streak</div>
+                <div class="v" id="streak">0</div>
+            </div>
+            <div class="stat">
+                <div class="k">Best</div>
+                <div class="v" id="best">0</div>
+            </div>
+            <div class="stat level">
+                <div class="k">Poe is</div>
+                <div class="v" id="level">Rookie</div>
+            </div>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="status" id="status">Your move.</div>
+
+        <div class="btns">
+            <button class="action primary" id="againBtn" style="display:none;">Next Round</button>
+            <button class="action secondary" id="homeBtn">Main Menu</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="overScreen">
+        <div class="panel">
+            <div class="emoji" id="overIcon">&#129302;</div>
+            <div class="rank" id="rankLabel">Rookie</div>
+            <h2>Poe got you</h2>
+            <div class="new-best" id="newBest" style="display:none;">&#11088; NEW RECORD!</div>
+            <p id="overText">Your streak ended at 0.</p>
+            <div class="btns">
+                <button class="action primary" id="restartBtn">Play Again</button>
+                <button class="action secondary" id="overHomeBtn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------------
+        // Pic Pac Poe - tic tac toe against an opponent that sharpens each
+        // time you beat it. The run ends the first time you lose, so the
+        // score is simply how many rounds you took off it in a row.
+        //
+        // "Poe" plays perfect minimax, but at low streaks it throws away a
+        // share of its moves on purpose - that share shrinks as you win, so
+        // a beginner gets a fair first game and a good player gets a wall.
+        // ---------------------------------------------------------------
+        const HUMAN = 'X';
+        const AI = 'O';
+
+        const LINES = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        const LEVELS = [
+            { at: 0, name: 'Rookie', mistake: 0.70 },
+            { at: 1, name: 'Learning', mistake: 0.55 },
+            { at: 2, name: 'Awake', mistake: 0.40 },
+            { at: 3, name: 'Sharp', mistake: 0.26 },
+            { at: 4, name: 'Cold', mistake: 0.16 },
+            { at: 5, name: 'Ruthless', mistake: 0.08 }
+        ];
+
+        let board, turn, streak, best, busy, roundOver, winLine;
+
+        try { best = parseInt(localStorage.getItem('picPacPoeBest')) || 0; } catch (e) { best = 0; }
+
+        // ---------------------------------------------------------------
+        // Sound
+        // ---------------------------------------------------------------
+        let audioCtx = null;
+        let sfxOn = true;
+        try { sfxOn = localStorage.getItem('picPacPoeMuted') !== '1'; } catch (e) { }
+
+        function blip(freq, dur, type, gain, slideTo) {
+            if (!sfxOn) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+                g.gain.setValueAtTime(gain, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g).connect(audioCtx.destination);
+                o.start(t);
+                o.stop(t + dur);
+            } catch (e) { }
+        }
+
+        const sndYou = () => blip(560, 0.08, 'square', 0.05, 760);
+        const sndThem = () => blip(300, 0.09, 'triangle', 0.05, 220);
+        const sndWin = () => blip(700, 0.2, 'triangle', 0.08, 1500);
+        const sndLose = () => blip(260, 0.35, 'sawtooth', 0.08, 60);
+        const sndDraw = () => blip(400, 0.14, 'square', 0.05, 380);
+
+        // ---------------------------------------------------------------
+        // Rules
+        // ---------------------------------------------------------------
+        function winnerOf(b) {
+            for (const L of LINES) {
+                if (b[L[0]] && b[L[0]] === b[L[1]] && b[L[1]] === b[L[2]]) {
+                    return { who: b[L[0]], line: L };
+                }
+            }
+            return b.indexOf('') === -1 ? { who: 'draw', line: null } : null;
+        }
+
+        const emptyCells = (b) => b.reduce((a, v, i) => (v === '' ? (a.push(i), a) : a), []);
+
+        // Classic minimax. The board is small enough that a plain search is
+        // instant - no pruning or memo needed.
+        function minimax(b, forAI, depth) {
+            const w = winnerOf(b);
+            if (w) {
+                if (w.who === AI) return { score: 10 - depth };
+                if (w.who === HUMAN) return { score: depth - 10 };
+                return { score: 0 };
+            }
+
+            let bestScore = forAI ? -Infinity : Infinity;
+            let bestMove = -1;
+
+            for (const i of emptyCells(b)) {
+                b[i] = forAI ? AI : HUMAN;
+                const s = minimax(b, !forAI, depth + 1).score;
+                b[i] = '';
+                if (forAI ? s > bestScore : s < bestScore) {
+                    bestScore = s;
+                    bestMove = i;
+                }
+            }
+            return { score: bestScore, move: bestMove };
+        }
+
+        function levelFor(s) {
+            let l = LEVELS[0];
+            for (const L of LEVELS) if (s >= L.at) l = L;
+            return l;
+        }
+
+        function aiMove() {
+            const free = emptyCells(board);
+            if (!free.length) return -1;
+            const lvl = levelFor(streak);
+            // Throwing away a move is what makes the early rounds winnable.
+            if (Math.random() < lvl.mistake) {
+                return free[Math.floor(Math.random() * free.length)];
+            }
+            return minimax(board.slice(), true, 0).move;
+        }
+
+        // ---------------------------------------------------------------
+        // Rendering
+        // ---------------------------------------------------------------
+        const boardEl = document.getElementById('board');
+        const statusEl = document.getElementById('status');
+        const streakEl = document.getElementById('streak');
+        const bestEl = document.getElementById('best');
+        const levelEl = document.getElementById('level');
+        const againBtn = document.getElementById('againBtn');
+        const overScreen = document.getElementById('overScreen');
+        const overText = document.getElementById('overText');
+        const overIcon = document.getElementById('overIcon');
+        const rankLabel = document.getElementById('rankLabel');
+        const newBestEl = document.getElementById('newBest');
+
+        const cells = [];
+        for (let i = 0; i < 9; i++) {
+            const b = document.createElement('button');
+            b.className = 'cell free';
+            b.type = 'button';
+            b.setAttribute('aria-label', 'Square ' + (i + 1));
+            b.addEventListener('click', () => play(i));
+            boardEl.appendChild(b);
+            cells.push(b);
+        }
+
+        function paint() {
+            for (let i = 0; i < 9; i++) {
+                const v = board[i];
+                cells[i].textContent = v === 'X' ? '✕' : (v === 'O' ? '◯' : '');
+                // paint() rewrites className wholesale, so the winning line has
+                // to be re-applied here or a later repaint erases the highlight
+                const won = winLine && winLine.indexOf(i) !== -1;
+                cells[i].className = 'cell'
+                    + (v === 'X' ? ' x' : v === 'O' ? ' o' : ' free')
+                    + (won ? ' win' : '');
+                cells[i].disabled = !!v || busy || roundOver;
+            }
+            streakEl.textContent = streak;
+            bestEl.textContent = best;
+            levelEl.textContent = levelFor(streak).name;
+        }
+
+        function say(html) { statusEl.innerHTML = html; }
+
+        // ---------------------------------------------------------------
+        // Flow
+        // ---------------------------------------------------------------
+        function newRound() {
+            board = ['', '', '', '', '', '', '', '', ''];
+            winLine = null;
+            roundOver = false;
+            busy = false;
+            againBtn.style.display = 'none';
+            overScreen.classList.remove('active');
+
+            // Alternate who opens, so a long streak cannot lean on always
+            // having the first move.
+            const aiOpens = streak % 2 === 1;
+            paint();
+
+            if (aiOpens) {
+                say('<span class="who-o">Poe</span> opens this round.');
+                busy = true;
+                paint();
+                setTimeout(() => {
+                    const m = aiMove();
+                    if (m >= 0) { board[m] = AI; sndThem(); }
+                    busy = false;
+                    turn = HUMAN;
+                    paint();
+                    say('Your move.');
+                }, 500);
+            } else {
+                turn = HUMAN;
+                say('Your move. You open.');
+            }
+        }
+
+        function play(i) {
+            if (busy || roundOver || board[i] || turn !== HUMAN) return;
+            board[i] = HUMAN;
+            sndYou();
+            paint();
+            if (finish()) return;
+
+            busy = true;
+            turn = AI;
+            paint();
+            say('<span class="who-o">Poe</span> is thinking…');
+
+            setTimeout(() => {
+                const m = aiMove();
+                if (m >= 0) { board[m] = AI; sndThem(); }
+                busy = false;
+                turn = HUMAN;
+                paint();
+                if (!finish()) say('Your move.');
+            }, 420);
+        }
+
+        // Returns true when the round has ended.
+        function finish() {
+            const w = winnerOf(board);
+            if (!w) return false;
+
+            roundOver = true;
+            winLine = w.line;
+            paint();
+
+            if (w.who === HUMAN) {
+                streak++;
+                if (streak > best) { best = streak; saveBest(); }
+                sndWin();
+                say('You take it. Streak <b>' + streak + '</b> — Poe sharpens up.');
+                againBtn.textContent = 'Next Round';
+                againBtn.style.display = 'block';
+            } else if (w.who === 'draw') {
+                sndDraw();
+                say('Draw. Streak holds at <b>' + streak + '</b>.');
+                againBtn.textContent = 'Go Again';
+                againBtn.style.display = 'block';
+            } else {
+                sndLose();
+                boardEl.classList.add('shake');
+                setTimeout(() => boardEl.classList.remove('shake'), 400);
+                gameOver();
+            }
+            paint();
+            return true;
+        }
+
+        function saveBest() {
+            try { localStorage.setItem('picPacPoeBest', String(best)); } catch (e) { }
+        }
+
+        function gameOver() {
+            const isNew = streak > 0 && streak >= best;
+            overText.textContent = streak === 0
+                ? 'Poe took the first one. Try again.'
+                : 'Your streak ended at ' + streak + '.';
+            newBestEl.style.display = (isNew && streak > 0) ? 'block' : 'none';
+
+            let icon = '🤖', label = 'Rookie';
+            if (streak >= 12) { icon = '👑'; label = 'Machine breaker'; }
+            else if (streak >= 8) { icon = '🧠'; label = 'Grandmaster'; }
+            else if (streak >= 5) { icon = '🔥'; label = 'Sharp'; }
+            else if (streak >= 2) { icon = '🙂'; label = 'Warming up'; }
+            overIcon.textContent = icon;
+            rankLabel.textContent = label;
+
+            setTimeout(() => overScreen.classList.add('active'), 700);
+            if (window.DarkyScores) DarkyScores.submit('pic-pac-poe', streak);
+        }
+
+        function restart() {
+            streak = 0;
+            newRound();
+        }
+
+        againBtn.addEventListener('click', newRound);
+        document.getElementById('restartBtn').addEventListener('click', restart);
+        document.getElementById('homeBtn').addEventListener('click', goHome);
+        document.getElementById('overHomeBtn').addEventListener('click', goHome);
+
+        function goHome() { window.location.href = '../index.html'; }
+
+        streak = 0;
+        newRound();
+    </script>
+
+    <script src="../shared/chiptune.js?v=6" data-track="picpacpoe"></script>
+    <script src="../shared/scores.js?v=5" data-game="pic-pac-poe"></script>
+</body>
+
+</html>
