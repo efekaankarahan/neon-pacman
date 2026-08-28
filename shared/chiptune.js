@@ -92,6 +92,18 @@
             drums: 'k . . h . . s . k . . h . . h .'
         },
 
+        // Calm, methodical D minor - a puzzle you think through rather than
+        // react to, so the loop stays out of the way and never hurries you.
+        g4096: {
+            bpm: 92, lead: 'triangle', bassWave: 'sine', gain: 0.11,
+            melody: P(
+                'D5 . . A4 . . F5 . E5 . . C5 . . A4 . ' +
+                'Bb4 . . F4 . . D5 . A4 . . D5 . . . .'
+            ),
+            bass: P('D3 . . . Bb2 . . . F2 . . . A2 . . .'),
+            drums: 'k . . . s . . h . . h . s . . .'
+        },
+
         // Bouncy arcade chase, A minor
         pacman: {
             bpm: 138, lead: 'square', bassWave: 'triangle', gain: 0.16,
