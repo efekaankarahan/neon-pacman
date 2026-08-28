@@ -901,6 +901,17 @@
             a.merging = true;
             b.merging = true;
 
+            // Orbs now merge in mid-air, which means the one the player is
+            // still steering can be consumed on the way down. If that happens
+            // nobody clears activeOrb - it keeps pointing at an orb that is no
+            // longer in the array, update() bails on `merging`, the landing
+            // path never runs, and no replacement is ever queued. Hand control
+            // over here instead.
+            if (a === activeOrb || b === activeOrb) {
+                activeOrb = null;
+                setTimeout(spawnNewOrb, 500);
+            }
+
             const newValue = a.value * 2;
             const nx = (a.x + b.x) / 2;
             const ny = (a.y + b.y) / 2;
@@ -975,6 +986,10 @@
         // --- Spawn new orb ---
         function spawnNewOrb() {
             if (gameOver) return;
+            // Two paths can queue a spawn in the same frame (landing and a
+            // mid-air merge). Without this guard the second one orphans the
+            // first orb, leaving an orb that falls with nobody steering it.
+            if (activeOrb) return;
 
             dropCount++;
             let value;
