@@ -40,4 +40,12 @@
     // the queued dataLayer calls simply never flush. Nothing else breaks.
     s.onerror = function () { };
     (document.head || document.documentElement).appendChild(s);
+
+    // Named events, for the reports where page_view alone is awkward to read.
+    // Wrapped in try/catch so a blocked tag can never break a game.
+    window.DarkyAnalytics = {
+        event: function (name, params) {
+            try { gtag('event', name, params || {}); } catch (e) { }
+        }
+    };
 })();

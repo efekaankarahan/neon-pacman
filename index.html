@@ -247,7 +247,7 @@
             }
         }
     </style>
-    <script src="shared/analytics.js?v=1"></script>
+    <script src="shared/analytics.js?v=2"></script>
 
 </head>
 
@@ -406,6 +406,23 @@
     <script src="shared/scores.js?v=5"></script>
     <script>
         DarkyScores.renderHub(document.getElementById('recordsBox'));
+
+        // ---- Analytics events ----
+        // GA4 already logs a page_view for "/", but a named event puts the
+        // home count in the same Events table as the game clicks below.
+        if (window.DarkyAnalytics) {
+            DarkyAnalytics.event('home_view');
+
+            document.querySelectorAll('.game-card').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    var href = card.getAttribute('href') || '';
+                    DarkyAnalytics.event('game_click', {
+                        game_id: href.split('/')[0],
+                        game_name: card.querySelector('.game-title').textContent.trim()
+                    });
+                });
+            });
+        }
     </script>
 </body>
 
