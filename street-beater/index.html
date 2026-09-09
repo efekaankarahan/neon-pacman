@@ -466,23 +466,28 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { KEYS[codeOf(e)] = false; });
 addEventListener('blur', () => { for (const k in KEYS) KEYS[k] = false; });
 
+/* parry / impact / grab have their own keys as well as the two-button
+   macros, so nobody has to hit two keys at once to use a system move. */
+const SYS = ['parry', 'impact', 'grab'];
 const MAPS = {
     p1: {
         up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'],
         LP: ['KeyU'], MP: ['KeyI'], HP: ['KeyO'],
         LK: ['KeyJ'], MK: ['KeyK'], HK: ['KeyL'],
+        parry: ['KeyQ'], impact: ['KeyE'], grab: ['KeyR'],
         start: ['Enter', 'Space']
     },
     p2: {
         up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'],
         LP: ['Digit1', 'Numpad7'], MP: ['Digit2', 'Numpad8'], HP: ['Digit3', 'Numpad9'],
         LK: ['Digit4', 'Numpad4'], MK: ['Digit5', 'Numpad5'], HK: ['Digit6', 'Numpad6'],
+        parry: ['Digit8', 'Numpad2'], impact: ['Digit9', 'Numpad3'], grab: ['Digit7', 'Numpad1'],
         start: ['NumpadEnter', 'Numpad0']
     }
 };
 
 /* Touch state feeds player 1 (and menus). */
-const TOUCH = { up: false, down: false, left: false, right: false, LP: false, MP: false, HP: false, LK: false, MK: false, HK: false, start: false, macro: null };
+const TOUCH = { up: false, down: false, left: false, right: false, LP: false, MP: false, HP: false, LK: false, MK: false, HK: false, parry: false, impact: false, grab: false, start: false };
 
 class Pad {
     constructor(map, virtual) {
@@ -497,6 +502,7 @@ class Pad {
     reset() {
         const blank = { up: false, down: false, left: false, right: false, start: false };
         BTNS.forEach(b => blank[b] = false);
+        SYS.forEach(b => blank[b] = false);
         this.cur = Object.assign({}, blank);
         this.prev = Object.assign({}, blank);
         this.hist.length = 0;
@@ -512,11 +518,13 @@ class Pad {
         const any = list => !!(list && list.some(k => KEYS[k]));
         c.up = any(m.up); c.down = any(m.down); c.left = any(m.left); c.right = any(m.right);
         BTNS.forEach(b => c[b] = any(m[b]));
+        SYS.forEach(b => c[b] = any(m[b]));
         c.start = any(m.start);
         if (m === MAPS.p1) {
             c.up = c.up || TOUCH.up; c.down = c.down || TOUCH.down;
             c.left = c.left || TOUCH.left; c.right = c.right || TOUCH.right;
             BTNS.forEach(b => c[b] = c[b] || TOUCH[b]);
+            SYS.forEach(b => c[b] = c[b] || TOUCH[b]);
             c.start = c.start || TOUCH.start;
         }
     }
@@ -531,7 +539,7 @@ class Pad {
     down(b) { return !!this.cur[b]; }
     pressed(b) { return !!this.cur[b] && !this.prev[b]; }
     pressed2(b) { return !!this.cur[b] && !this.prev[b]; }   // used for direction taps
-    anyPressed() { return BTNS.some(b => this.pressed(b)) || (this.cur.start && !this.prev.start); }
+    anyPressed() { return BTNS.concat(SYS).some(b => this.pressed(b)) || (this.cur.start && !this.prev.start); }
     dirNum() {
         const c = this.cur;
         let n = 5;
@@ -620,9 +628,7 @@ const PADS = { p1: new Pad(MAPS.p1), p2: new Pad(MAPS.p2), cpu1: new Pad(null, t
         const b = el.dataset.btn;
         const press = on => {
             Snd.init(); Snd.resume();
-            if (b === 'impact') { TOUCH.HP = on; TOUCH.HK = on; }
-            else if (b === 'parry') { TOUCH.MP = on; TOUCH.MK = on; }
-            else TOUCH[b] = on;
+            TOUCH[b] = on;
         };
         el.addEventListener('touchstart', e => { e.preventDefault(); press(true); }, { passive: false });
         el.addEventListener('touchend', e => { e.preventDefault(); press(false); }, { passive: false });
@@ -631,6 +637,21 @@ const PADS = { p1: new Pad(MAPS.p1), p2: new Pad(MAPS.p2), cpu1: new Pad(null, t
         addEventListener('mouseup', () => press(false));
     });
 })();
+
+/* The on-screen buttons say what they actually do in the active scheme. */
+function labelTouch() {
+    const modern = typeof Game !== 'undefined' && Game.controls === 'modern';
+    const names = modern
+        ? { LP: 'PUNCH', MP: 'KICK', HP: 'SPECIAL', LK: 'SUPER', MK: 'THROW', HK: 'IMPACT' }
+        : { LP: 'LP', MP: 'MP', HP: 'HP', LK: 'LK', MK: 'MK', HK: 'HK' };
+    document.querySelectorAll('[data-btn]').forEach(el => {
+        const b = el.dataset.btn;
+        if (names[b]) {
+            el.textContent = names[b];
+            el.style.fontSize = names[b].length > 4 ? '7px' : '10px';
+        }
+    });
+}
 
 /* ------------------------------ camera / fx ------------------------- */
 const Cam = {
@@ -1218,6 +1239,7 @@ class Fighter {
         this.comboHits = 0; this.comboDmg = 0; this.comboT = 0;
         this.superFreeze = 0; this.rushT = 0; this.grabTarget = null;
         this.wins = 0; this.dizzyT = 0; this.landLag = 0;
+        this.autoStep = 0; this.autoT = -99; this.autoRow = '';
         this.exGlow = 0; this.lastMoveName = '';
     }
     softReset(x) {
@@ -1470,15 +1492,35 @@ class Fighter {
             this.startSpecial(s, STRENGTH[hit[0]], ex);
             return true;
         }
+        /* --- system moves on their own keys (both control schemes) --- */
+        if (canAct && !air) {
+            if (p.pressed('impact') && this.beat >= IMPACT_COST && this.burnout === 0) {
+                this.useBeat(IMPACT_COST);
+                this.startMove(IMPACT, 1, false);
+                Snd.impact(); Cam.bang(0.3, this.style.glow);
+                return true;
+            }
+            if (p.pressed('parry') && this.burnout === 0) {
+                this.state = 'parry'; this.parryT = 0; this.parryOK = 7; this.setAnim('parry'); this.vx = 0;
+                return true;
+            }
+            if (p.pressed('grab') && !this.crouching) { this.startMove(THROW, 1, false); return true; }
+        }
+
+        /* --- modern controls: one button per action, no motions needed --- */
+        if (this.modern && this.modernAttack(p, air, canAct)) return true;
+
         if (!canAct) {
             /* only cancels are allowed from here on */
             if (!this.canCancel('normal')) return false;
         }
         if (air) {
+            if (this.modern) return false;
             const b = ['HP', 'HK', 'MP', 'MK', 'LP', 'LK'].find(x => p.pressed(x));
             if (b && !this.airAction) { this.airAction = true; this.startNormal('j' + b); return true; }
             return false;
         }
+        if (this.modern) return false;
         /* --- beat impact --- */
         if (p.macro('HP', 'HK') && this.beat >= IMPACT_COST && this.burnout === 0 && canAct) {
             this.useBeat(IMPACT_COST);
@@ -1513,6 +1555,84 @@ class Fighter {
         }
         return false;
     }
+    /* A human on the modern scheme, where every action has its own button.
+       The CPU always runs classic - it commits to specials directly. */
+    get modern() { return !this.cpu && Game.controls === 'modern'; }
+
+    /* Which special each direction fires. Worked out from the move kinds so
+       a new character slots in without a table to maintain. */
+    modernMap() {
+        if (this._mm) return this._mm;
+        const list = Object.keys(this.ch.specials).map(k => this.ch.specials[k]);
+        const used = [];
+        const take = pred => {
+            const s = list.find(x => pred(x) && used.indexOf(x) < 0 && !x.air);
+            if (s) used.push(s);
+            return s;
+        };
+        const neutral = take(s => s.projectile && s.kind !== 'wave') || take(s => s.kind === 'rush') || take(() => true);
+        const down = take(s => s.kind === 'dp' || s.kind === 'burst') || take(s => s.kind === 'wave') || take(() => true) || neutral;
+        const forward = take(s => s.kind === 'grab') || take(s => s.kind === 'teleport') || take(s => s.kind === 'rush') || take(() => true) || neutral;
+        this._mm = { neutral, down, forward, air: list.find(s => s.air) || null };
+        return this._mm;
+    }
+
+    /* MODERN LAYOUT
+         LP slot = PUNCH (auto chain)   MP slot = KICK (auto chain)
+         HP slot = SPECIAL (direction picks which)   LK slot = SUPER
+         MK slot = THROW                HK slot = BEAT IMPACT
+         SPECIAL + KICK together = EX version                              */
+    modernAttack(p, air, canAct) {
+        const f = this.facing;
+        const fwd = f > 0 ? p.down('right') : p.down('left');
+        const dn = p.down('down');
+
+        if (p.pressed('LK') && this.superM >= SUPER_COST && !air && canAct) { this.startSuper(); return true; }
+        if (p.pressed('MK') && canAct && !air && !this.crouching) { this.startMove(THROW, 1, false); return true; }
+        if (p.pressed('HK') && canAct && !air && this.beat >= IMPACT_COST && this.burnout === 0) {
+            this.useBeat(IMPACT_COST);
+            this.startMove(IMPACT, 1, false);
+            Snd.impact(); Cam.bang(0.3, this.style.glow);
+            return true;
+        }
+        if (p.pressed('HP')) {
+            const mm = this.modernMap();
+            const s = air ? mm.air : (dn ? mm.down : (fwd ? mm.forward : mm.neutral));
+            if (s && (canAct || this.canCancel('special'))) {
+                const ex = p.down('MP') && this.beat >= EX_COST && this.burnout === 0;
+                if (!ex || this.useBeat(EX_COST)) {
+                    this.startSpecial(s, 1, ex);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /* auto chain: tap the same button again to escalate light -> heavy */
+        const punch = p.pressed('LP'), kick = p.pressed('MP');
+        if (!punch && !kick) return false;
+        if (p.frame - this.autoT > 34 || this.autoRow !== (punch ? 'P' : 'K')) this.autoStep = 0;
+        this.autoT = p.frame;
+        this.autoRow = punch ? 'P' : 'K';
+        const names = punch ? ['LP', 'MP', 'HP'] : ['LK', 'MK', 'HK'];
+        if (air) {
+            if (this.airAction) return false;
+            this.airAction = true;
+            this.startNormal('j' + names[Math.min(this.autoStep, 2)]);
+            this.autoStep++;
+            return true;
+        }
+        if (this.state === 'attack') {
+            if (!this.canCancel('normal')) return false;
+            const cur = this.move;
+            if (!cur || cur.type !== 'normal') return false;
+            if (this.autoStep >= 3 || STRENGTH[names[this.autoStep]] <= STRENGTH[cur.key.slice(1)]) return false;
+        } else if (this.autoStep > 2) this.autoStep = 0;
+        this.startNormal((this.crouching ? 'c' : 's') + names[Math.min(this.autoStep, 2)]);
+        this.autoStep++;
+        return true;
+    }
+
     canCancel(into) {
         const m = this.move;
         if (!m || this.state !== 'attack') return false;
@@ -2936,13 +3056,15 @@ const MOTION_TEXT = {
 
 const Game = {
     screen: 'title', t: 0, fade: 0,
-    mode: 'arcade', diff: 2, players: 1,
+    mode: 'arcade', diff: 2, players: 1, controls: 'modern',
     cur: [0, 3], lock: [false, false], stage: 'city',
     ladder: [], ladderI: 0, previews: [], menuI: 0, resultT: 0,
     stats: { wins: 0, losses: 0, best: 0 },
 
     boot() {
         try { this.stats = Object.assign(this.stats, JSON.parse(localStorage.getItem('sb1_stats') || '{}')); } catch (e) { }
+        try { const c = localStorage.getItem('sb1_controls'); if (c === 'classic' || c === 'modern') this.controls = c; } catch (e) { }
+        labelTouch();
         this.previews = CHARS.map((c, i) => {
             const f = new Fighter(c.id, 0, PADS.cpu1, 0);
             f.state = 'idle'; f.anim = 'idle'; f.animT = i * 5;
@@ -2981,24 +3103,32 @@ const Game = {
         if (p1.anyPressed() || p2.anyPressed() || (this.t > 4 && TOUCH.start)) { Snd.select(); this.go('mode'); }
     },
     modeUpdate(p) {
-        const items = 5;
+        const items = 7;
         if (p.pressed2('down')) { this.menuI = (this.menuI + 1) % items; Snd.menu(); }
         if (p.pressed2('up')) { this.menuI = (this.menuI + items - 1) % items; Snd.menu(); }
-        if (this.menuI === 3) {
+        const lr = p.pressed2('right') || p.pressed2('left');
+        if (this.menuI === 4 && lr) { this.toggleControls(); }
+        if (this.menuI === 5) {
             if (p.pressed2('right')) { this.diff = clamp(this.diff + 1, 1, 4); Snd.menu(); }
             if (p.pressed2('left')) { this.diff = clamp(this.diff - 1, 1, 4); Snd.menu(); }
         }
-        if (this.menuI === 4) {
-            if (p.pressed2('right') || p.pressed2('left')) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
-        }
+        if (this.menuI === 6 && lr) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
         if (p.anyPressed()) {
             Snd.select();
             if (this.menuI === 0) { this.mode = 'arcade'; this.players = 1; this.lock = [false, false]; this.go('select'); }
             else if (this.menuI === 1) { this.mode = 'versus'; this.players = 2; this.lock = [false, false]; this.go('select'); }
             else if (this.menuI === 2) { this.mode = 'training'; this.players = 1; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 3) { this.diff = this.diff % 4 + 1; }
-            else if (this.menuI === 4) { Snd.musicOn = !Snd.musicOn; }
+            else if (this.menuI === 3) { this.go('howto'); }
+            else if (this.menuI === 4) { this.toggleControls(); }
+            else if (this.menuI === 5) { this.diff = this.diff % 4 + 1; }
+            else if (this.menuI === 6) { Snd.musicOn = !Snd.musicOn; }
         }
+    },
+    toggleControls() {
+        this.controls = this.controls === 'modern' ? 'classic' : 'modern';
+        try { localStorage.setItem('sb1_controls', this.controls); } catch (e) { }
+        labelTouch();
+        Snd.menu();
     },
     selectUpdate(p1, p2) {
         const move = (pad, i) => {
@@ -3141,44 +3271,64 @@ const Game = {
     drawMode() {
         this.menuBg();
         shadowText('STREET BEATER 1', W / 2, 110, 34, '#ff2e63', 'center', 22);
+        const modern = this.controls === 'modern';
         const items = [
             ['ARCADE', 'BEAT 5 RIVALS AND THE STORM KING'],
             ['VERSUS  (2 PLAYERS)', 'SHARE THE KEYBOARD'],
             ['TRAINING', 'INFINITE METER, FRAME DATA'],
+            ['HOW TO PLAY', 'EVERY BUTTON, EXPLAINED'],
+            ['CONTROLS:  ' + (modern ? 'MODERN' : 'CLASSIC'),
+                modern ? 'ONE BUTTON SPECIALS AND SUPERS - EASY' : 'MOTION INPUTS, SIX ATTACK BUTTONS'],
             ['DIFFICULTY:  ' + ['', 'EASY', 'NORMAL', 'HARD', 'MASTER'][this.diff], 'LEFT / RIGHT TO CHANGE'],
             ['MUSIC:  ' + (Snd.musicOn ? 'ON' : 'OFF'), 'LEFT / RIGHT TO TOGGLE']
         ];
         items.forEach((it, i) => {
-            const y = 220 + i * 68;
+            const y = 196 + i * 58;
             const on = i === this.menuI;
             if (on) {
                 ctx.save();
                 ctx.fillStyle = 'rgba(255,46,99,.16)';
-                ctx.fillRect(W / 2 - 350, y - 34, 700, 54);
+                ctx.fillRect(W / 2 - 350, y - 30, 700, 46);
                 ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3;
-                ctx.strokeRect(W / 2 - 350, y - 34, 700, 54);
+                ctx.strokeRect(W / 2 - 350, y - 30, 700, 46);
                 ctx.restore();
             }
-            shadowText(it[0], W / 2, y, 20, on ? '#fff' : '#9d8fb5', 'center', on ? 14 : 0);
-            if (on) shadowText(it[1], W / 2, y + 40, 11, '#00f3ff');
+            shadowText(it[0], W / 2, y, 18, on ? '#fff' : '#9d8fb5', 'center', on ? 14 : 0);
+            if (on) shadowText(it[1], W / 2, y + 30, 9, '#00f3ff');
         });
-        shadowText('P1: W A S D MOVE   U I O PUNCH   J K L KICK', W / 2, H - 74, 11, '#8a7fa8');
-        shadowText('P2: ARROWS   1 2 3 PUNCH   4 5 6 KICK', W / 2, H - 46, 11, '#8a7fa8');
+        if (modern) {
+            shadowText('P1: W A S D MOVE   U PUNCH   I KICK   O SPECIAL   J SUPER   K THROW   L IMPACT', W / 2, H - 52, 9, '#8a7fa8');
+            shadowText('P2: ARROWS   1 PUNCH   2 KICK   3 SPECIAL   4 SUPER   5 THROW   6 IMPACT', W / 2, H - 28, 9, '#8a7fa8');
+        } else {
+            shadowText('P1: W A S D MOVE   U I O PUNCH   J K L KICK', W / 2, H - 52, 10, '#8a7fa8');
+            shadowText('P2: ARROWS   1 2 3 PUNCH   4 5 6 KICK', W / 2, H - 28, 10, '#8a7fa8');
+        }
     },
     drawHowto() {
         this.menuBg();
-        shadowText('HOW TO PLAY', W / 2, 90, 28, '#00f3ff', 'center', 18);
-        const lines = [
-            'MOVE: WALK WITH LEFT / RIGHT, DOUBLE TAP TO DASH',
+        const modern = this.controls === 'modern';
+        shadowText('HOW TO PLAY', W / 2, 74, 26, '#00f3ff', 'center', 18);
+        shadowText(modern ? 'MODERN CONTROLS' : 'CLASSIC CONTROLS', W / 2, 112, 14, '#ffd400');
+        const lines = modern ? [
+            'MOVE: LEFT / RIGHT, DOUBLE TAP TO DASH, UP TO JUMP',
+            'BLOCK: HOLD BACK. HOLD DOWN+BACK FOR LOW ATTACKS',
+            'U  PUNCH  -  TAP AGAIN AND AGAIN FOR A COMBO',
+            'I  KICK   -  SAME, IT CHAINS BY ITSELF',
+            'O  SPECIAL  -  PLAIN / HOLD DOWN / HOLD FORWARD',
+            'J  SUPER (FULL GAUGE)     K  THROW     L  IMPACT',
+            'Q  PARRY     O+I TOGETHER  =  EX SPECIAL'
+        ] : [
+            'MOVE: LEFT / RIGHT, DOUBLE TAP TO DASH, UP TO JUMP',
             'BLOCK: HOLD BACK. CROUCH-BLOCK STOPS LOW ATTACKS',
-            'THROW: LP + LK TOGETHER  (TAP AGAIN TO TECH)',
-            'BEAT PARRY: MP + MK  -  PERFECT PARRY IN 7 FRAMES',
-            'BEAT IMPACT: HP + HK  -  ARMOURED, 50 BEAT',
-            'EX SPECIAL: MOTION + TWO BUTTONS  -  25 BEAT',
-            'SUPER ART: NEEDS A FULL SUPER GAUGE'
+            'U I O  PUNCH        J K L  KICK',
+            'SPECIALS: DOWN-FORWARD, DRAGON PUNCH, ETC + BUTTON',
+            'THROW: R OR LP+LK     PARRY: Q OR MP+MK',
+            'IMPACT: E OR HP+HK  -  ARMOURED, 50 BEAT',
+            'EX: MOTION + TWO BUTTONS      SUPER: FULL GAUGE'
         ];
-        lines.forEach((l, i) => shadowText(l, W / 2, 180 + i * 46, 13, '#fff'));
-        shadowText('ANY BUTTON TO GO BACK', W / 2, H - 60, 14, '#ffd400');
+        lines.forEach((l, i) => shadowText(l, W / 2, 168 + i * 44, 12, '#fff'));
+        shadowText('CHANGE THE SCHEME IN THE MENU: CONTROLS', W / 2, H - 96, 11, '#8a7fa8');
+        shadowText('ANY BUTTON TO GO BACK', W / 2, H - 56, 14, '#ffd400');
     },
     drawSelect() {
         this.menuBg();
@@ -3214,11 +3364,24 @@ const Game = {
         ctx.restore();
         shadowText(c.name + '  -  ' + c.title, 90, py + 34, 16, '#ff2e63', 'left');
         shadowText('STYLE: ' + c.tier + '   HP: ' + c.stats.hp, 90, py + 62, 11, '#00f3ff', 'left');
-        const sp = Object.keys(c.specials).map(k => c.specials[k]);
-        sp.slice(0, 3).forEach((s, i) => {
-            shadowText((MOTION_TEXT[s.motion] || '') + ' + ' + s.btn + '   ' + s.name, 90, py + 92 + i * 22, 11, '#fff', 'left');
-        });
-        shadowText(MOTION_TEXT.superF + ' + ' + c.super.btn + '   ' + c.super.name + '  (SUPER)', W - 90, py + 92, 11, '#ffd400', 'right');
+        if (this.controls === 'modern') {
+            const mm = this.previews[this.cur[0]].modernMap();
+            const rows = [
+                ['SPECIAL', mm.neutral], ['DOWN + SPECIAL', mm.down], ['FORWARD + SPECIAL', mm.forward]
+            ];
+            if (mm.air) rows.push(['IN THE AIR + SPECIAL', mm.air]);
+            rows.slice(0, 4).forEach((r, i) => {
+                if (!r[1]) return;
+                shadowText(r[0] + '   ' + r[1].name, 90, py + 92 + i * 20, 10, '#fff', 'left');
+            });
+            shadowText('SUPER BUTTON   ' + c.super.name, W - 90, py + 92, 10, '#ffd400', 'right');
+        } else {
+            const sp = Object.keys(c.specials).map(k => c.specials[k]);
+            sp.slice(0, 3).forEach((s, i) => {
+                shadowText((MOTION_TEXT[s.motion] || '') + ' + ' + s.btn + '   ' + s.name, 90, py + 92 + i * 22, 11, '#fff', 'left');
+            });
+            shadowText(MOTION_TEXT.superF + ' + ' + c.super.btn + '   ' + c.super.name + '  (SUPER)', W - 90, py + 92, 11, '#ffd400', 'right');
+        }
         shadowText('PUNCH = PICK    KICK = BACK', W - 90, py + 136, 11, '#8a7fa8', 'right');
         const tag = this.lock[0] ? 'P1 READY' : 'P1 CHOOSE';
         shadowText(tag, 90, py + 136, 11, '#ff2e63', 'left');
