@@ -1563,6 +1563,7 @@ class Fighter {
        a new character slots in without a table to maintain. */
     modernMap() {
         if (this._mm) return this._mm;
+        if (this.ch.modernSlots) return (this._mm = this.ch.modernSlots);   /* World Tour avatar */
         const list = Object.keys(this.ch.specials).map(k => this.ch.specials[k]);
         const used = [];
         const take = pred => {
@@ -2154,7 +2155,9 @@ const Match = {
                     this.phase = 'roundEnd'; this.phaseT = 0;
                     if (this.roundWinner) {
                         this.roundWinner.wins++;
-                        this.banner = this.roundWinner === a ? 'PLAYER 1 WINS' : (this.mode === 'versus' ? 'PLAYER 2 WINS' : 'CPU WINS');
+                        this.banner = this.mode === 'worldtour'
+                            ? (this.roundWinner === a ? 'YOU WIN' : this.roundWinner.ch.name + ' WINS')
+                            : (this.roundWinner === a ? 'PLAYER 1 WINS' : (this.mode === 'versus' ? 'PLAYER 2 WINS' : 'CPU WINS'));
                     } else this.banner = 'DRAW';
                     this.bannerT = 0;
                 }
@@ -2356,7 +2359,7 @@ const Match = {
             else if (B.mf >= B.move.startup + B.move.active) { counter = 'PUNISH'; mult = 1.35; }
         }
         const scale = m.noScale ? 1 : SCALE[Math.min(A.comboHits, SCALE.length - 1)];
-        const dmg = Math.max(4, Math.round((m.dmg || 40) * scale * mult));
+        const dmg = Math.max(4, Math.round((m.dmg || 40) * scale * mult * (A.dmgMul || 1)));
         B.takeRaw(dmg, A);
         B.stun += (m.stun || 30) * (counter ? 1.3 : 1);
         B.move = null; B.armor = 0;
@@ -2853,10 +2856,10 @@ const Stage = {
             ctx.lineTo(lerp(x, STAGE_W / 2, -1.4), GROUND_Y + 220); ctx.stroke();
         }
         ctx.globalAlpha = 1;
-        /* stage edges */
+        /* stage edges - World Tour streets are wider than a fight stage */
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(-600, GROUND_Y - 700, 620, 1000);
-        ctx.fillRect(STAGE_W - 20, GROUND_Y - 700, 620, 1000);
+        ctx.fillRect((this.right || STAGE_W) - 20, GROUND_Y - 700, 620, 1000);
     }
 };
 Stage.build();
@@ -3056,7 +3059,7 @@ const MOTION_TEXT = {
 
 const Game = {
     screen: 'title', t: 0, fade: 0,
-    mode: 'arcade', diff: 2, players: 1, controls: 'modern',
+    mode: 'arcade', diff: 2, players: 1, controls: 'modern', selectFor: null,
     cur: [0, 3], lock: [false, false], stage: 'city',
     ladder: [], ladderI: 0, previews: [], menuI: 0, resultT: 0,
     stats: { wins: 0, losses: 0, best: 0 },
@@ -3094,6 +3097,8 @@ const Game = {
                 break;
             case 'fight': Match.update(); break;
             case 'result': this.resultUpdate(p1, p2); break;
+            case 'wt': WT.update(p1); break;
+            case 'wtEnd': if (this.t > 40 && p1.anyPressed()) { Snd.select(); this.go('title'); } break;
             case 'ending': if (this.t > 40 && (p1.anyPressed() || p2.anyPressed())) { Snd.select(); this.go('title'); } break;
         }
         if (this.screen === 'title' || this.screen === 'mode' || this.screen === 'select' || this.screen === 'vs')
@@ -3103,25 +3108,30 @@ const Game = {
         if (p1.anyPressed() || p2.anyPressed() || (this.t > 4 && TOUCH.start)) { Snd.select(); this.go('mode'); }
     },
     modeUpdate(p) {
-        const items = 7;
+        const items = 8;
         if (p.pressed2('down')) { this.menuI = (this.menuI + 1) % items; Snd.menu(); }
         if (p.pressed2('up')) { this.menuI = (this.menuI + items - 1) % items; Snd.menu(); }
         const lr = p.pressed2('right') || p.pressed2('left');
-        if (this.menuI === 4 && lr) { this.toggleControls(); }
-        if (this.menuI === 5) {
+        if (this.menuI === 5 && lr) { this.toggleControls(); }
+        if (this.menuI === 6) {
             if (p.pressed2('right')) { this.diff = clamp(this.diff + 1, 1, 4); Snd.menu(); }
             if (p.pressed2('left')) { this.diff = clamp(this.diff - 1, 1, 4); Snd.menu(); }
         }
-        if (this.menuI === 6 && lr) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
+        if (this.menuI === 7 && lr) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
         if (p.anyPressed()) {
             Snd.select();
-            if (this.menuI === 0) { this.mode = 'arcade'; this.players = 1; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 1) { this.mode = 'versus'; this.players = 2; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 2) { this.mode = 'training'; this.players = 1; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 3) { this.go('howto'); }
-            else if (this.menuI === 4) { this.toggleControls(); }
-            else if (this.menuI === 5) { this.diff = this.diff % 4 + 1; }
-            else if (this.menuI === 6) { Snd.musicOn = !Snd.musicOn; }
+            if (this.menuI === 0) {
+                this.mode = 'worldtour'; this.players = 1;
+                if (WT.hasSave() && WT.resume()) this.go('wt');
+                else { this.selectFor = 'wt'; this.lock = [false, false]; this.go('select'); }
+            }
+            else if (this.menuI === 1) { this.mode = 'arcade'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
+            else if (this.menuI === 2) { this.mode = 'versus'; this.players = 2; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
+            else if (this.menuI === 3) { this.mode = 'training'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
+            else if (this.menuI === 4) { this.go('howto'); }
+            else if (this.menuI === 5) { this.toggleControls(); }
+            else if (this.menuI === 6) { this.diff = this.diff % 4 + 1; }
+            else if (this.menuI === 7) { Snd.musicOn = !Snd.musicOn; }
         }
     },
     toggleControls() {
@@ -3149,6 +3159,12 @@ const Game = {
         else if (!this.lock[0]) {
             /* CPU keeps browsing until the player commits */
             if (this.t % 40 === 0) this.cur[1] = rndi(0, CHARS.length);
+        }
+        if (this.lock[0] && this.selectFor === 'wt') {
+            this.selectFor = null;
+            WT.begin(CHARS[this.cur[0]].id);
+            this.go('wt');
+            return;
         }
         if (this.lock[0] && (this.players === 1 || this.lock[1])) {
             if (this.players === 1) {
@@ -3218,6 +3234,8 @@ const Game = {
             case 'vs': this.drawVs(); break;
             case 'fight': this.drawFight(); break;
             case 'result': this.drawFight(); this.drawResult(); break;
+            case 'wt': WT.draw(); break;
+            case 'wtEnd': this.drawWtEnd(); break;
             case 'ending': this.drawEnding(); break;
         }
         if (this.fade > 0) {
@@ -3273,6 +3291,8 @@ const Game = {
         shadowText('STREET BEATER 1', W / 2, 110, 34, '#ff2e63', 'center', 22);
         const modern = this.controls === 'modern';
         const items = [
+            ['WORLD TOUR' + (WT.hasSave() ? '   (CONTINUE)' : ''),
+                'WALK THE CITY, LEVEL UP, LEARN MOVES FROM MASTERS'],
             ['ARCADE', 'BEAT 5 RIVALS AND THE STORM KING'],
             ['VERSUS  (2 PLAYERS)', 'SHARE THE KEYBOARD'],
             ['TRAINING', 'INFINITE METER, FRAME DATA'],
@@ -3283,7 +3303,7 @@ const Game = {
             ['MUSIC:  ' + (Snd.musicOn ? 'ON' : 'OFF'), 'LEFT / RIGHT TO TOGGLE']
         ];
         items.forEach((it, i) => {
-            const y = 196 + i * 58;
+            const y = 178 + i * 55;
             const on = i === this.menuI;
             if (on) {
                 ctx.save();
@@ -3332,7 +3352,7 @@ const Game = {
     },
     drawSelect() {
         this.menuBg();
-        shadowText('SELECT YOUR FIGHTER', W / 2, 66, 24, '#fff', 'center', 16);
+        shadowText(this.selectFor === 'wt' ? 'CHOOSE YOUR STYLE' : 'SELECT YOUR FIGHTER', W / 2, 66, 24, '#fff', 'center', 16);
         const cols = 3, cw = 210, chh = 200;
         const x0 = W / 2 - (cols * cw) / 2, y0 = 110;
         CHARS.forEach((c, i) => {
@@ -3439,6 +3459,22 @@ const Game = {
         if (this.t > 60 && Math.floor(this.t / 22) % 2 === 0)
             shadowText('PRESS ANY BUTTON', W / 2, 470, 18, '#fff');
     },
+    drawWtEnd() {
+        this.menuBg();
+        const s = WT.s;
+        shadowText('WORLD TOUR CLEARED', W / 2, 120, 34, '#ffd400', 'center', 24);
+        const f = WT.player;
+        if (f) {
+            f.x = W / 2; f.y = 470; f.facing = 1; f.setAnim('win'); f.auraT = this.t; f.updatePose();
+            ctx.save(); ctx.translate(f.x, f.y); ctx.scale(1.55, 1.55); ctx.translate(-f.x, -f.y);
+            drawFighter(f, 1); ctx.restore();
+        }
+        shadowText('VOLT IS DOWN. THE HUM IS YOURS.', W / 2, 176, 15, '#fff');
+        if (s) shadowText('LEVEL ' + s.level + '    ' + s.money + ' ZENNY    ' + s.learned.length + ' MOVES LEARNED',
+            W / 2, 540, 12, '#00f3ff');
+        shadowText('THE CITY STAYS OPEN - GO BACK AND FREE ROAM ANY TIME', W / 2, 578, 10, '#8a7fa8');
+        if (Math.floor(this.t / 22) % 2 === 0) shadowText('PRESS ANY BUTTON', W / 2, 640, 16, '#ffd400');
+    },
     drawEnding() {
         this.menuBg();
         const c = CHARS[this.cur[0]];
@@ -3454,6 +3490,635 @@ const Game = {
     }
 };
 
+
+/* =====================================================================
+   WORLD TOUR
+   A single player tour of the city: walk the streets as your own fighter,
+   talk to people, take fights, level up, and learn a master's special
+   move to slot into your own moveset. Battles hand off to the same Match
+   engine the rest of the game uses.
+   ===================================================================== */
+const WT_SLOTS = ['neutral', 'down', 'forward'];
+const SLOT_LABEL = { neutral: 'SPECIAL', down: 'DOWN + SPECIAL', forward: 'FWD + SPECIAL' };
+const SLOT_MOTION = { neutral: 'qcf', down: 'dp', forward: 'qcb' };
+
+const WT_AREAS = {
+    downtown: {
+        name: 'DOWNTOWN', stage: 'city', width: 2400,
+        exits: [{ x: 2360, to: 'dojo', label: 'DOJO DISTRICT' }],
+        npcs: [
+            {
+                id: 'mika', name: 'MIKA', char: 'kana', x: 420, kind: 'talk',
+                lines: s => s.flags.punksDown
+                    ? ['You flattened both of them. The street noticed.', 'Master RYKO trains at the end of this block. Go and be humbled.']
+                    : (s.flags.metMika
+                        ? ['Two punks. One street. Still waiting.']
+                        : ['New face. Nobody walks Downtown for fun.', 'You want to be somebody here? Beat the two punks working this block.', 'Then talk to me again.']),
+                after: s => { s.flags.metMika = true; }
+            },
+            {
+                id: 'punk1', name: 'RED CAP', char: 'kana', x: 980, kind: 'fight', level: 1,
+                xp: 45, money: 60,
+                lines: ['This block pays me. You do not.'],
+                win: ['...fine. Take the block.']
+            },
+            {
+                id: 'punk2', name: 'IRON JAW', char: 'brutus', x: 1560, kind: 'fight', level: 2,
+                xp: 60, money: 80,
+                lines: ['Small hands. Big mouth.'],
+                win: ['My jaw is iron. My pride is not.'],
+                after: s => { if (s.defeated.punk1) s.flags.punksDown = true; }
+            },
+            {
+                id: 'coach', name: 'COACH DEE', char: 'hako', x: 1950, kind: 'shop',
+                lines: ['Zenny buys muscle. That is the whole philosophy.']
+            },
+            {
+                id: 'ryko', name: 'MASTER RYKO', char: 'ryko', x: 2240, kind: 'master', level: 3,
+                xp: 110, money: 150, teach: { char: 'ryko', key: 'bolt' },
+                need: s => s.flags.punksDown,
+                needText: 'Beat the two punks first. I do not teach strangers.',
+                lines: ['So the street sent you.', 'Show me a guard I cannot walk through.'],
+                win: ['Good. Take the Bolt. Do not waste it on air.']
+            }
+        ]
+    },
+    dojo: {
+        name: 'DOJO DISTRICT', stage: 'dojo', width: 2200,
+        exits: [
+            { x: 40, to: 'downtown', label: 'DOWNTOWN' },
+            { x: 2160, to: 'subway', label: 'SUBWAY LINE', need: s => s.defeated.hako, needText: 'THE GATE IS SHUT. BEAT MASTER HAKO.' }
+        ],
+        npcs: [
+            {
+                id: 'monk', name: 'SWEEPER', char: 'hako', x: 340, kind: 'talk',
+                lines: ['I sweep this floor twice a day.', 'Master HAKO stands at the far end. He has not moved in an hour.', 'Hit the pause key any time to check your stance and your moves.']
+            },
+            {
+                id: 'student', name: 'STUDENT KEN-JI', char: 'ryko', x: 900, kind: 'fight', level: 3,
+                xp: 80, money: 90,
+                lines: ['Nobody passes me without a bruise.'],
+                win: ['A bruise. As promised. Mine.']
+            },
+            {
+                id: 'hako', name: 'MASTER HAKO', char: 'hako', x: 1660, kind: 'master', level: 5,
+                xp: 150, money: 200, teach: { char: 'hako', key: 'crane' },
+                lines: ['A crane waits. Then a crane does not.'],
+                win: ['You waited well. The Crane Kick is yours.']
+            }
+        ]
+    },
+    subway: {
+        name: 'SUBWAY LINE', stage: 'subway', width: 2400,
+        exits: [
+            { x: 40, to: 'dojo', label: 'DOJO DISTRICT' },
+            {
+                x: 2360, to: 'roof', label: 'ROOFTOPS',
+                need: s => s.defeated.brutus && s.defeated.kana,
+                needText: 'THE STAIRS ARE HELD. BEAT BRUTUS AND KANA.'
+            }
+        ],
+        npcs: [
+            {
+                id: 'busker', name: 'BUSKER', char: 'nova', x: 300, kind: 'talk',
+                lines: ['Trains every four minutes. Fights every two.', 'BRUTUS holds the platform. KANA holds everything else.']
+            },
+            {
+                id: 'thug', name: 'TURNSTILE TOM', char: 'volt', x: 820, kind: 'fight', level: 5,
+                xp: 110, money: 120,
+                lines: ['Fare is a beating. Exact change only.'],
+                win: ['Ride free. Please leave.']
+            },
+            {
+                id: 'brutus', name: 'BRUTUS', char: 'brutus', x: 1500, kind: 'master', level: 7,
+                xp: 200, money: 260, teach: { char: 'brutus', key: 'charge' },
+                lines: ['I move walls for a living.', 'You are not a wall. This will be quick.'],
+                win: ['Hah. Take the Rush. Break something with it.']
+            },
+            {
+                id: 'kana', name: 'KANA', char: 'kana', x: 2080, kind: 'master', level: 8,
+                xp: 230, money: 300, teach: { char: 'kana', key: 'claw' },
+                lines: ['I saw you on the platform camera.', 'You are slow. Let us fix that.'],
+                win: ['Faster already. Keep the Claw.']
+            }
+        ]
+    },
+    roof: {
+        name: 'ROOFTOPS', stage: 'roof', width: 2000,
+        exits: [{ x: 40, to: 'subway', label: 'SUBWAY LINE' }],
+        npcs: [
+            {
+                id: 'nova', name: 'NOVA', char: 'nova', x: 620, kind: 'master', level: 9,
+                xp: 260, money: 320, teach: { char: 'nova', key: 'orb' },
+                lines: ['I ran the numbers on you at the turnstile.', 'They were not flattering. Prove the maths wrong.'],
+                win: ['Corrected. The Orb is yours.']
+            },
+            {
+                id: 'volt', name: 'VOLT', char: 'volt', x: 1740, kind: 'boss', level: 12,
+                xp: 500, money: 800,
+                need: s => s.defeated.nova,
+                needText: 'Beat NOVA first. I do not fight warm-ups.',
+                lines: ['The city hums my name.', 'Say it once, and I will let you keep your teeth.'],
+                win: ['...then the street is yours. Take the hum with it.']
+            }
+        ]
+    }
+};
+
+const WT_QUESTS = [
+    { text: 'TALK TO MIKA IN DOWNTOWN', done: s => s.flags.metMika },
+    { text: 'BEAT THE TWO STREET PUNKS', done: s => s.flags.punksDown },
+    { text: 'TALK TO MIKA AGAIN', done: s => s.flags.mikaTwice },
+    { text: 'LEARN FROM MASTER RYKO', done: s => s.defeated.ryko },
+    { text: 'GO EAST - BEAT MASTER HAKO', done: s => s.defeated.hako },
+    { text: 'TAKE THE SUBWAY - BEAT BRUTUS', done: s => s.defeated.brutus },
+    { text: 'BEAT KANA ON THE PLATFORM', done: s => s.defeated.kana },
+    { text: 'CLIMB TO THE ROOFTOPS - BEAT NOVA', done: s => s.defeated.nova },
+    { text: 'FACE VOLT, THE STORM KING', done: s => s.defeated.volt }
+];
+
+const WT = {
+    s: null, area: null, player: null, npcCache: {},
+    camX: 0, mode: 'walk', dialog: null, prompt: '', promptT: 0,
+    statusI: 0, statusCol: 0, shopI: 0, toast: '', toastT: 0, walkT: 0,
+
+    blank(styleId) {
+        return {
+            style: styleId, level: 1, xp: 0, money: 0,
+            hpBonus: 0, atkBonus: 0,
+            area: 'downtown', x: 260,
+            slots: null,            // filled in by equipDefaults
+            learned: [],            // [{char, key}]
+            flags: {}, defeated: {}, cleared: false
+        };
+    },
+    save() { try { localStorage.setItem('sb1_wt', JSON.stringify(this.s)); } catch (e) { } },
+    load() {
+        try {
+            const raw = localStorage.getItem('sb1_wt');
+            if (!raw) return null;
+            const s = JSON.parse(raw);
+            return (s && s.style && CHAR_BY_ID[s.style]) ? s : null;
+        } catch (e) { return null; }
+    },
+    hasSave() { return !!this.load(); },
+
+    begin(styleId) {
+        this.s = this.blank(styleId);
+        this.equipDefaults();
+        this.enter();
+        this.save();
+    },
+    resume() {
+        const s = this.load();
+        if (!s) return false;
+        this.s = s;
+        if (!this.s.slots) this.equipDefaults();
+        this.enter();
+        return true;
+    },
+    equipDefaults() {
+        const base = CHAR_BY_ID[this.s.style];
+        const keys = Object.keys(base.specials).filter(k => !base.specials[k].air);
+        this.s.slots = {
+            neutral: { char: base.id, key: keys[0] },
+            down: { char: base.id, key: keys[1] || keys[0] },
+            forward: { char: base.id, key: keys[2] || keys[0] }
+        };
+    },
+    enter() {
+        this.area = WT_AREAS[this.s.area] || WT_AREAS.downtown;
+        this.player = new Fighter(this.s.style, 0, PADS.cpu1, 0);
+        this.player.state = 'idle'; this.player.anim = 'idle';
+        this.npcCache = {};
+        this.camX = this.s.x;
+        this.mode = 'walk'; this.dialog = null;
+        Snd.setTrack(TRACKS[this.area.stage] || TRACKS.city);
+    },
+
+    /* --------------------------- progression --------------------------- */
+    maxHpOf() { return CHAR_BY_ID[this.s.style].stats.hp + (this.s.level - 1) * 30 + this.s.hpBonus; },
+    dmgMulOf() { return 1 + (this.s.level - 1) * 0.03 + this.s.atkBonus; },
+    xpNeeded() { return this.s.level * 100; },
+    gainXp(n) {
+        this.s.xp += n;
+        while (this.s.xp >= this.xpNeeded() && this.s.level < 20) {
+            this.s.xp -= this.xpNeeded();
+            this.s.level++;
+            this.toastUp('LEVEL ' + this.s.level + '!');
+            Snd.bell();
+        }
+    },
+    toastUp(t) { this.toast = t; this.toastT = 150; },
+    questText() {
+        const q = WT_QUESTS.find(q => !q.done(this.s));
+        return q ? q.text : 'THE CITY IS YOURS - FREE ROAM';
+    },
+    /* every special the player may put in a slot */
+    pool() {
+        const base = CHAR_BY_ID[this.s.style];
+        const out = Object.keys(base.specials)
+            .filter(k => !base.specials[k].air)
+            .map(k => ({ char: base.id, key: k }));
+        for (const l of this.s.learned) {
+            if (!out.some(o => o.char === l.char && o.key === l.key)) out.push(l);
+        }
+        return out;
+    },
+    moveOf(ref) {
+        const c = CHAR_BY_ID[ref.char];
+        return c && c.specials[ref.key] ? c.specials[ref.key] : null;
+    },
+
+    /* Build the avatar character used in battle: the player's base with the
+       equipped specials re-motioned so each slot has its own input. */
+    buildAvatar() {
+        const base = CHAR_BY_ID[this.s.style];
+        const specials = {};
+        WT_SLOTS.forEach(slot => {
+            const ref = this.s.slots[slot];
+            const mv = this.moveOf(ref);
+            if (!mv) return;
+            const copy = Object.assign({}, mv);
+            copy.motion = SLOT_MOTION[slot];
+            copy.box = Object.assign({}, mv.box);
+            copy.pose = Object.assign({}, mv.pose);
+            if (mv.projectile) copy.projectile = Object.assign({}, mv.projectile);
+            specials[slot] = copy;
+        });
+        const avatar = Object.assign({}, base, {
+            id: 'avatar', name: 'YOU', title: 'STREET TOURIST',
+            specials,
+            modernSlots: { neutral: specials.neutral, down: specials.down, forward: specials.forward, air: null },
+            stats: Object.assign({}, base.stats, { hp: this.maxHpOf() })
+        });
+        CHAR_BY_ID.avatar = avatar;
+        return avatar;
+    },
+
+    /* ----------------------------- battle ------------------------------ */
+    startFight(npc) {
+        this.pendingNpc = npc;
+        this.buildAvatar();
+        const oppLvl = npc.level || 1;
+        Match.start({
+            mode: 'worldtour', stage: this.area.stage,
+            p1: 'avatar', p2: npc.char,
+            pad1: PADS.p1, pad2: PADS.cpu2,
+            cpu2: clamp(1 + Math.floor(oppLvl / 3), 1, 4),
+            onEnd: w => this.fightOver(w === Match.f1)
+        });
+        Match.f1.dmgMul = this.dmgMulOf();
+        Match.f2.maxHp = Math.round(Match.f2.maxHp * (0.8 + oppLvl * 0.05));
+        Match.f2.hp = Match.f2.maxHp;
+        Match.f2.dmgMul = 0.85 + oppLvl * 0.03;
+        Match.f1.wtName = 'YOU';
+        Snd.setTrack(npc.kind === 'boss' ? TRACKS.boss : (TRACKS[this.area.stage] || TRACKS.city));
+        Game.go('fight');
+    },
+    fightOver(won) {
+        const npc = this.pendingNpc;
+        this.pendingNpc = null;
+        if (won && npc) {
+            this.s.defeated[npc.id] = true;
+            this.gainXp(npc.xp || 50);
+            this.s.money += npc.money || 50;
+            if (npc.teach) {
+                if (!this.s.learned.some(l => l.char === npc.teach.char && l.key === npc.teach.key))
+                    this.s.learned.push(npc.teach);
+            }
+            if (npc.after) npc.after(this.s);
+            if (npc.kind === 'boss') this.s.cleared = true;
+            this.dialog = {
+                name: npc.name, lines: (npc.win || ['...']).slice(),
+                i: 0, reward: { xp: npc.xp || 50, money: npc.money || 50, teach: npc.teach || null }
+            };
+            this.mode = 'dialog';
+        } else if (npc) {
+            this.dialog = { name: npc.name, lines: ['Come back when the street has taught you more.'], i: 0 };
+            this.mode = 'dialog';
+        }
+        this.save();
+        Snd.setTrack(TRACKS[this.area.stage] || TRACKS.city);
+        Game.go('wt');
+        if (this.s.cleared && npc && npc.kind === 'boss') this.endingPending = true;
+    },
+
+    /* ----------------------------- update ------------------------------ */
+    update(p) {
+        this.walkT++;
+        if (this.toastT > 0) this.toastT--;
+        if (this.mode === 'dialog') return this.dialogUpdate(p);
+        if (this.mode === 'status') return this.statusUpdate(p);
+        if (this.mode === 'shop') return this.shopUpdate(p);
+
+        const sp = 4.2;
+        let moving = 0;
+        if (p.down('right')) moving = 1;
+        else if (p.down('left')) moving = -1;
+        this.s.x = clamp(this.s.x + moving * sp, 40, this.area.width - 40);
+        if (moving) this.player.facing = moving;
+        this.player.setAnim(moving ? 'walkF' : 'idle');
+        this.player.x = this.s.x; this.player.y = GROUND_Y;
+        this.player.auraT = this.walkT;
+        this.player.updatePose();
+
+        const half = W / 2 / 0.92;
+        this.camX = lerp(this.camX, clamp(this.s.x, half, Math.max(half, this.area.width - half)), 0.14);
+
+        /* what is in reach? */
+        const npc = this.nearNpc();
+        const exit = this.nearExit();
+        this.prompt = '';
+        if (npc) this.prompt = 'TALK TO ' + npc.name;
+        else if (exit) this.prompt = 'GO TO ' + exit.label;
+
+        if (p.pressed('start')) { this.mode = 'status'; this.statusI = 0; Snd.menu(); return; }
+        if (!BTNS.some(b => p.pressed(b))) return;
+
+        if (npc) this.talkTo(npc);
+        else if (exit) {
+            if (exit.need && !exit.need(this.s)) {
+                this.dialog = { name: 'LOCKED', lines: [exit.needText || 'Not yet.'], i: 0 };
+                this.mode = 'dialog';
+                return;
+            }
+            this.s.area = exit.to; this.s.x = exit.x < 200 ? WT_AREAS[exit.to].width - 200 : 200;
+            this.save();
+            this.enter();
+            Snd.select();
+        }
+    },
+    nearNpc() {
+        return this.area.npcs.find(n => Math.abs(n.x - this.s.x) < 82 && !(n.once && this.s.defeated[n.id]));
+    },
+    nearExit() {
+        return this.area.exits.find(e => Math.abs(e.x - this.s.x) < 110);
+    },
+    talkTo(npc) {
+        Snd.select();
+        if (npc.need && !npc.need(this.s)) {
+            this.dialog = { name: npc.name, lines: [npc.needText || 'Not yet.'], i: 0 };
+            this.mode = 'dialog';
+            return;
+        }
+        if (npc.kind === 'shop') {
+            this.dialog = { name: npc.name, lines: (typeof npc.lines === 'function' ? npc.lines(this.s) : npc.lines).slice(), i: 0, thenShop: true };
+            this.mode = 'dialog';
+            return;
+        }
+        const beaten = this.s.defeated[npc.id];
+        let lines;
+        if (beaten && (npc.kind === 'fight' || npc.kind === 'master' || npc.kind === 'boss')) {
+            lines = npc.kind === 'boss' ? ['The street is yours. I only keep the hum.'] : ['Again? Fine - but you already took what I had.'];
+        } else {
+            lines = (typeof npc.lines === 'function' ? npc.lines(this.s) : npc.lines).slice();
+        }
+        this.dialog = {
+            name: npc.name, lines, i: 0,
+            thenFight: !beaten && (npc.kind === 'fight' || npc.kind === 'master' || npc.kind === 'boss') ? npc : null,
+            npc
+        };
+        this.mode = 'dialog';
+        if (npc.after && npc.kind === 'talk') {
+            if (npc.id === 'mika' && this.s.flags.metMika && this.s.flags.punksDown) this.s.flags.mikaTwice = true;
+            npc.after(this.s);
+            this.save();
+        }
+    },
+    dialogUpdate(p) {
+        if (!BTNS.some(b => p.pressed(b)) && !p.pressed('start')) return;
+        const d = this.dialog;
+        d.i++;
+        Snd.menu();
+        if (d.i < d.lines.length) return;
+        this.dialog = null;
+        this.mode = 'walk';
+        if (d.thenFight) { this.startFight(d.thenFight); return; }
+        if (d.thenShop) { this.mode = 'shop'; this.shopI = 0; return; }
+        if (this.endingPending) { this.endingPending = false; Game.go('wtEnd'); }
+    },
+
+    SHOP: [
+        { name: '+20 MAX HP', cost: 100, apply: s => s.hpBonus += 20 },
+        { name: '+3% DAMAGE', cost: 150, apply: s => s.atkBonus += 0.03 },
+        { name: 'LEAVE', cost: 0, apply: null }
+    ],
+    shopUpdate(p) {
+        if (p.pressed2('down')) { this.shopI = (this.shopI + 1) % this.SHOP.length; Snd.menu(); }
+        if (p.pressed2('up')) { this.shopI = (this.shopI + this.SHOP.length - 1) % this.SHOP.length; Snd.menu(); }
+        if (!BTNS.some(b => p.pressed(b))) return;
+        const it = this.SHOP[this.shopI];
+        if (!it.apply) { this.mode = 'walk'; Snd.select(); return; }
+        if (this.s.money < it.cost) { this.toastUp('NOT ENOUGH ZENNY'); Snd.whiff(); return; }
+        this.s.money -= it.cost;
+        it.apply(this.s);
+        this.toastUp(it.name + ' BOUGHT');
+        Snd.select();
+        this.save();
+    },
+    statusUpdate(p) {
+        if (p.pressed2('down')) { this.statusI = (this.statusI + 1) % 4; Snd.menu(); }
+        if (p.pressed2('up')) { this.statusI = (this.statusI + 3) % 4; Snd.menu(); }
+        if (this.statusI < 3) {
+            const slot = WT_SLOTS[this.statusI];
+            const pool = this.pool();
+            const cur = pool.findIndex(o => o.char === this.s.slots[slot].char && o.key === this.s.slots[slot].key);
+            if (p.pressed2('right')) { this.s.slots[slot] = pool[(cur + 1) % pool.length]; Snd.menu(); this.save(); }
+            if (p.pressed2('left')) { this.s.slots[slot] = pool[(cur - 1 + pool.length) % pool.length]; Snd.menu(); this.save(); }
+        }
+        if (p.pressed('start') || (this.statusI === 3 && BTNS.some(b => p.pressed(b)))) {
+            this.mode = 'walk'; Snd.select();
+        }
+    },
+
+    /* ------------------------------ draw ------------------------------- */
+    npcFighter(npc) {
+        if (!this.npcCache[npc.id]) {
+            const f = new Fighter(npc.char, 1, PADS.cpu1, 0);
+            f.state = 'idle'; f.anim = 'idle'; f.animT = (npc.x | 0) % 30;
+            this.npcCache[npc.id] = f;
+        }
+        return this.npcCache[npc.id];
+    },
+    draw() {
+        const s = this.s;
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+        ctx.save();
+        ctx.translate(W / 2, H * 0.58);
+        ctx.scale(0.92, 0.92);
+        ctx.translate(-this.camX, -(H * 0.58));
+        Stage.right = this.area.width;
+        Stage.draw(this.area.stage, this.walkT);
+        Stage.right = STAGE_W;
+
+        /* exits */
+        for (const e of this.area.exits) {
+            const locked = e.need && !e.need(this.s);
+            ctx.save();
+            ctx.globalAlpha = 0.75 + Math.sin(this.walkT * 0.06) * 0.2;
+            ctx.fillStyle = locked ? '#ff4d6d' : '#3dffb0';
+            ctx.font = px(13); ctx.textAlign = 'center';
+            ctx.fillText(locked ? 'LOCKED' : e.label, e.x, GROUND_Y - 250);
+            ctx.fillText(e.x < 200 ? '<<' : '>>', e.x, GROUND_Y - 210);
+            ctx.globalAlpha = 0.18;
+            ctx.fillRect(e.x - 60, GROUND_Y - 200, 120, 200);
+            ctx.restore();
+        }
+
+        /* NPCs */
+        for (const n of this.area.npcs) {
+            const f = this.npcFighter(n);
+            f.x = n.x; f.y = GROUND_Y;
+            f.facing = this.s.x >= n.x ? 1 : -1;
+            f.auraT = this.walkT;
+            f.updatePose();
+            drawFighter(f, 1);
+            const beaten = this.s.defeated[n.id];
+            const mark = beaten ? '' : (n.kind === 'talk' || n.kind === 'shop' ? '!' : '*');
+            const col = n.kind === 'boss' ? '#ff2e63' : (n.kind === 'master' ? '#ffd400' : '#00f3ff');
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.font = px(10); ctx.fillStyle = beaten ? '#6b6280' : col;
+            ctx.fillText(n.name, n.x, GROUND_Y - 205);
+            if (mark) {
+                ctx.font = px(22); ctx.fillStyle = col;
+                ctx.shadowBlur = 14; ctx.shadowColor = col;
+                ctx.fillText(mark, n.x, GROUND_Y - 232 + Math.sin(this.walkT * 0.12) * 5);
+            }
+            ctx.restore();
+        }
+
+        /* the player */
+        drawFighter(this.player, 1);
+        ctx.restore();
+
+        this.hud();
+        if (this.mode === 'dialog') this.drawDialog();
+        if (this.mode === 'status') this.drawStatus();
+        if (this.mode === 'shop') this.drawShop();
+    },
+    hud() {
+        const s = this.s;
+        ctx.save();
+        ctx.fillStyle = 'rgba(6,3,14,.8)';
+        ctx.fillRect(20, 20, 430, 92);
+        ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3; ctx.strokeRect(20, 20, 430, 92);
+        ctx.restore();
+        shadowText('LV ' + s.level + '   ' + this.area.name, 38, 48, 13, '#fff', 'left');
+        /* xp bar */
+        const p = clamp(s.xp / this.xpNeeded(), 0, 1);
+        ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(38, 60, 250, 10);
+        ctx.fillStyle = '#3dffb0'; ctx.fillRect(38, 60, 250 * p, 10);
+        shadowText(s.money + ' Z', 432, 70, 12, '#ffd400', 'right');
+        shadowText('HP ' + this.maxHpOf() + '   ATK x' + this.dmgMulOf().toFixed(2), 38, 96, 10, '#9d8fb5', 'left');
+
+        /* objective */
+        ctx.save();
+        ctx.fillStyle = 'rgba(6,3,14,.8)';
+        ctx.fillRect(W - 560, 20, 540, 52);
+        ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.strokeRect(W - 560, 20, 540, 52);
+        ctx.restore();
+        shadowText('OBJECTIVE', W - 540, 42, 9, '#00f3ff', 'left');
+        shadowText(this.questText(), W - 540, 62, 10, '#fff', 'left');
+
+        if (this.mode === 'walk' && this.prompt)
+            shadowText('[ ANY BUTTON ]  ' + this.prompt, W / 2, H - 120, 13, '#ffd400', 'center', 12);
+        if (this.mode === 'walk')
+            shadowText('MOVE: LEFT / RIGHT      START: STATUS AND MOVES', W / 2, H - 40, 10, '#8a7fa8');
+        if (this.toastT > 0) {
+            ctx.save();
+            ctx.globalAlpha = clamp(this.toastT / 40, 0, 1);
+            shadowText(this.toast, W / 2, 200, 26, '#ffd400', 'center', 18);
+            ctx.restore();
+        }
+    },
+    drawDialog() {
+        const d = this.dialog;
+        ctx.save();
+        ctx.fillStyle = 'rgba(4,2,10,.92)';
+        ctx.fillRect(60, H - 210, W - 120, 170);
+        ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 4;
+        ctx.strokeRect(60, H - 210, W - 120, 170);
+        ctx.restore();
+        shadowText(d.name, 88, H - 176, 15, '#ff2e63', 'left');
+        const line = d.lines[Math.min(d.i, d.lines.length - 1)] || '';
+        wrapText(line, 88, H - 132, W - 200, 26, 12, '#fff');
+        if (d.reward && d.i >= d.lines.length - 1) {
+            const r = d.reward;
+            shadowText('+' + r.xp + ' XP   +' + r.money + ' Z' + (r.teach ? '   NEW MOVE!' : ''), W - 100, H - 60, 11, '#3dffb0', 'right');
+        }
+        if (Math.floor(this.walkT / 16) % 2 === 0)
+            shadowText('>', W - 100, H - 168, 14, '#ffd400', 'right');
+    },
+    drawStatus() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(4,2,10,.93)'; ctx.fillRect(120, 90, W - 240, H - 200);
+        ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 4; ctx.strokeRect(120, 90, W - 240, H - 200);
+        ctx.restore();
+        const s = this.s;
+        shadowText('STATUS', W / 2, 140, 24, '#00f3ff', 'center', 14);
+        shadowText('STYLE ' + CHAR_BY_ID[s.style].name + '    LV ' + s.level + '    ' + s.money + ' Z', W / 2, 180, 12, '#fff');
+        shadowText('MAX HP ' + this.maxHpOf() + '    DAMAGE x' + this.dmgMulOf().toFixed(2) +
+            '    XP ' + s.xp + '/' + this.xpNeeded(), W / 2, 208, 11, '#9d8fb5');
+        shadowText('EQUIPPED SPECIALS   (LEFT / RIGHT TO SWAP)', W / 2, 256, 11, '#ffd400');
+        WT_SLOTS.forEach((slot, i) => {
+            const y = 300 + i * 54;
+            const on = this.statusI === i;
+            if (on) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0,243,255,.14)'; ctx.fillRect(180, y - 28, W - 360, 44);
+                ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.strokeRect(180, y - 28, W - 360, 44);
+                ctx.restore();
+            }
+            const mv = this.moveOf(this.s.slots[slot]);
+            shadowText(SLOT_LABEL[slot], 205, y, 11, on ? '#fff' : '#9d8fb5', 'left');
+            shadowText(mv ? mv.name : '-', W - 205, y, 12, on ? '#ffd400' : '#9d8fb5', 'right');
+        });
+        const leaveOn = this.statusI === 3;
+        shadowText('CLOSE', W / 2, 480, 14, leaveOn ? '#fff' : '#9d8fb5', 'center', leaveOn ? 12 : 0);
+        shadowText('LEARNED: ' + (this.s.learned.length ? this.s.learned.map(l => {
+            const m = this.moveOf(l); return m ? m.name : '?';
+        }).join('  /  ') : 'NOTHING YET'), W / 2, 530, 9, '#8a7fa8');
+    },
+    drawShop() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(4,2,10,.93)'; ctx.fillRect(240, 160, W - 480, 340);
+        ctx.strokeStyle = '#ffd400'; ctx.lineWidth = 4; ctx.strokeRect(240, 160, W - 480, 340);
+        ctx.restore();
+        shadowText('COACH DEE', W / 2, 210, 20, '#ffd400', 'center', 12);
+        shadowText('YOU HAVE ' + this.s.money + ' Z', W / 2, 244, 11, '#fff');
+        this.SHOP.forEach((it, i) => {
+            const y = 300 + i * 56;
+            const on = this.shopI === i;
+            if (on) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255,212,0,.14)'; ctx.fillRect(280, y - 26, W - 560, 42);
+                ctx.strokeStyle = '#ffd400'; ctx.lineWidth = 2; ctx.strokeRect(280, y - 26, W - 560, 42);
+                ctx.restore();
+            }
+            shadowText(it.name, 306, y, 12, on ? '#fff' : '#9d8fb5', 'left');
+            if (it.cost) shadowText(it.cost + ' Z', W - 306, y, 12, on ? '#ffd400' : '#9d8fb5', 'right');
+        });
+        if (this.toastT > 0) shadowText(this.toast, W / 2, 470, 11, '#3dffb0');
+    }
+};
+
+function wrapText(str, x, y, maxW, lh, size, col) {
+    ctx.save();
+    ctx.font = px(size);
+    const words = String(str).split(' ');
+    let line = '', ly = y;
+    for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width > maxW && line) {
+            shadowText(line, x, ly, size, col, 'left');
+            line = w; ly += lh;
+        } else line = test;
+    }
+    if (line) shadowText(line, x, ly, size, col, 'left');
+    ctx.restore();
+}
 /* =====================================================================
    MAIN LOOP
    ===================================================================== */
