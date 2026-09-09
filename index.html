@@ -141,20 +141,26 @@
             }
         }
 
-        /* Specific Game Card Styles */
-        .game-card:nth-child(3):hover {
+        /* Specific Game Card Styles (card 1 is Street Beater) */
+        .game-card:nth-child(1):hover {
+            background: #ff2e63 !important;
+            color: #000 !important;
+            box-shadow: 0 0 30px #ff2e63 !important;
+        }
+
+        .game-card:nth-child(4):hover {
             background: #00BFFF !important;
             color: #000 !important;
             box-shadow: none !important;
         }
 
-        .game-card:nth-child(2):hover {
+        .game-card:nth-child(3):hover {
             background: #FF4500 !important;
             color: #000 !important;
             box-shadow: 0 0 30px #FF4500 !important;
         }
 
-        .game-card:nth-child(4):hover {
+        .game-card:nth-child(5):hover {
             background: #FFDE00 !important;
             color: #000 !important;
             box-shadow: 0 0 30px #FFDE00 !important;
@@ -292,6 +298,11 @@
 
     <h1>DARKYPLAY</h1>
     <div class="game-grid">
+        <a href="street-beater/index.html" class="game-card"
+            style="border-color: #ff2e63; box-shadow: 0 0 10px #ff2e63; color: #ff2e63;">
+            <div class="game-icon">&#129354;</div>
+            <div class="game-title">STREET BEATER 1</div>
+        </a>
         <a href="neon-pacman/index.html" class="game-card">
             <div class="game-icon">👻</div>
             <div class="game-title">NEON PACMAN</div>
