@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IQur - Test Your Brain</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IQur - Free Online Math Quiz and Brain Training Game | Darky Play</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -17,8 +17,13 @@
             font-family: 'Inter', sans-serif;
             background: #f0f2f5;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
+            /* no grey flash or double-tap zoom on the answer buttons */
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            overscroll-behavior-y: none;
         }
 
         /* ── Navbar ── */
@@ -574,6 +579,23 @@
             }
         }
     </style>
+    <script src="../shared/analytics.js?v=2"></script>
+    <meta name="description" content="Play IQur free online. How many sums can you solve in 60 seconds? A quick fire maths quiz that scores your speed and accuracy. Free brain training game, no download.">
+    <meta name="keywords" content="math quiz, mental maths game, brain training game, iq test game, free quiz game online, maths game for kids, free online games">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://darkyplay.com/iqur/">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Darky Play">
+    <meta property="og:title" content="IQur - Free Online Math Quiz and Brain Training Game | Darky Play">
+    <meta property="og:description" content="Play IQur free online. How many sums can you solve in 60 seconds? A quick fire maths quiz that scores your speed and accuracy. Free brain training game, no download.">
+    <meta property="og:url" content="https://darkyplay.com/iqur/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="IQur - Free Online Math Quiz and Brain Training Game | Darky Play">
+    <meta name="twitter:description" content="Play IQur free online. How many sums can you solve in 60 seconds? A quick fire maths quiz that scores your speed and accuracy. Free brain training game, no download.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"IQur - Free Online Math Quiz and Brain Training Game | Darky Play","url":"https://darkyplay.com/iqur/","description":"Play IQur free online. How many sums can you solve in 60 seconds? A quick fire maths quiz that scores your speed and accuracy. Free brain training game, no download.","keywords":"math quiz, mental maths game, brain training game, iq test game, free quiz game online, maths game for kids, free online games","genre":"Educational","gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"Darky Play","url":"https://darkyplay.com/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+
+
 </head>
 
 <body>
@@ -790,6 +812,7 @@
             document.getElementById("endScreen").classList.remove("hidden");
 
             document.getElementById("finalScore").innerText = score;
+            if (window.DarkyScores) DarkyScores.submit('iqur', score);
 
             // Accuracy
             let accuracy = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
@@ -834,6 +857,13 @@
             }
         });
     </script>
+
+    <script src="../shared/chiptune.js?v=8" data-track="iqur"></script>
+
+
+    <script src="../shared/scores.js?v=7" data-game="iqur"></script>
+
+
 
 </body>
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word Catch</title>
+    <title>Word Catch - Free Online Word Search Puzzle Game | Darky Play</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <style>
@@ -18,6 +18,7 @@
             font-family: 'Inter', sans-serif;
             background: #f0f2f5;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -27,6 +28,7 @@
             width: 100%;
             max-width: 420px;
             min-height: 100vh;
+            min-height: 100dvh;
             background: #fff;
             position: relative;
             display: flex;
@@ -629,6 +631,23 @@
             }
         }
     </style>
+    <script src="../shared/analytics.js?v=2"></script>
+    <meta name="description" content="Play Word Catch free online. Find every hidden word in the letter grid before the timer runs out. A free word search puzzle in your browser, no download, phone friendly.">
+    <meta name="keywords" content="word search, word search game, word puzzle, find the word game, free word games online, word find, free online games">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://darkyplay.com/wordsearch/">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Darky Play">
+    <meta property="og:title" content="Word Catch - Free Online Word Search Puzzle Game | Darky Play">
+    <meta property="og:description" content="Play Word Catch free online. Find every hidden word in the letter grid before the timer runs out. A free word search puzzle in your browser, no download, phone friendly.">
+    <meta property="og:url" content="https://darkyplay.com/wordsearch/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Word Catch - Free Online Word Search Puzzle Game | Darky Play">
+    <meta name="twitter:description" content="Play Word Catch free online. Find every hidden word in the letter grid before the timer runs out. A free word search puzzle in your browser, no download, phone friendly.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Word Catch - Free Online Word Search Puzzle Game | Darky Play","url":"https://darkyplay.com/wordsearch/","description":"Play Word Catch free online. Find every hidden word in the letter grid before the timer runs out. A free word search puzzle in your browser, no download, phone friendly.","keywords":"word search, word search game, word puzzle, find the word game, free word games online, word find, free online games","genre":"Puzzle","gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"Darky Play","url":"https://darkyplay.com/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+
+
 </head>
 
 <body>
@@ -999,6 +1018,7 @@
 
             document.getElementById("wordsFoundStat").innerText = wordsFound;
             document.getElementById("finalScoreStat").innerText = score.toLocaleString();
+            if (window.DarkyScores) DarkyScores.submit('wordsearch', score);
 
             let accuracy = totalAttempts > 0 ? Math.round((wordsFound / totalAttempts) * 100) : 0;
             document.getElementById("accuracyStat").innerText = accuracy + "%";
@@ -1017,6 +1037,13 @@
             window.location.href = "https://darkyplay.com";
         }
     </script>
+
+    <script src="../shared/chiptune.js?v=8" data-track="wordcatch"></script>
+
+
+    <script src="../shared/scores.js?v=7" data-game="wordsearch"></script>
+
+
 
 </body>
 

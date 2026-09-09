@@ -22,6 +22,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     touch-action: none;
     /* Prevent scroll on mobile */
@@ -32,6 +33,7 @@ body {
     width: 100%;
     max-width: 600px;
     height: 100vh;
+    height: 100dvh;
     max-height: 800px;
     border: 2px solid var(--neon-orange);
     background: #000;

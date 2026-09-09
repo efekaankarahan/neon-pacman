@@ -3,18 +3,30 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Holepringo 2D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Holepringo - Free Hole Eating Game Like Hole io | Darky Play</title>
     <style>
+        html,
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
             background: #ffffff;
+            /* dvh keeps the canvas correct when the iOS URL bar shows/hides */
+            height: 100vh;
+            height: 100dvh;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         canvas {
             display: block;
             position: relative;
             z-index: 1;
+            /* stop the browser from scrolling/zooming while dragging the hole */
+            touch-action: none;
         }
 
         #ui {
@@ -27,6 +39,23 @@
             color: #000;
         }
     </style>
+    <script src="../shared/analytics.js?v=2"></script>
+    <meta name="description" content="Play Holepringo free online. Drag your finger, swallow every coloured dot and score as high as you can in two minutes. A hole io style eating game, free in your browser.">
+    <meta name="keywords" content="hole io style game, eating game, agar io style, dot eating game, free io games, free online games, browser game">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://darkyplay.com/holepringo/">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Darky Play">
+    <meta property="og:title" content="Holepringo - Free Hole Eating Game Like Hole io | Darky Play">
+    <meta property="og:description" content="Play Holepringo free online. Drag your finger, swallow every coloured dot and score as high as you can in two minutes. A hole io style eating game, free in your browser.">
+    <meta property="og:url" content="https://darkyplay.com/holepringo/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Holepringo - Free Hole Eating Game Like Hole io | Darky Play">
+    <meta name="twitter:description" content="Play Holepringo free online. Drag your finger, swallow every coloured dot and score as high as you can in two minutes. A hole io style eating game, free in your browser.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Holepringo - Free Hole Eating Game Like Hole io | Darky Play","url":"https://darkyplay.com/holepringo/","description":"Play Holepringo free online. Drag your finger, swallow every coloured dot and score as high as you can in two minutes. A hole io style eating game, free in your browser.","keywords":"hole io style game, eating game, agar io style, dot eating game, free io games, free online games, browser game","genre":"Arcade","gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"Darky Play","url":"https://darkyplay.com/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+
+
 </head>
 
 <body>
@@ -57,8 +86,14 @@
         const canvas = document.getElementById("game");
         const ctx = canvas.getContext("2d");
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        // Phones fire this on rotation and when the iOS URL bar collapses.
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("orientationchange", resizeCanvas);
 
         let player = {
             x: canvas.width / 2,
@@ -100,20 +135,25 @@
         // TOUCH CONTROL
         let touchStartX = 0, touchStartY = 0;
 
+        // passive:false is required - window-level touch listeners are passive
+        // by default in Chrome, so preventDefault would be ignored and iOS
+        // would rubber-band the page while you drag.
         window.addEventListener("touchstart", e => {
             if (!gameActive) return;
+            e.preventDefault();
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
-        });
+        }, { passive: false });
 
         window.addEventListener("touchmove", e => {
             if (!gameActive) return;
+            e.preventDefault();
             let dx = e.touches[0].clientX - touchStartX;
             let dy = e.touches[0].clientY - touchStartY;
 
             player.vx = dx * 0.01;
             player.vy = dy * 0.01;
-        });
+        }, { passive: false });
 
         window.addEventListener("touchend", () => {
             player.vx = 0;
@@ -129,6 +169,8 @@
                 document.getElementById("time").innerText = timeLeft;
                 if (timeLeft <= 0) {
                     gameActive = false;
+                    clearInterval(timerInterval);
+                    if (window.DarkyScores) DarkyScores.submit('holepringo', score);
                 }
             }, 1000);
         }
@@ -246,6 +288,13 @@
             window.location.href = "../index.html";
         }
     </script>
+
+    <script src="../shared/chiptune.js?v=8" data-track="holepringo"></script>
+
+
+    <script src="../shared/scores.js?v=7" data-game="holepringo"></script>
+
+
 
 </body>
 

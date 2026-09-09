@@ -477,6 +477,7 @@ function gameOver(isBossDeath = false) {
         title.innerText = "LOSER";
     }
     gameOverScreen.classList.remove('hidden');
+    if (window.DarkyScores) DarkyScores.submit('fired-space-shooter', score);
 }
 
 function winGame() {
@@ -490,23 +491,24 @@ window.addEventListener('keydown', e => { keys[e.key] = true; });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
 // Touch Controls
+// passive:false so preventDefault actually suppresses iOS scroll/zoom
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
     const touch = e.touches[0];
     touchX = touch.clientX;
     touchY = touch.clientY;
-});
+}, { passive: false });
 canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     const touch = e.touches[0];
     touchX = touch.clientX;
     touchY = touch.clientY;
-});
+}, { passive: false });
 canvas.addEventListener('touchend', e => {
     e.preventDefault();
     touchX = null;
     touchY = null;
-});
+}, { passive: false });
 
 playBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);

@@ -1,0 +1,29 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "scores": {
+      "$game": {
+        ".read": true,
+        ".indexOn": "s",
+
+        "$entry": {
+          ".write": "!data.exists() && newData.hasChildren(['n','s','t'])",
+
+          "n": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 12"
+          },
+          "s": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+          },
+          "t": {
+            ".validate": "newData.val() == now"
+          },
+
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  }
+}
