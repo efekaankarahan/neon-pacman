@@ -1572,7 +1572,7 @@ const G = {
         ctx.save();
         ctx.fillStyle = 'rgba(20,0,6,.6)'; ctx.fillRect(0, 0, W, H);
         ctx.restore();
-        text('YOU HAVE FALLEN', W / 2, 300, 34, '#ff5a6e', 'center', 20);
+        text('GAME OVER', W / 2, 300, 40, '#ff5a6e', 'center', 20);
         text('DEATHS: ' + this.deaths, W / 2, 348, 12, '#cfe8ff');
         if (this.t > 30 && Math.floor(this.t / 22) % 2 === 0)
             text('PRESS ANY BUTTON TO TRY AGAIN', W / 2, 420, 14, '#fff');
