@@ -24,6 +24,7 @@
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Street Beater 1 - Free Online Fighting Game | Darky Play","url":"https://darkyplay.com/street-beater/","description":"Play Street Beater 1 free online. A 2D arcade fighting game with six fighters, special moves, super arts, an arcade ladder and 2 player versus. Works in your browser, no download.","keywords":"street beater, fighting game, online fighting game, 2 player fighting game, arcade fighter, versus game, free fighting games online, free online games","genre":"Fighting","gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"playMode":["SinglePlayer","CoOp"],"publisher":{"@type":"Organization","name":"Darky Play","url":"https://darkyplay.com/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="../shared/analytics.js?v=2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -60,12 +61,31 @@
             padding-top: 6px;
         }
 
-        #game {
-            display: block;
-            image-rendering: auto;
+        /* two layers: WebGL underneath, the 2D HUD and menus on top */
+        #stack {
+            position: relative;
             box-shadow: 0 0 40px rgba(255, 0, 170, .35), 0 0 120px rgba(0, 220, 255, .18);
             border-radius: 4px;
             background: #000;
+            overflow: hidden;
+        }
+
+        #stack canvas {
+            display: block;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #g3d {
+            z-index: 0;
+            display: none;
+        }
+
+        #game {
+            z-index: 1;
+            background: transparent;
         }
 
         /* ---------- Touch controls ---------- */
@@ -270,7 +290,12 @@
 </head>
 
 <body>
-    <div id="wrap"><canvas id="game" width="1280" height="720"></canvas></div>
+    <div id="wrap">
+        <div id="stack">
+            <canvas id="g3d"></canvas>
+            <canvas id="game" width="1280" height="720"></canvas>
+        </div>
+    </div>
 
     <a id="home" href="../index.html">&#8592; ARCADE</a>
 
@@ -351,7 +376,7 @@ cv.addEventListener('touchstart', e => {
 cv.addEventListener('mousedown', e => { Snd.init(); Snd.resume(); markTap(e.clientX, e.clientY); });
 
 /* Shared menu geometry, so hit testing and drawing can never drift apart. */
-const MENU_ROW = i => ({ x: W / 2 - 350, y: 178 + i * 55 - 30, w: 700, h: 46 });
+const MENU_ROW = i => ({ x: W / 2 - 350, y: 172 + i * 52 - 28, w: 700, h: 44 });
 const CARD_COLS = 3, CARD_W = 210, CARD_H = 200;
 const CARD_X0 = () => W / 2 - (CARD_COLS * CARD_W) / 2, CARD_Y0 = 110;
 const CARD_RECT = i => ({
@@ -379,8 +404,9 @@ function fit() {
     const availH = (IS_TOUCH && portrait) ? innerHeight * 0.54 - pad : innerHeight - pad;
     const s = Math.min((innerWidth - pad) / W, availH / H);
     const cw = Math.floor(W * s), ch = Math.floor(H * s);
-    cv.style.width = cw + 'px';
-    cv.style.height = ch + 'px';
+    const stack = document.getElementById('stack');
+    stack.style.width = cw + 'px';
+    stack.style.height = ch + 'px';
     const root = document.documentElement;
     if (IS_TOUCH && portrait) {
         /* the dock fills everything under the canvas, and the controls sit in
@@ -875,6 +901,37 @@ const FX = {
             t.y += t.vy; t.vy *= 0.93; t.life--;
             if (t.life <= 0) this.texts.splice(i, 1);
         }
+    },
+    /* In 3D the sparks and callouts stay flat, but they are projected from
+       their world position so they land on top of the right shoulder. */
+    draw3d() {
+        ctx.save();
+        const P = (x, y) => R3D.project(x, y);
+        for (const r of this.rings) {
+            const s = P(r.x, r.y);
+            ctx.globalAlpha = Math.max(0, r.life);
+            ctx.strokeStyle = r.col; ctx.lineWidth = r.w;
+            ctx.beginPath(); ctx.arc(s.x, s.y, r.r * 0.75, 0, 7); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        for (const p of this.parts) {
+            const s = P(p.x, p.y);
+            ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
+            ctx.fillStyle = p.col;
+            ctx.fillRect(s.x - p.size / 2, s.y - p.size / 2, p.size, p.size);
+        }
+        ctx.globalAlpha = 1;
+        for (const t of this.texts) {
+            const s = P(t.x, t.y);
+            ctx.globalAlpha = clamp(t.life / t.max * 1.6, 0, 1);
+            ctx.font = 'bold ' + t.size + 'px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
+            ctx.strokeText(t.str, s.x, s.y);
+            ctx.fillStyle = t.col;
+            ctx.fillText(t.str, s.x, s.y);
+        }
+        ctx.restore();
     },
     draw() {
         ctx.save();
@@ -3199,7 +3256,7 @@ const MOTION_TEXT = {
 
 const Game = {
     screen: 'title', t: 0, fade: 0,
-    mode: 'arcade', diff: 2, players: 1, controls: 'modern', selectFor: null,
+    mode: 'arcade', diff: 2, players: 1, controls: 'modern', selectFor: null, gfx: '3d',
     cur: [0, 3], lock: [false, false], stage: 'city',
     ladder: [], ladderI: 0, previews: [], menuI: 0, resultT: 0,
     stats: { wins: 0, losses: 0, best: 0 },
@@ -3207,6 +3264,9 @@ const Game = {
     boot() {
         try { this.stats = Object.assign(this.stats, JSON.parse(localStorage.getItem('sb1_stats') || '{}')); } catch (e) { }
         try { const c = localStorage.getItem('sb1_controls'); if (c === 'classic' || c === 'modern') this.controls = c; } catch (e) { }
+        try { const g = localStorage.getItem('sb1_gfx'); if (g === '2d' || g === '3d') this.gfx = g; } catch (e) { }
+        if (!R3D.available() || !R3D.init()) this.gfx = '2d';
+        R3D.setVisible(this.gfx === '3d');
         labelTouch();
         this.previews = CHARS.map((c, i) => {
             const f = new Fighter(c.id, 0, PADS.cpu1, 0);
@@ -3249,7 +3309,7 @@ const Game = {
         if (p1.anyPressed() || p2.anyPressed() || tap || (this.t > 4 && TOUCH.start)) { Snd.select(); this.go('mode'); }
     },
     modeUpdate(p, tap) {
-        const items = 8;
+        const items = 9;
         if (tap) {
             /* tapping a row both moves the cursor and picks it */
             for (let i = 0; i < items; i++) {
@@ -3264,11 +3324,12 @@ const Game = {
         if (p.pressed2('up')) { this.menuI = (this.menuI + items - 1) % items; Snd.menu(); }
         const lr = p.pressed2('right') || p.pressed2('left');
         if (this.menuI === 5 && lr) { this.toggleControls(); }
-        if (this.menuI === 6) {
+        if (this.menuI === 6 && lr) { this.toggleGfx(); }
+        if (this.menuI === 7) {
             if (p.pressed2('right')) { this.diff = clamp(this.diff + 1, 1, 4); Snd.menu(); }
             if (p.pressed2('left')) { this.diff = clamp(this.diff - 1, 1, 4); Snd.menu(); }
         }
-        if (this.menuI === 7 && lr) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
+        if (this.menuI === 8 && lr) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
         if (p.anyPressed()) this.pickMode(this.menuI);
     },
     pickMode(i) {
@@ -3283,13 +3344,22 @@ const Game = {
         else if (i === 3) { this.mode = 'training'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
         else if (i === 4) { this.go('howto'); }
         else if (i === 5) { this.toggleControls(); }
-        else if (i === 6) { this.diff = this.diff % 4 + 1; }
-        else if (i === 7) { Snd.musicOn = !Snd.musicOn; }
+        else if (i === 6) { this.toggleGfx(); }
+        else if (i === 7) { this.diff = this.diff % 4 + 1; }
+        else if (i === 8) { Snd.musicOn = !Snd.musicOn; }
     },
     toggleControls() {
         this.controls = this.controls === 'modern' ? 'classic' : 'modern';
         try { localStorage.setItem('sb1_controls', this.controls); } catch (e) { }
         labelTouch();
+        Snd.menu();
+    },
+    toggleGfx() {
+        if (!R3D.ok) { Snd.whiff(); return; }
+        this.gfx = this.gfx === '3d' ? '2d' : '3d';
+        try { localStorage.setItem('sb1_gfx', this.gfx); } catch (e) { }
+        R3D.setVisible(this.gfx === '3d');
+        R3D.stageName = '';           /* force a rebuild on the way back in */
         Snd.menu();
     },
     selectUpdate(p1, p2, tap) {
@@ -3460,6 +3530,8 @@ const Game = {
             ['HOW TO PLAY', 'EVERY BUTTON, EXPLAINED'],
             ['CONTROLS:  ' + (modern ? 'MODERN' : 'CLASSIC'),
                 modern ? 'ONE BUTTON SPECIALS AND SUPERS - EASY' : 'MOTION INPUTS, SIX ATTACK BUTTONS'],
+            ['GRAPHICS:  ' + (this.gfx === '3d' ? '3D' : 'RETRO 2D'),
+                R3D.ok ? 'FULL 3D FIGHTERS AND STAGES' : '3D NOT AVAILABLE ON THIS DEVICE'],
             ['DIFFICULTY:  ' + ['', 'EASY', 'NORMAL', 'HARD', 'MASTER'][this.diff], 'LEFT / RIGHT TO CHANGE'],
             ['MUSIC:  ' + (Snd.musicOn ? 'ON' : 'OFF'), 'LEFT / RIGHT TO TOGGLE']
         ];
@@ -3589,6 +3661,7 @@ const Game = {
     },
     drawFight() {
         const m = Match;
+        if (this.use3d()) { this.drawFight3d(m); return; }
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
         Cam.apply();
         Stage.draw(m.stage, this.t);
@@ -3621,6 +3694,25 @@ const Game = {
         if (this.t > 60 && Math.floor(this.t / 22) % 2 === 0)
             shadowText('PRESS ANY BUTTON', W / 2, 470, 18, '#fff');
     },
+    use3d() { return this.gfx === '3d' && R3D.ok; },
+    drawFight3d(m) {
+        R3D.originX = STAGE_W / 2;
+        if (R3D.stageName !== m.stage) STAGE3D.build(m.stage, STAGE_W);
+        const a = R3D.syncFighter(m.f1, 'p1'), b = R3D.syncFighter(m.f2, 'p2');
+        R3D.hideUnused([a.id, b.id]);
+        R3D.syncProjectiles();
+        R3D.syncCamera((m.f1.x + m.f2.x) / 2, Math.abs(m.f1.x - m.f2.x));
+        R3D.render();
+        FX.draw3d();
+        if (Cam.flash > 0.01) {
+            ctx.save();
+            ctx.globalAlpha = clamp(Cam.flash, 0, 0.85);
+            ctx.fillStyle = Cam.flashCol;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+        HUD.draw(m);
+    },
     drawWtEnd() {
         this.menuBg();
         const s = WT.s;
@@ -3652,6 +3744,449 @@ const Game = {
     }
 };
 
+
+/* =====================================================================
+   3D RENDERER
+   The fight itself stays on a flat plane - the same hitboxes, the same
+   frame data - and this module draws that plane in three dimensions, the
+   way a modern 2.5D fighter does. Fighters are built from the very same
+   eleven-joint pose the 2D renderer uses, so every animation, every
+   attack and every World Tour street works here untouched.
+   ===================================================================== */
+const S3 = 0.02;                 /* game pixels -> world units */
+const UP3 = { x: 0, y: 1, z: 0 };
+
+const R3D = {
+    ok: false, on: false, renderer: null, scene: null, camera: null,
+    rigs: {}, stageGroup: null, stageName: '', originX: STAGE_W / 2,
+    projGroup: null, projPool: [], lights: null, shakeX: 0, shakeY: 0,
+    _v: null, _up: null,
+
+    available() { return typeof THREE !== 'undefined'; },
+
+    init() {
+        if (this.ok || !this.available()) return this.ok;
+        const canvas = document.getElementById('g3d');
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !LOWFX, alpha: false });
+        this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LOWFX ? 1.5 : 2));
+        this.renderer.setSize(W, H, false);
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 400);
+        this.scene.fog = new THREE.Fog(0x0a0618, 26, 90);
+
+        const amb = new THREE.AmbientLight(0xffffff, 0.55);
+        const key = new THREE.DirectionalLight(0xffffff, 0.85);
+        key.position.set(4, 12, 9);
+        const rimA = new THREE.PointLight(0xff2e63, 1.5, 60);
+        const rimB = new THREE.PointLight(0x00f3ff, 1.4, 60);
+        rimA.position.set(-9, 5, -5);
+        rimB.position.set(9, 5, -5);
+        this.scene.add(amb, key, rimA, rimB);
+        this.lights = { amb, key, rimA, rimB };
+
+        this.stageGroup = new THREE.Group();
+        this.projGroup = new THREE.Group();
+        this.scene.add(this.stageGroup, this.projGroup);
+
+        this._v = new THREE.Vector3();
+        this._up = new THREE.Vector3(0, 1, 0);
+        this.ok = true;
+        return true;
+    },
+
+    /* ---- coordinate mapping: game space -> world space ---- */
+    x3(gx) { return (gx - this.originX) * S3; },
+    y3(gy) { return (GROUND_Y - gy) * S3; },
+    v3(gx, gy, z) { return new THREE.Vector3(this.x3(gx), this.y3(gy), z || 0); },
+
+    /* ---- a fighter rig, built once and posed every frame ---- */
+    rigFor(f, key) {
+        /* keyed by slot AND character, or a rematch would wear the last
+           fighter's colours */
+        const id = (key || 'f' + f.side) + ':' + f.ch.id + ':' + f.style.gi;
+        if (this.rigs[id]) return this.rigs[id];
+        const S = f.style;
+        const mat = (col, emissive, emi) => new THREE.MeshLambertMaterial({
+            color: new THREE.Color(col),
+            emissive: new THREE.Color(emissive || '#000'),
+            emissiveIntensity: emi === undefined ? 0.35 : emi
+        });
+        const g = new THREE.Group();
+        const cyl = new THREE.CylinderGeometry(1, 1, 1, 10);
+        const sph = new THREE.SphereGeometry(1, 14, 10);
+        const box = new THREE.BoxGeometry(1, 1, 1);
+
+        const skinM = mat(S.skin);
+        const giM = mat(S.gi, S.gi, 0.06);
+        const giDM = mat(S.giDark, S.giDark, 0.05);
+        const trimM = mat(S.trim, S.trim, 0.7);
+        const hairM = mat(S.hair);
+        const bootM = mat('#1a1a22');
+
+        const limb = (m) => { const x = new THREE.Mesh(cyl, m); g.add(x); return x; };
+        const ball = (m, r) => { const x = new THREE.Mesh(sph, m); x.scale.setScalar(r); g.add(x); return x; };
+
+        const rig = {
+            group: g,
+            armF: [limb(giM), limb(giM)], armB: [limb(giDM), limb(giDM)],
+            legF: [limb(giM), limb(giM)], legB: [limb(giDM), limb(giDM)],
+            neck: limb(skinM),
+            torso: new THREE.Mesh(box, giM),
+            belt: new THREE.Mesh(box, trimM),
+            head: ball(skinM, 1), hair: ball(hairM, 1),
+            handF: ball(trimM, 1), handB: ball(trimM, 1),
+            footF: ball(bootM, 1), footB: ball(bootM, 1),
+            shadow: new THREE.Mesh(new THREE.CircleGeometry(1, 18),
+                new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.36 })),
+            aura: new THREE.PointLight(new THREE.Color(S.aura), 0, 8),
+            mats: { giM, trimM, skinM }
+        };
+        g.add(rig.torso, rig.belt);
+        rig.shadow.rotation.x = -Math.PI / 2;
+        g.add(rig.shadow);
+        g.add(rig.aura);
+        this.scene.add(g);
+        this.rigs[id] = rig;
+        rig.id = id;
+        return rig;
+    },
+
+    segment(mesh, a, b, r) {
+        const v = this._v;
+        v.subVectors(b, a);
+        const len = Math.max(0.02, v.length());
+        mesh.position.copy(a).add(b).multiplyScalar(0.5);
+        v.normalize();
+        mesh.quaternion.setFromUnitVectors(this._up, v);
+        mesh.scale.set(r, len, r);
+    },
+
+    /* pose the rig from the fighter's current 2D skeleton */
+    syncFighter(f, key) {
+        const rig = this.rigFor(f, key);
+        const P = poseWorld(f, f.pose);
+        const b = f.style.build;
+        const zF = 0.17 * b, zB = -0.17 * b, zLF = 0.11 * b, zLB = -0.11 * b;
+        const V = (p, z) => new THREE.Vector3(this.x3(p.x), this.y3(p.y), z);
+
+        const s1 = V(P.s1, zF), e1 = V(P.e1, zF), h1 = V(P.h1, zF);
+        const s2 = V(P.s2, zB), e2 = V(P.e2, zB), h2 = V(P.h2, zB);
+        const g1 = V(P.g1, zLF), k1 = V(P.k1, zLF), f1 = V(P.f1, zLF);
+        const g2 = V(P.g2, zLB), k2 = V(P.k2, zLB), f2 = V(P.f2, zLB);
+        const ch = V(P.ch, 0), pel = V(P.pel, 0), hd = V(P.hd, 0);
+
+        const R = 0.115 * b;   /* matches the 2D line weights once scaled */
+        this.segment(rig.armF[0], s1, e1, R * 1.05); this.segment(rig.armF[1], e1, h1, R * 0.95);
+        this.segment(rig.armB[0], s2, e2, R); this.segment(rig.armB[1], e2, h2, R * 0.9);
+        this.segment(rig.legF[0], g1, k1, R * 1.35); this.segment(rig.legF[1], k1, f1, R * 1.15);
+        this.segment(rig.legB[0], g2, k2, R * 1.3); this.segment(rig.legB[1], k2, f2, R * 1.1);
+        this.segment(rig.neck, ch, hd, R * 0.85);
+
+        /* torso: a slab from the shoulders down to the hips */
+        const mid = ch.clone().add(pel).multiplyScalar(0.5);
+        rig.torso.position.copy(mid);
+        const spine = new THREE.Vector3().subVectors(ch, pel);
+        const len = Math.max(0.1, spine.length());
+        rig.torso.quaternion.setFromUnitVectors(this._up, spine.normalize());
+        rig.torso.scale.set(0.52 * b, len * 1.14, 0.34 * b);
+
+        rig.belt.position.copy(pel);
+        rig.belt.quaternion.copy(rig.torso.quaternion);
+        rig.belt.scale.set(0.56 * b, 0.1 * b, 0.37 * b);
+
+        rig.head.position.copy(hd);
+        rig.head.scale.setScalar(0.31 * b);
+        rig.hair.position.copy(hd);
+        rig.hair.position.y += 0.07 * b;
+        rig.hair.position.x -= 0.03 * b * f.facing;
+        rig.hair.scale.set(0.33 * b, 0.28 * b, 0.33 * b);
+
+        rig.handF.position.copy(h1); rig.handF.scale.setScalar(0.15 * b);
+        rig.handB.position.copy(h2); rig.handB.scale.setScalar(0.14 * b);
+        rig.footF.position.copy(f1); rig.footF.scale.setScalar(0.16 * b);
+        rig.footB.position.copy(f2); rig.footB.scale.setScalar(0.15 * b);
+
+        /* blob shadow, faded by height off the floor */
+        const lift = clamp(1 - (GROUND_Y - f.y) / 300, 0.2, 1);
+        rig.shadow.position.set(this.x3(f.x), 0.012, 0);
+        rig.shadow.scale.setScalar(0.55 * b * lift);
+        rig.shadow.material.opacity = 0.38 * lift;
+
+        /* glow when something special is happening */
+        const hot = (f.exGlow > 0 || f.superFreeze > 0 || (f.move && f.move.type === 'super')) ? 3.4
+            : (f.hitFlash > 0 ? 2.2 : 0);
+        rig.aura.intensity = lerp(rig.aura.intensity, hot, 0.35);
+        rig.aura.position.set(this.x3(f.x), this.y3(f.y - 100), 0.6);
+        if (f.hitFlash > 0) rig.aura.color.set('#ffffff');
+        else rig.aura.color.set(f.style.aura);
+
+        rig.group.visible = true;
+        return rig;
+    },
+
+    hideUnused(activeIds) {
+        for (const id in this.rigs) {
+            if (activeIds.indexOf(id) < 0) this.rigs[id].group.visible = false;
+        }
+    },
+
+    /* ---- projectiles as real objects in the scene ---- */
+    syncProjectiles() {
+        const list = Projectiles.list;
+        while (this.projPool.length < list.length) {
+            const m = new THREE.Mesh(
+                new THREE.SphereGeometry(1, 12, 10),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 })
+            );
+            const light = new THREE.PointLight(0xffffff, 2, 9);
+            m.add(light);
+            m.userData.light = light;
+            this.projGroup.add(m);
+            this.projPool.push(m);
+        }
+        this.projPool.forEach((m, i) => {
+            const p = list[i];
+            if (!p) { m.visible = false; return; }
+            m.visible = true;
+            m.position.set(this.x3(p.x), this.y3(p.y), 0);
+            const r = p.r * S3 * (p.beam ? 1.5 : 1.1);
+            m.scale.set(r * (p.beam ? 3.2 : 1), r, r);
+            m.material.color.set(p.col);
+            m.userData.light.color.set(p.col);
+            m.userData.light.intensity = p.beam ? 5 : 2.2;
+        });
+    },
+
+    /* ---- camera: rails behind the action, like a broadcast fighter ---- */
+    syncCamera(midX, sep, height) {
+        const cam = this.camera;
+        const dist = clamp(6.6 + sep * S3 * 0.8, 6.6, 13);
+        const shake = Cam.shake * S3 * 1.4;
+        cam.position.set(
+            this.x3(midX) + rnd(shake, -shake),
+            (height === undefined ? 1.85 : height) + rnd(shake, -shake) * 0.5,
+            dist
+        );
+        cam.lookAt(this.x3(midX), 1.45, 0);
+    },
+
+    project(gx, gy) {
+        this._v.set(this.x3(gx), this.y3(gy), 0);
+        this._v.project(this.camera);
+        return { x: (this._v.x * 0.5 + 0.5) * W, y: (-this._v.y * 0.5 + 0.5) * H };
+    },
+
+    render() { this.renderer.render(this.scene, this.camera); },
+
+    setVisible(on) {
+        const c = document.getElementById('g3d');
+        if (c) c.style.display = on ? 'block' : 'none';
+    }
+};
+
+/* =====================================================================
+   3D STAGES
+   ===================================================================== */
+function gridTexture(colA, colB, line) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = colA; g.fillRect(0, 0, 128, 128);
+    g.strokeStyle = line; g.lineWidth = 6;
+    g.strokeRect(0, 0, 128, 128);
+    g.strokeStyle = colB; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(64, 0); g.lineTo(64, 128); g.moveTo(0, 64); g.lineTo(128, 64); g.stroke();
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+}
+function windowTexture(base, glow) {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = base; g.fillRect(0, 0, 64, 128);
+    for (let y = 6; y < 124; y += 12) {
+        for (let x = 6; x < 60; x += 14) {
+            if (Math.random() < 0.45) continue;
+            g.fillStyle = Math.random() < 0.5 ? glow : '#ffffff';
+            g.globalAlpha = 0.5 + Math.random() * 0.5;
+            g.fillRect(x, y, 8, 7);
+        }
+    }
+    g.globalAlpha = 1;
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+}
+
+const STAGE3D = {
+    build(name, width) {
+        const R = R3D;
+        const grp = R.stageGroup;
+        while (grp.children.length) {
+            const c = grp.children.pop();
+            if (c.geometry) c.geometry.dispose();
+            grp.remove(c);
+        }
+        R.stageName = name;
+        const half = (width || STAGE_W) * S3 / 2;
+        const theme = {
+            city: { sky: 0x140a2a, fog: 0x160b2e, floorA: '#1a0f2e', floorB: '#ff2e63', line: '#3a1f5e', glow: '#ff2e63' },
+            dojo: { sky: 0x2a1b12, fog: 0x2a1810, floorA: '#3d2517', floorB: '#ffb454', line: '#5a3a22', glow: '#ff9d3d' },
+            subway: { sky: 0x0b1420, fog: 0x0a1620, floorA: '#0e1c26', floorB: '#7cf7ff', line: '#1d3a49', glow: '#7cf7ff' },
+            roof: { sky: 0x3a1a4a, fog: 0x4a2450, floorA: '#2a1830', floorB: '#ffd166', line: '#553055', glow: '#ffb457' }
+        }[name] || { sky: 0x140a2a, fog: 0x160b2e, floorA: '#1a0f2e', floorB: '#ff2e63', line: '#3a1f5e', glow: '#ff2e63' };
+
+        R.scene.background = new THREE.Color(theme.sky);
+        R.scene.fog.color = new THREE.Color(theme.fog);
+
+        /* floor */
+        const tex = gridTexture(theme.floorA, theme.line, theme.floorB);
+        tex.repeat.set(Math.round(half * 2 / 1.6), 12);
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(half * 2 + 20, 26),
+            new THREE.MeshLambertMaterial({ map: tex })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.z = -4;
+        grp.add(floor);
+
+        /* the neon strip the fighters stand on */
+        const strip = new THREE.Mesh(
+            new THREE.PlaneGeometry(half * 2 + 20, 0.09),
+            new THREE.MeshBasicMaterial({ color: new THREE.Color(theme.floorB) })
+        );
+        strip.rotation.x = -Math.PI / 2;
+        strip.position.set(0, 0.02, 1.6);
+        grp.add(strip);
+
+        if (name === 'dojo') this.dojo(grp, half, theme);
+        else if (name === 'subway') this.subway(grp, half, theme);
+        else if (name === 'roof') this.roof(grp, half, theme);
+        else this.city(grp, half, theme);
+    },
+
+    city(grp, half, theme) {
+        const tex = windowTexture('#1b1038', '#ff7ade');
+        const tex2 = windowTexture('#241247', '#78f0ff');
+        seed = 41;
+        for (let i = 0; i < 46; i++) {
+            const w = 1.2 + srnd() * 2.2;
+            const h = 4 + srnd() * 14;
+            const d = 1.5 + srnd() * 2;
+            const m = new THREE.Mesh(
+                new THREE.BoxGeometry(w, h, d),
+                new THREE.MeshLambertMaterial({ map: (i % 2 ? tex : tex2), emissive: 0x140a28, emissiveIntensity: 0.6 })
+            );
+            m.position.set(-half - 6 + srnd() * (half * 2 + 12), h / 2, -9 - srnd() * 22);
+            grp.add(m);
+        }
+        /* two big signs behind the action */
+        [[-half * 0.5, '#ff2e63'], [half * 0.5, '#00f3ff']].forEach(s => {
+            const sign = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.4, 1.1),
+                new THREE.MeshBasicMaterial({ color: new THREE.Color(s[1]), transparent: true, opacity: 0.85 })
+            );
+            sign.position.set(s[0], 6.5, -8.5);
+            grp.add(sign);
+            const l = new THREE.PointLight(new THREE.Color(s[1]), 2.2, 26);
+            l.position.set(s[0], 6, -6);
+            grp.add(l);
+        });
+    },
+    dojo(grp, half, theme) {
+        const wall = new THREE.Mesh(
+            new THREE.BoxGeometry(half * 2 + 14, 9, 1),
+            new THREE.MeshLambertMaterial({ color: 0x3d2517 })
+        );
+        wall.position.set(0, 4.5, -7);
+        grp.add(wall);
+        const banner = new THREE.Mesh(
+            new THREE.PlaneGeometry(5, 5.4),
+            new THREE.MeshLambertMaterial({ color: 0x8c1c1c, emissive: 0x2a0808, emissiveIntensity: 0.6 })
+        );
+        banner.position.set(0, 5, -6.4);
+        grp.add(banner);
+        for (let i = -4; i <= 4; i++) {
+            if (!i) continue;
+            const lamp = new THREE.Mesh(
+                new THREE.SphereGeometry(0.34, 12, 10),
+                new THREE.MeshBasicMaterial({ color: 0xff9d3d })
+            );
+            lamp.position.set(i * 2.6, 5.4, -5.6);
+            grp.add(lamp);
+            const l = new THREE.PointLight(0xff9d3d, 1.1, 12);
+            l.position.copy(lamp.position);
+            grp.add(l);
+        }
+        for (let i = -6; i <= 6; i++) {
+            const beam = new THREE.Mesh(
+                new THREE.BoxGeometry(0.22, 9, 0.22),
+                new THREE.MeshLambertMaterial({ color: 0x2a1a10 })
+            );
+            beam.position.set(i * 2.2, 4.5, -6.3);
+            grp.add(beam);
+        }
+    },
+    subway(grp, half, theme) {
+        const wall = new THREE.Mesh(
+            new THREE.BoxGeometry(half * 2 + 14, 10, 1),
+            new THREE.MeshLambertMaterial({ color: 0x0e1c26 })
+        );
+        wall.position.set(0, 5, -8);
+        grp.add(wall);
+        const tunnel = new THREE.Mesh(
+            new THREE.BoxGeometry(half * 2 + 12, 4.4, 0.4),
+            new THREE.MeshBasicMaterial({ color: 0x02060a })
+        );
+        tunnel.position.set(0, 3.4, -7.4);
+        grp.add(tunnel);
+        for (let i = -6; i <= 6; i++) {
+            const p = new THREE.Mesh(
+                new THREE.BoxGeometry(0.55, 7, 0.55),
+                new THREE.MeshLambertMaterial({ color: 0x1d3a49 })
+            );
+            p.position.set(i * 3.1, 3.5, -5.4);
+            grp.add(p);
+            const strip = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6, 0.12, 0.6),
+                new THREE.MeshBasicMaterial({ color: 0x7cf7ff })
+            );
+            strip.position.set(i * 3.1, 6.6, -5.4);
+            grp.add(strip);
+        }
+        const l = new THREE.PointLight(0x7cf7ff, 2, 40);
+        l.position.set(0, 7, -3);
+        grp.add(l);
+    },
+    roof(grp, half, theme) {
+        seed = 77;
+        for (let i = 0; i < 26; i++) {
+            const h = 3 + srnd() * 9;
+            const m = new THREE.Mesh(
+                new THREE.BoxGeometry(1.6 + srnd() * 2, h, 1.6),
+                new THREE.MeshLambertMaterial({ color: 0x3a2450 })
+            );
+            m.position.set(-half - 4 + srnd() * (half * 2 + 8), h / 2 - 3.2, -12 - srnd() * 16);
+            grp.add(m);
+        }
+        const sun = new THREE.Mesh(
+            new THREE.CircleGeometry(3.4, 26),
+            new THREE.MeshBasicMaterial({ color: 0xffe08a })
+        );
+        sun.position.set(0, 4.4, -20);
+        grp.add(sun);
+        const l = new THREE.PointLight(0xffb457, 2.4, 60);
+        l.position.set(0, 6, -8);
+        grp.add(l);
+        const parapet = new THREE.Mesh(
+            new THREE.BoxGeometry(half * 2 + 14, 0.7, 0.5),
+            new THREE.MeshLambertMaterial({ color: 0x2a1830 })
+        );
+        parapet.position.set(0, 0.35, -6);
+        grp.add(parapet);
+    }
+};
 
 /* =====================================================================
    WORLD TOUR
@@ -4127,6 +4662,7 @@ const WT = {
         return this.npcCache[npc.id];
     },
     draw() {
+        if (Game.use3d()) return this.draw3d();
         const s = this.s;
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
         ctx.save();
@@ -4178,6 +4714,52 @@ const WT = {
         drawFighter(this.player, 1);
         ctx.restore();
 
+        this.hud();
+        if (this.mode === 'dialog') this.drawDialog();
+        if (this.mode === 'status') this.drawStatus();
+        if (this.mode === 'shop') this.drawShop();
+    },
+    draw3d() {
+        R3D.originX = this.area.width / 2;
+        if (R3D.stageName !== 'wt:' + this.s.area) {
+            STAGE3D.build(this.area.stage, this.area.width);
+            R3D.stageName = 'wt:' + this.s.area;
+        }
+        const active = [];
+        for (const n of this.area.npcs) {
+            const f = this.npcFighter(n);
+            f.x = n.x; f.y = GROUND_Y;
+            f.facing = this.s.x >= n.x ? 1 : -1;
+            f.auraT = this.walkT;
+            f.updatePose();
+            active.push(R3D.syncFighter(f, 'npc:' + n.id).id);
+        }
+        active.push(R3D.syncFighter(this.player, 'wtplayer').id);
+        R3D.hideUnused(active);
+        R3D.syncProjectiles();
+        R3D.syncCamera(this.s.x, 320, 2.1);
+        R3D.render();
+
+        /* name plates and markers, projected onto the 3D street */
+        for (const n of this.area.npcs) {
+            const p = R3D.project(n.x, GROUND_Y - 210);
+            if (p.x < -80 || p.x > W + 80) continue;
+            const beaten = this.s.defeated[n.id];
+            const col = n.kind === 'boss' ? '#ff2e63' : (n.kind === 'master' ? '#ffd400' : '#00f3ff');
+            shadowText(n.name, p.x, p.y, 10, beaten ? '#6b6280' : col);
+            if (!beaten) {
+                const mark = (n.kind === 'talk' || n.kind === 'shop') ? '!' : '*';
+                shadowText(mark, p.x, p.y - 26 + Math.sin(this.walkT * 0.12) * 5, 20, col, 'center', 12);
+            }
+        }
+        for (const e of this.area.exits) {
+            const locked = e.need && !e.need(this.s);
+            const p = R3D.project(e.x, GROUND_Y - 250);
+            if (p.x < -120 || p.x > W + 120) continue;
+            shadowText(locked ? 'LOCKED' : e.label, p.x, p.y, 12, locked ? '#ff4d6d' : '#3dffb0', 'center', 10);
+            shadowText(e.x < 200 ? '<<' : '>>', p.x, p.y + 30, 12, locked ? '#ff4d6d' : '#3dffb0');
+        }
+        FX.draw3d();
         this.hud();
         if (this.mode === 'dialog') this.drawDialog();
         if (this.mode === 'status') this.drawStatus();
