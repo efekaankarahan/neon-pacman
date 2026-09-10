@@ -377,8 +377,8 @@ cv.addEventListener('mousedown', e => { Snd.init(); Snd.resume(); markTap(e.clie
 
 /* Shared menu geometry, so hit testing and drawing can never drift apart. */
 const MENU_ROW = i => ({ x: W / 2 - 350, y: 172 + i * 52 - 28, w: 700, h: 44 });
-const CARD_COLS = 3, CARD_W = 210, CARD_H = 200;
-const CARD_X0 = () => W / 2 - (CARD_COLS * CARD_W) / 2, CARD_Y0 = 110;
+const CARD_COLS = 4, CARD_W = 190, CARD_H = 132;
+const CARD_X0 = () => W / 2 - (CARD_COLS * CARD_W) / 2, CARD_Y0 = 92;
 const CARD_RECT = i => ({
     x: CARD_X0() + (i % CARD_COLS) * CARD_W + 6,
     y: CARD_Y0 + Math.floor(i / CARD_COLS) * CARD_H,
@@ -1374,6 +1374,310 @@ const CHARS = [
     }
 ];
 const CHAR_BY_ID = {};
+CHARS.forEach(c => CHAR_BY_ID[c.id] = c);
+
+/* =====================================================================
+   THE WORLD ROSTER
+   Ten more fighters, one per country, each teaching the special that
+   belongs to their own tradition. They are selectable everywhere the
+   original six are - arcade, versus and as a World Tour style.
+   ===================================================================== */
+CHARS.push(
+    {
+        id: 'zeybek', name: 'ZEYBEK', title: 'THE AEGEAN OAK', tier: 'GRAPPLER', country: 'TURKIYE',
+        quote: 'The dance ends when I say it ends.',
+        intro: 'Stand tall. I only throw people who stand.',
+        stats: { hp: 1120, walkF: 2.6, walkB: 2.2, dashF: 7.2, dashB: 6.8, jumpV: -16.5, grav: 0.8, stun: 1100, weight: 1.25 },
+        style: { skin: '#d8a271', gi: '#e01a2b', giDark: '#8c0f1c', trim: '#f5f0e6', hair: '#20150e', glow: '#ff5a4d', hairStyle: 'band', build: 1.1, aura: '#ff5a4d' },
+        normals: makeNormals({ all: { dmg: 1.14 }, sMP: { startup: 7 }, sHK: { startup: 13 } }),
+        specials: {
+            grip: SP({
+                key: 'grip', name: 'ZEYBEK GRIP', motion: 'hcb', btn: 'P', kind: 'grab',
+                startup: 8, active: 3, recovery: 34, dmg: 165, range: 92, stun: 88, sfx: 2,
+                pose: { wind: 'throwTry', hit: 'grabSwing' }
+            }),
+            oil: SP({
+                key: 'oil', name: 'OIL SLIP', motion: 'qcb', btn: 'K', kind: 'rush',
+                startup: 9, active: 18, recovery: 22, dmg: 44, hits: 2, hitstun: 18, blockstun: 12, chip: 6,
+                dash: 8.2, low: true, box: { x: 10, y: -58, w: 86, h: 56 }, hitY: -48,
+                pose: { wind: 'crouch', hit: 'crMidKick' }, sfx: 1
+            }),
+            rise: SP({
+                key: 'rise', name: 'EFE RISE', motion: 'dp', btn: 'P', kind: 'dp',
+                startup: 5, active: 12, recovery: 32, dmg: 120, hitstun: 25, blockstun: 12, chip: 9,
+                invuln: 6, launch: -12, knockdown: true, rise: -15.8, drift: 3, sfx: 2,
+                box: { x: -6, y: -206, w: 80, h: 128 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'dpRise' }
+            })
+        },
+        super: { key: 'ultra', name: 'PLATEAU SLAM', motion: 'superF', btn: 'P', kind: 'grab', startup: 7, dmg: 390, range: 118, col: '#e01a2b', col2: '#f5f0e6' },
+        ai: { aggr: 0.72, fireball: 0.1, aa: 0.55, jump: 0.22 }
+    },
+    {
+        id: 'vira', name: 'VIRA', title: 'THE RODA QUEEN', tier: 'RUSHDOWN', country: 'BRAZIL',
+        quote: 'You watched my feet. That was the trick.',
+        intro: 'Music first. Bruises after.',
+        stats: { hp: 930, walkF: 3.6, walkB: 3.1, dashF: 9.4, dashB: 8.6, jumpV: -15.9, grav: 0.7, stun: 930, weight: 0.92 },
+        style: { skin: '#8a5a3b', gi: '#1faa59', giDark: '#0f5c31', trim: '#ffd400', hair: '#1a1008', glow: '#ffd400', hairStyle: 'tail', build: 0.96, aura: '#3dffb0' },
+        normals: makeNormals({ all: { dmg: 0.94 }, sLK: { startup: 4 }, sMK: { dmg: 68 } }),
+        specials: {
+            meia: SP({
+                key: 'meia', name: 'MEIA LUA', motion: 'qcf', btn: 'K', kind: 'rush',
+                startup: 10, active: 16, recovery: 24, dmg: 88, hitstun: 22, blockstun: 13, chip: 8,
+                dash: 9, knockdown: true, box: { x: 16, y: -150, w: 90, h: 96 }, hitY: -110,
+                pose: { wind: 'kickWind', hit: 'spinKick' }, sfx: 1
+            }),
+            au: SP({
+                key: 'au', name: 'AU BATIDO', motion: 'dp', btn: 'K', kind: 'dp',
+                startup: 5, active: 13, recovery: 30, dmg: 112, hitstun: 24, blockstun: 12, chip: 8,
+                invuln: 6, launch: -12.5, knockdown: true, rise: -16.4, drift: 2.8, sfx: 2,
+                box: { x: -4, y: -208, w: 78, h: 130 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'jHigh' }
+            }),
+            ginga: SP({
+                key: 'ginga', name: 'GINGA SWEEP', motion: 'qcb', btn: 'K', kind: 'rush',
+                startup: 8, active: 20, recovery: 22, dmg: 36, hits: 3, hitstun: 17, blockstun: 11, chip: 5,
+                dash: 7.4, low: true, knockdown: true, box: { x: 6, y: -54, w: 92, h: 52 }, hitY: -44,
+                pose: { wind: 'crouch', hit: 'sweep' }, sfx: 1
+            })
+        },
+        super: { key: 'ultra', name: 'RODA STORM', motion: 'superF', btn: 'K', kind: 'rush', startup: 8, dmg: 355, chip: 40, hits: 13, col: '#1faa59', col2: '#ffd400' },
+        ai: { aggr: 0.86, fireball: 0.05, aa: 0.5, jump: 0.52 }
+    },
+    {
+        id: 'toro', name: 'TORO', title: 'THE MASKED BULL', tier: 'GRAPPLER', country: 'MEXICO',
+        quote: 'The mask stays on. Your dignity does not.',
+        intro: 'One fall. One mask. Choose carefully.',
+        stats: { hp: 1150, walkF: 2.7, walkB: 2.2, dashF: 7.6, dashB: 7, jumpV: -17, grav: 0.78, stun: 1120, weight: 1.28 },
+        style: { skin: '#c98b5e', gi: '#d81e3f', giDark: '#7d0f24', trim: '#ffcc33', hair: '#d81e3f', glow: '#ffcc33', hairStyle: 'hood', build: 1.12, aura: '#ffcc33' },
+        normals: makeNormals({ all: { dmg: 1.16 }, sHP: { startup: 11 }, cHK: { startup: 10 } }),
+        specials: {
+            plancha: SP({
+                key: 'plancha', name: 'PLANCHA', motion: 'qcf', btn: 'P', kind: 'rush',
+                startup: 13, active: 15, recovery: 28, dmg: 112, hitstun: 24, blockstun: 14, chip: 10,
+                dash: 8.8, armor: 1, knockdown: true, box: { x: 14, y: -152, w: 86, h: 110 }, hitY: -118,
+                pose: { wind: 'jumpUp', hit: 'jFierce' }, sfx: 2
+            }),
+            tope: SP({
+                key: 'tope', name: 'TOPE RISE', motion: 'dp', btn: 'P', kind: 'dp',
+                startup: 6, active: 12, recovery: 32, dmg: 118, hitstun: 24, blockstun: 12, chip: 9,
+                invuln: 5, launch: -12, knockdown: true, rise: -15.6, drift: 3.4, sfx: 2,
+                box: { x: -6, y: -204, w: 82, h: 126 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'dpRise' }
+            }),
+            torito: SP({
+                key: 'torito', name: 'TORITO GRIP', motion: 'hcb', btn: 'P', kind: 'grab',
+                startup: 7, active: 3, recovery: 33, dmg: 170, range: 94, stun: 90, sfx: 2,
+                pose: { wind: 'throwTry', hit: 'grabSwing' }
+            })
+        },
+        super: { key: 'ultra', name: 'LUCHA DRIVER', motion: 'superF', btn: 'P', kind: 'grab', startup: 6, dmg: 400, range: 120, col: '#d81e3f', col2: '#ffcc33' },
+        ai: { aggr: 0.75, fireball: 0.08, aa: 0.5, jump: 0.3 }
+    },
+    {
+        id: 'nefra', name: 'NEFRA', title: 'THE STICK OF THE NILE', tier: 'ZONER', country: 'EGYPT',
+        quote: 'The river is patient. So is the stick.',
+        intro: 'Come closer. The stick is longer than your arm.',
+        stats: { hp: 950, walkF: 2.8, walkB: 2.8, dashF: 8, dashB: 8.2, jumpV: -16, grav: 0.72, stun: 950, weight: 0.98 },
+        style: { skin: '#b07a4a', gi: '#e8c25a', giDark: '#9c7a24', trim: '#22b2a6', hair: '#151015', glow: '#22b2a6', hairStyle: 'topknot', build: 1, aura: '#ffe08a' },
+        normals: makeNormals({ all: { reach: 1.18, dmg: 0.96 }, sMK: { startup: 9 } }),
+        specials: {
+            lance: SP({
+                key: 'lance', name: 'SAND LANCE', motion: 'qcf', btn: 'P', startup: 13, recovery: 30,
+                projectile: { speed: 8.6, dmg: 66, y: -116, r: 20, col: '#e8c25a', life: 170 },
+                exProj: { speed: 11, dmg: 48, hits: 2, col: '#22b2a6' }, dmg: 0, active: 1, meter: 12
+            }),
+            scarab: SP({
+                key: 'scarab', name: 'SCARAB RISE', motion: 'dp', btn: 'P', kind: 'dp',
+                startup: 6, active: 12, recovery: 31, dmg: 112, hitstun: 24, blockstun: 12, chip: 8,
+                invuln: 5, launch: -12, knockdown: true, rise: -15.6, drift: 2.6, sfx: 2,
+                box: { x: -4, y: -206, w: 78, h: 128 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'dpRise' }
+            }),
+            desert: SP({
+                key: 'desert', name: 'DESERT SWEEP', motion: 'qcb', btn: 'K', kind: 'rush',
+                startup: 10, active: 14, recovery: 26, dmg: 78, hitstun: 20, blockstun: 12, chip: 7,
+                dash: 7, low: true, knockdown: true, box: { x: 12, y: -48, w: 100, h: 46 }, hitY: -40,
+                pose: { wind: 'crouch', hit: 'sweep' }, sfx: 1
+            })
+        },
+        super: { key: 'ultra', name: 'SUN DISC', motion: 'superF', btn: 'P', kind: 'beam', startup: 11, dmg: 335, chip: 42, col: '#ffe08a', col2: '#22b2a6' },
+        ai: { aggr: 0.35, fireball: 0.8, aa: 0.68, jump: 0.2 }
+    },
+    {
+        id: 'arju', name: 'ARJU', title: 'THE COILED SPRING', tier: 'TECHNICAL', country: 'INDIA',
+        quote: 'Kalari teaches the body to forget fear. Yours remembered.',
+        intro: 'Breathe. Then we begin.',
+        stats: { hp: 960, walkF: 3.2, walkB: 2.8, dashF: 8.8, dashB: 8.2, jumpV: -16.2, grav: 0.7, stun: 960, weight: 0.96 },
+        style: { skin: '#a86a3c', gi: '#ff7a1a', giDark: '#a3410a', trim: '#1e88e5', hair: '#120c08', glow: '#ffb347', hairStyle: 'topknot', build: 0.99, aura: '#ffb347' },
+        normals: makeNormals({ all: { reach: 1.08 }, cMK: { dmg: 62 }, sHK: { dmg: 98 } }),
+        specials: {
+            chakra: SP({
+                key: 'chakra', name: 'CHAKRA BOLT', motion: 'qcf', btn: 'P', startup: 12, recovery: 28,
+                projectile: { speed: 9, dmg: 64, y: -120, r: 22, col: '#ffb347', life: 160, wobble: true },
+                exProj: { speed: 11.5, dmg: 46, hits: 2, col: '#1e88e5' }, dmg: 0, active: 1, meter: 12
+            }),
+            vault: SP({
+                key: 'vault', name: 'VAULT KICK', motion: 'dp', btn: 'K', kind: 'dp',
+                startup: 5, active: 13, recovery: 30, dmg: 116, hitstun: 24, blockstun: 12, chip: 8,
+                invuln: 6, launch: -12.5, knockdown: true, rise: -16.2, drift: 3, sfx: 2,
+                box: { x: -4, y: -210, w: 78, h: 132 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'jHigh' }
+            }),
+            serpent: SP({
+                key: 'serpent', name: 'SERPENT RUSH', motion: 'qcb', btn: 'K', kind: 'rush',
+                startup: 9, active: 22, recovery: 24, dmg: 38, hits: 3, hitstun: 17, blockstun: 11, chip: 5,
+                dash: 8, knockdown: true, box: { x: 10, y: -140, w: 88, h: 104 }, hitY: -104,
+                pose: { wind: 'kickWind', hit: 'spinKick' }, sfx: 1
+            })
+        },
+        super: { key: 'ultra', name: 'MANDALA', motion: 'superF', btn: 'P', kind: 'beam', startup: 11, dmg: 340, chip: 42, col: '#ffb347', col2: '#1e88e5' },
+        ai: { aggr: 0.58, fireball: 0.45, aa: 0.66, jump: 0.34 }
+    },
+    {
+        id: 'sibir', name: 'SIBIR', title: 'THE WINTER LOCK', tier: 'GRAPPLER', country: 'RUSSIA',
+        quote: 'Cold does not hurry. Neither do I.',
+        intro: 'You will be warm soon. Briefly.',
+        stats: { hp: 1180, walkF: 2.4, walkB: 2, dashF: 6.8, dashB: 6.4, jumpV: -16.9, grav: 0.84, stun: 1160, weight: 1.34 },
+        style: { skin: '#e0b48f', gi: '#dfe9f5', giDark: '#8fa4bd', trim: '#1f5fbf', hair: '#c8b48a', glow: '#9fd8ff', hairStyle: 'bald', build: 1.18, aura: '#9fd8ff' },
+        normals: makeNormals({ all: { dmg: 1.2 }, sLP: { startup: 5 }, sHP: { startup: 12 }, sHK: { startup: 14 } }),
+        specials: {
+            bear: SP({
+                key: 'bear', name: 'BEAR CHARGE', motion: 'qcf', btn: 'P', kind: 'rush',
+                startup: 14, active: 16, recovery: 30, dmg: 118, hitstun: 24, blockstun: 14, chip: 11,
+                dash: 8.4, armor: 1, knockdown: true, box: { x: 14, y: -156, w: 88, h: 114 }, hitY: -120,
+                pose: { wind: 'impactWind', hit: 'impactHit' }, sfx: 2
+            }),
+            sambo: SP({
+                key: 'sambo', name: 'SAMBO GRIP', motion: 'hcb', btn: 'P', kind: 'grab',
+                startup: 7, active: 3, recovery: 35, dmg: 178, range: 96, stun: 92, sfx: 2,
+                pose: { wind: 'throwTry', hit: 'grabSwing' }
+            }),
+            frost: SP({
+                key: 'frost', name: 'FROST STOMP', motion: 'qcb', btn: 'K', kind: 'wave',
+                startup: 16, active: 4, recovery: 30, dmg: 58, hitstun: 20, blockstun: 12, chip: 8,
+                low: true, knockdown: true,
+                projectile: { speed: 7.4, dmg: 68, y: -26, r: 26, col: '#9fd8ff', life: 110, ground: true },
+                box: { x: 18, y: -40, w: 72, h: 38 }, hitY: -30, pose: { wind: 'fierceWind', hit: 'sweep' }, sfx: 2
+            })
+        },
+        super: { key: 'ultra', name: 'SIBERIAN LOCK', motion: 'superF', btn: 'P', kind: 'grab', startup: 6, dmg: 405, range: 122, col: '#9fd8ff', col2: '#1f5fbf' },
+        ai: { aggr: 0.68, fireball: 0.18, aa: 0.52, jump: 0.18 }
+    },
+    {
+        id: 'adaku', name: 'ADAKU', title: 'THE BOUND FIST', tier: 'RUSHDOWN', country: 'NIGERIA',
+        quote: 'One hand is a spear. The other is a shield. Pick one to fear.',
+        intro: 'The rope is tied. That means we are serious.',
+        stats: { hp: 970, walkF: 3.4, walkB: 2.9, dashF: 9, dashB: 8.4, jumpV: -16.1, grav: 0.73, stun: 980, weight: 1 },
+        style: { skin: '#6b4226', gi: '#0f9d58', giDark: '#0a6b3c', trim: '#f5f5f5', hair: '#120a06', glow: '#3dffb0', hairStyle: 'band', build: 1.02, aura: '#3dffb0' },
+        normals: makeNormals({ all: { dmg: 1.05 }, sLP: { startup: 3, recovery: 6 }, sMP: { startup: 5 } }),
+        specials: {
+            spear: SP({
+                key: 'spear', name: 'SPEAR FIST', motion: 'qcf', btn: 'P', kind: 'rush',
+                startup: 11, active: 10, recovery: 24, dmg: 92, hitstun: 22, blockstun: 13, chip: 8,
+                dash: 9.8, box: { x: 20, y: -148, w: 88, h: 76 }, hitY: -120,
+                pose: { wind: 'dashB', hit: 'straight' }, sfx: 1
+            }),
+            ram: SP({
+                key: 'ram', name: 'RAM RISE', motion: 'dp', btn: 'P', kind: 'dp',
+                startup: 5, active: 12, recovery: 30, dmg: 118, hitstun: 25, blockstun: 12, chip: 9,
+                invuln: 6, launch: -12.5, knockdown: true, rise: -16, drift: 3.2, sfx: 2,
+                box: { x: -4, y: -206, w: 78, h: 128 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'upper' }
+            }),
+            rope: SP({
+                key: 'rope', name: 'ROPE GUARD', motion: 'qcb', btn: 'P', kind: 'burst',
+                startup: 9, active: 9, recovery: 27, dmg: 88, hitstun: 23, blockstun: 14, chip: 9,
+                invuln: 5, launch: -10.5, knockdown: true, box: { x: -8, y: -206, w: 84, h: 140 }, hitY: -140,
+                pose: { wind: 'fbWind', hit: 'fbFire' }, sfx: 2
+            })
+        },
+        super: { key: 'ultra', name: 'THUNDER FIST', motion: 'superF', btn: 'P', kind: 'rush', startup: 8, dmg: 360, chip: 40, hits: 12, col: '#0f9d58', col2: '#f5f5f5' },
+        ai: { aggr: 0.82, fireball: 0.08, aa: 0.58, jump: 0.42 }
+    },
+    {
+        id: 'haru', name: 'HARU', title: 'THE HIGH GUARD', tier: 'TECHNICAL', country: 'KOREA',
+        quote: 'Your head was open the whole round.',
+        intro: 'Guard high. I will still find it.',
+        stats: { hp: 940, walkF: 3.3, walkB: 3, dashF: 9, dashB: 8.6, jumpV: -16.3, grav: 0.71, stun: 940, weight: 0.95 },
+        style: { skin: '#e6bb92', gi: '#f5f5f5', giDark: '#c3cbd6', trim: '#1f4fbf', hair: '#100c10', glow: '#ff4d6d', hairStyle: 'spiky', build: 0.98, aura: '#4d8bff' },
+        normals: makeNormals({ all: { reach: 1.1 }, sHK: { dmg: 104 }, sMK: { dmg: 70 }, jHK: { dmg: 96 } }),
+        specials: {
+            flash: SP({
+                key: 'flash', name: 'FLASH HEEL', motion: 'qcf', btn: 'K', kind: 'rush',
+                startup: 11, active: 14, recovery: 25, dmg: 94, hitstun: 23, blockstun: 13, chip: 8,
+                dash: 8.6, knockdown: true, box: { x: 18, y: -160, w: 92, h: 88 }, hitY: -130,
+                pose: { wind: 'kickWind', hit: 'highKick' }, sfx: 1
+            }),
+            axe: SP({
+                key: 'axe', name: 'SKY AXE', motion: 'dp', btn: 'K', kind: 'dp',
+                startup: 5, active: 13, recovery: 31, dmg: 120, hitstun: 25, blockstun: 12, chip: 9,
+                invuln: 6, launch: -12.6, knockdown: true, rise: -16.3, drift: 2.8, sfx: 2,
+                box: { x: -4, y: -212, w: 78, h: 134 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'jHigh' }
+            }),
+            spin: SP({
+                key: 'spin', name: 'SPIN STORM', motion: 'qcb', btn: 'K', kind: 'rush',
+                startup: 10, active: 26, recovery: 24, dmg: 33, hits: 4, hitstun: 17, blockstun: 11, chip: 5,
+                dash: 6.8, knockdown: true, box: { x: 6, y: -162, w: 94, h: 120 }, hitY: -112,
+                pose: { wind: 'kickWind', hit: 'spinKick' }, sfx: 1
+            })
+        },
+        super: { key: 'ultra', name: 'TAE STORM', motion: 'superF', btn: 'K', kind: 'rush', startup: 9, dmg: 350, chip: 40, hits: 12, col: '#4d8bff', col2: '#ff4d6d' },
+        ai: { aggr: 0.64, fireball: 0.15, aa: 0.74, jump: 0.38 }
+    },
+    {
+        id: 'marquis', name: 'MARQUIS', title: 'THE SILVER BOOT', tier: 'ALL-ROUND', country: 'FRANCE',
+        quote: 'Savate is footwork with opinions.',
+        intro: 'Shall we? Try to keep your feet.',
+        stats: { hp: 970, walkF: 3.2, walkB: 3.2, dashF: 8.8, dashB: 9, jumpV: -16.1, grav: 0.71, stun: 960, weight: 0.97 },
+        style: { skin: '#efd0b4', gi: '#1b2a6b', giDark: '#0d1540', trim: '#e8e8e8', hair: '#5a3a1e', glow: '#8fa8ff', hairStyle: 'tail', build: 1, aura: '#8fa8ff' },
+        normals: makeNormals({ all: { reach: 1.06 }, sMK: { startup: 7, dmg: 68 }, cMK: { dmg: 60 } }),
+        specials: {
+            fouette: SP({
+                key: 'fouette', name: 'FOUETTE', motion: 'qcf', btn: 'K', kind: 'rush',
+                startup: 10, active: 14, recovery: 24, dmg: 90, hitstun: 22, blockstun: 13, chip: 8,
+                dash: 8.4, knockdown: true, box: { x: 16, y: -152, w: 90, h: 90 }, hitY: -120,
+                pose: { wind: 'kickWind', hit: 'midKick' }, sfx: 1
+            }),
+            chasse: SP({
+                key: 'chasse', name: 'CHASSE RISE', motion: 'dp', btn: 'K', kind: 'dp',
+                startup: 5, active: 12, recovery: 30, dmg: 114, hitstun: 24, blockstun: 12, chip: 8,
+                invuln: 6, launch: -12.2, knockdown: true, rise: -16, drift: 3, sfx: 2,
+                box: { x: -4, y: -206, w: 78, h: 128 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'jHigh' }
+            }),
+            pas: SP({
+                key: 'pas', name: 'PAS DE COTE', motion: 'qcb', btn: 'K', kind: 'teleport',
+                startup: 8, active: 1, recovery: 15, dist: 260, invuln: 15, dmg: 0, sfx: 0,
+                pose: { wind: 'dashB', hit: 'dashF' }
+            })
+        },
+        super: { key: 'ultra', name: 'GRAND SALLE', motion: 'superF', btn: 'K', kind: 'rush', startup: 9, dmg: 348, chip: 40, hits: 11, col: '#8fa8ff', col2: '#e8e8e8' },
+        ai: { aggr: 0.6, fireball: 0.12, aa: 0.66, jump: 0.34 }
+    },
+    {
+        id: 'chai', name: 'CHAI', title: 'THE EIGHT LIMBS', tier: 'RUSHDOWN', country: 'THAILAND',
+        quote: 'Elbows do not need permission.',
+        intro: 'Respect the ring. Then step in.',
+        stats: { hp: 1000, walkF: 3.1, walkB: 2.6, dashF: 8.6, dashB: 7.8, jumpV: -16.2, grav: 0.75, stun: 1010, weight: 1.06 },
+        style: { skin: '#c08a52', gi: '#c62828', giDark: '#7d1414', trim: '#ffd54f', hair: '#140d08', glow: '#ffd54f', hairStyle: 'band', build: 1.05, aura: '#ffb300' },
+        normals: makeNormals({ all: { dmg: 1.08 }, sMP: { startup: 5 }, cMP: { dmg: 64 } }),
+        specials: {
+            knee: SP({
+                key: 'knee', name: 'WAI KHRU KNEE', motion: 'qcf', btn: 'K', kind: 'rush',
+                startup: 11, active: 13, recovery: 25, dmg: 96, hitstun: 23, blockstun: 13, chip: 9,
+                dash: 8.8, knockdown: true, box: { x: 16, y: -132, w: 84, h: 82 }, hitY: -104,
+                pose: { wind: 'kickWind', hit: 'jKick' }, sfx: 1
+            }),
+            elbow: SP({
+                key: 'elbow', name: 'ELBOW RISE', motion: 'dp', btn: 'P', kind: 'dp',
+                startup: 5, active: 12, recovery: 30, dmg: 122, hitstun: 25, blockstun: 12, chip: 9,
+                invuln: 6, launch: -12.4, knockdown: true, rise: -15.9, drift: 3.1, sfx: 2,
+                box: { x: -4, y: -204, w: 78, h: 126 }, hitY: -150, pose: { wind: 'dpCoil', hit: 'upper' }
+            }),
+            clinch: SP({
+                key: 'clinch', name: 'CLINCH', motion: 'hcb', btn: 'P', kind: 'grab',
+                startup: 7, active: 3, recovery: 32, dmg: 158, range: 88, stun: 86, sfx: 2,
+                pose: { wind: 'throwTry', hit: 'throwHold' }
+            })
+        },
+        super: { key: 'ultra', name: 'EIGHT LIMBS', motion: 'superF', btn: 'K', kind: 'rush', startup: 8, dmg: 365, chip: 42, hits: 14, col: '#ffb300', col2: '#c62828' },
+        ai: { aggr: 0.8, fireball: 0.08, aa: 0.6, jump: 0.34 }
+    }
+);
 CHARS.forEach(c => CHAR_BY_ID[c.id] = c);
 
 /* universal system moves shared by everybody */
@@ -2866,6 +3170,13 @@ const Stage = {
     },
     draw(name, t) {
         const d = this.data;
+        const wp = stagePal(name);
+        if (wp) {
+            const c = name.indexOf('world:') === 0 ? COUNTRY_BY_ID[name.slice(6)] : null;
+            this.world(d, t, wp, c ? c.prop : 'airport');
+            this.floor(name, t);
+            return;
+        }
         switch (name) {
             case 'city': this.city(d, t); break;
             case 'dojo': this.dojo(d, t); break;
@@ -3034,7 +3345,8 @@ const Stage = {
         ctx.restore();
     },
     floor(name, t) {
-        const cols = {
+        const wp = stagePal(name);
+        const cols = wp ? [wp.floorA, wp.line, wp.floorB] : {
             city: ['#1a0f2e', '#2b1a4a', '#ff2e63'],
             dojo: ['#2a1a10', '#4a2f1c', '#ffb454'],
             subway: ['#0b161d', '#16303f', '#7cf7ff'],
@@ -3299,6 +3611,7 @@ const Game = {
             case 'fight': Match.update(); break;
             case 'result': this.resultUpdate(p1, p2, tap); break;
             case 'wt': WT.update(p1, tap); break;
+            case 'flight': this.flightUpdate(p1, tap); break;
             case 'wtEnd': if (this.t > 40 && (p1.anyPressed() || tap)) { Snd.select(); this.go('title'); } break;
             case 'ending': if (this.t > 40 && (p1.anyPressed() || p2.anyPressed() || tap)) { Snd.select(); this.go('title'); } break;
         }
@@ -3404,6 +3717,7 @@ const Game = {
                     /* shuffle, keep the boss last */
                     this.ladder = this.ladder.filter(id => id !== 'volt');
                     for (let i = this.ladder.length - 1; i > 0; i--) { const j = rndi(0, i + 1); const t = this.ladder[i]; this.ladder[i] = this.ladder[j]; this.ladder[j] = t; }
+                    this.ladder = this.ladder.slice(0, 5);
                     this.ladder.push('volt');
                     this.ladderI = 0;
                     this.cur[1] = CHARS.findIndex(c => c.id === this.ladder[0]);
@@ -3466,6 +3780,7 @@ const Game = {
             case 'fight': this.drawFight(); break;
             case 'result': this.drawFight(); this.drawResult(); break;
             case 'wt': WT.draw(); break;
+            case 'flight': this.drawFlight(); break;
             case 'wtEnd': this.drawWtEnd(); break;
             case 'ending': this.drawEnding(); break;
         }
@@ -3601,23 +3916,24 @@ const Game = {
             ctx.strokeRect(cx + 6, cy, cw - 12, chh - 14);
             ctx.restore();
             const f = this.previews[i];
-            f.x = cx + cw / 2; f.y = cy + chh - 34; f.facing = 1; f.auraT = this.t + i * 12;
+            f.x = cx + cw / 2; f.y = cy + chh - 26; f.facing = 1; f.auraT = this.t + i * 12;
             ctx.save();
-            ctx.translate(f.x, f.y); ctx.scale(0.78, 0.78); ctx.translate(-f.x, -f.y);
+            ctx.translate(f.x, f.y); ctx.scale(0.52, 0.52); ctx.translate(-f.x, -f.y);
             drawFighter(f, sel1 || sel2 ? 1 : 0.62);
             ctx.restore();
-            shadowText(c.name, cx + cw / 2, cy + 26, 15, sel1 || sel2 ? '#fff' : '#9d8fb5');
+            shadowText(c.name, cx + cw / 2, cy + 20, 11, sel1 || sel2 ? '#fff' : '#9d8fb5');
+            if (c.country) shadowText(c.country, cx + cw / 2, cy + chh - 22, 7, sel1 || sel2 ? '#00f3ff' : '#6b6280');
         });
         /* info panel */
         const c = CHARS[this.cur[0]];
-        const py = y0 + 2 * chh + 6;
+        const py = y0 + 4 * chh + 8;
         ctx.save();
-        ctx.fillStyle = 'rgba(10,5,20,.8)';
-        ctx.fillRect(60, py, W - 120, 160);
-        ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3; ctx.strokeRect(60, py, W - 120, 160);
+        ctx.fillStyle = 'rgba(10,5,20,.85)';
+        ctx.fillRect(60, py, W - 120, H - py - 14);
+        ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3; ctx.strokeRect(60, py, W - 120, H - py - 14);
         ctx.restore();
-        shadowText(c.name + '  -  ' + c.title, 90, py + 34, 16, '#ff2e63', 'left');
-        shadowText('STYLE: ' + c.tier + '   HP: ' + c.stats.hp, 90, py + 62, 11, '#00f3ff', 'left');
+        shadowText(c.name + '  -  ' + c.title + (c.country ? '  (' + c.country + ')' : ''), 90, py + 26, 13, '#ff2e63', 'left');
+        shadowText('STYLE: ' + c.tier + '   HP: ' + c.stats.hp, 90, py + 48, 10, '#00f3ff', 'left');
         if (this.controls === 'modern') {
             const mm = this.previews[this.cur[0]].modernMap();
             const rows = [
@@ -3626,19 +3942,19 @@ const Game = {
             if (mm.air) rows.push(['IN THE AIR + SPECIAL', mm.air]);
             rows.slice(0, 4).forEach((r, i) => {
                 if (!r[1]) return;
-                shadowText(r[0] + '   ' + r[1].name, 90, py + 92 + i * 20, 10, '#fff', 'left');
+                shadowText(r[0] + '   ' + r[1].name, 90, py + 70 + i * 17, 9, '#fff', 'left');
             });
-            shadowText('SUPER BUTTON   ' + c.super.name, W - 90, py + 92, 10, '#ffd400', 'right');
+            shadowText('SUPER BUTTON   ' + c.super.name, W - 90, py + 70, 9, '#ffd400', 'right');
         } else {
             const sp = Object.keys(c.specials).map(k => c.specials[k]);
             sp.slice(0, 3).forEach((s, i) => {
-                shadowText((MOTION_TEXT[s.motion] || '') + ' + ' + s.btn + '   ' + s.name, 90, py + 92 + i * 22, 11, '#fff', 'left');
+                shadowText((MOTION_TEXT[s.motion] || '') + ' + ' + s.btn + '   ' + s.name, 90, py + 70 + i * 17, 9, '#fff', 'left');
             });
-            shadowText(MOTION_TEXT.superF + ' + ' + c.super.btn + '   ' + c.super.name + '  (SUPER)', W - 90, py + 92, 11, '#ffd400', 'right');
+            shadowText(MOTION_TEXT.superF + ' + ' + c.super.btn + '   ' + c.super.name + '  (SUPER)', W - 90, py + 70, 9, '#ffd400', 'right');
         }
-        shadowText('PUNCH = PICK    KICK = BACK', W - 90, py + 136, 11, '#8a7fa8', 'right');
+        shadowText('PUNCH = PICK    KICK = BACK', W - 90, py + 122, 9, '#8a7fa8', 'right');
         const tag = this.lock[0] ? 'P1 READY' : 'P1 CHOOSE';
-        shadowText(tag, 90, py + 136, 11, '#ff2e63', 'left');
+        shadowText(tag, 90, py + 122, 9, '#ff2e63', 'left');
     },
     drawVs() {
         this.menuBg();
@@ -3712,6 +4028,74 @@ const Game = {
             ctx.restore();
         }
         HUD.draw(m);
+    },
+    flightUpdate(p, tap) {
+        const f = this.flight;
+        if (!f) { this.go('wt'); return; }
+        f.t++;
+        if (f.t > 190 || ((p.anyPressed() || tap) && f.t > 30)) {
+            this.flight = null;
+            WT.arrive(f.area);
+        }
+    },
+    drawFlight() {
+        const f = this.flight || { from: '', to: '', t: 0 };
+        const t = f.t;
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#050318'); g.addColorStop(0.55, '#1b1040'); g.addColorStop(1, '#3a1a4a');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        ctx.save();
+        for (let i = 0; i < 70; i++) {
+            const x = (i * 197 + t * 0.6) % W, y = (i * 83) % 320;
+            ctx.globalAlpha = 0.3 + Math.sin(t * 0.05 + i) * 0.25;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(x, y, 2, 2);
+        }
+        ctx.restore();
+        /* the flight path */
+        const x0 = 190, x1 = W - 190, y0 = 430;
+        ctx.save();
+        ctx.strokeStyle = '#ffffff33'; ctx.lineWidth = 3; ctx.setLineDash([10, 12]);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.quadraticCurveTo(W / 2, y0 - 170, x1, y0);
+        ctx.stroke();
+        ctx.restore();
+        const p = clamp(t / 170, 0, 1);
+        const px = lerp(lerp(x0, W / 2, p), lerp(W / 2, x1, p), p);
+        const py = lerp(lerp(y0, y0 - 170, p), lerp(y0 - 170, y0, p), p);
+        /* plane */
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate((p - 0.5) * 0.7);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(26, 0); ctx.lineTo(-14, 9); ctx.lineTo(-6, 0); ctx.lineTo(-14, -9);
+        ctx.closePath(); ctx.fill();
+        ctx.fillRect(-12, -1.5, 16, 3);
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(-2, -12, 4, 24);
+        ctx.restore();
+        /* endpoints */
+        [[x0, f.from, '#8a7fa8'], [x1, f.to, '#ffd400']].forEach(e => {
+            ctx.save();
+            ctx.fillStyle = e[2];
+            ctx.beginPath(); ctx.arc(e[0], y0, 8, 0, 7); ctx.fill();
+            ctx.restore();
+            shadowText(e[1], e[0], y0 + 40, 11, e[2]);
+        });
+        shadowText('NOW BOARDING', W / 2, 150, 30, '#00f3ff', 'center', 18);
+        shadowText(f.to, W / 2, 200, 20, '#fff', 'center', 12);
+        /* boarding pass */
+        ctx.save();
+        ctx.fillStyle = 'rgba(6,3,14,.85)';
+        ctx.fillRect(W / 2 - 230, 236, 460, 56);
+        ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 2;
+        ctx.strokeRect(W / 2 - 230, 236, 460, 56);
+        ctx.restore();
+        shadowText('BOARDING PASS  -  SEAT 1A  -  STREET BEATER AIR', W / 2, 270, 9, '#cbbfe0');
+        if (t > 30 && Math.floor(t / 20) % 2 === 0)
+            shadowText('ANY BUTTON TO SKIP', W / 2, H - 60, 11, '#8a7fa8');
     },
     drawWtEnd() {
         this.menuBg();
@@ -4044,7 +4428,8 @@ const STAGE3D = {
         }
         R.stageName = name;
         const half = (width || STAGE_W) * S3 / 2;
-        const theme = {
+        const pal = stagePal(name);
+        const theme = pal || {
             city: { sky: 0x140a2a, fog: 0x160b2e, floorA: '#1a0f2e', floorB: '#ff2e63', line: '#3a1f5e', glow: '#ff2e63' },
             dojo: { sky: 0x2a1b12, fog: 0x2a1810, floorA: '#3d2517', floorB: '#ffb454', line: '#5a3a22', glow: '#ff9d3d' },
             subway: { sky: 0x0b1420, fog: 0x0a1620, floorA: '#0e1c26', floorB: '#7cf7ff', line: '#1d3a49', glow: '#7cf7ff' },
@@ -4074,7 +4459,10 @@ const STAGE3D = {
         strip.position.set(0, 0.02, 1.6);
         grp.add(strip);
 
-        if (name === 'dojo') this.dojo(grp, half, theme);
+        const country = name.indexOf('world:') === 0 ? COUNTRY_BY_ID[name.slice(6)] : null;
+        if (country) this.world(grp, half, theme, country.prop);
+        else if (name === 'airport') this.world(grp, half, theme, 'airport');
+        else if (name === 'dojo') this.dojo(grp, half, theme);
         else if (name === 'subway') this.subway(grp, half, theme);
         else if (name === 'roof') this.roof(grp, half, theme);
         else this.city(grp, half, theme);
@@ -4348,6 +4736,334 @@ const WT_QUESTS = [
     { text: 'FACE VOLT, THE STORM KING', done: s => s.defeated.volt }
 ];
 
+/* =====================================================================
+   THE WORLD TOUR PROPER
+   Ten countries, each with a master who teaches their own special. You
+   reach them by air, and a seat costs zenny - once bought, the route
+   stays open for good.
+   ===================================================================== */
+const COUNTRIES = [
+    {
+        id: 'turkiye', city: 'ISTANBUL', country: 'TURKIYE', master: 'zeybek', teach: 'grip',
+        lvl: 6, price: 300, track: 'dojo', prop: 'domes',
+        pal: { sky: 0x10233a, fog: 0x0e2033, floorA: '#12283f', floorB: '#e01a2b', line: '#1d3f5e', glow: '#e01a2b' },
+        local: { name: 'TEA SELLER', char: 'hako', lines: ['Two teas. One for you, one for the man who beats you.', 'ZEYBEK trains by the water. He has thrown better than you into it.'] },
+        lines: ['You came a long way to be thrown a short distance.', 'Plant your feet. This is a dance with rules.'],
+        win: ['Good stance. Take the grip - the sea taught it to me.']
+    },
+    {
+        id: 'brazil', city: 'RIO', country: 'BRAZIL', master: 'vira', teach: 'meia',
+        lvl: 7, price: 450, track: 'city', prop: 'beach',
+        pal: { sky: 0x0d3b2e, fog: 0x0f4034, floorA: '#144a38', floorB: '#ffd400', line: '#1f6b4f', glow: '#1faa59' },
+        local: { name: 'DRUMMER', char: 'kana', lines: ['The roda never stops. It only changes who is inside it.', 'Listen to the beat and you will see her kick coming. Probably.'] },
+        lines: ['You move like a man counting steps.', 'Stop counting. Start moving.'],
+        win: ['Now you hear it. The Meia Lua is yours.']
+    },
+    {
+        id: 'mexico', city: 'CIUDAD LUCHA', country: 'MEXICO', master: 'toro', teach: 'torito',
+        lvl: 8, price: 600, track: 'roof', prop: 'arena',
+        pal: { sky: 0x2a0f1a, fog: 0x300f1c, floorA: '#3a1220', floorB: '#ffcc33', line: '#5c1c2e', glow: '#d81e3f' },
+        local: { name: 'MASK MAKER', char: 'nova', lines: ['A mask is a promise. Lose it and you lose the promise.', 'TORO has never lost his. Ask him why. Politely.'] },
+        lines: ['You want the grip of the bull?', 'Then be thrown by it first. That is the tradition.'],
+        win: ['You held on longer than most. Take the Torito.']
+    },
+    {
+        id: 'egypt', city: 'CAIRO', country: 'EGYPT', master: 'nefra', teach: 'lance',
+        lvl: 9, price: 750, track: 'roof', prop: 'pyramid',
+        pal: { sky: 0x3a2a12, fog: 0x40301a, floorA: '#4a3a1e', floorB: '#22b2a6', line: '#6b5430', glow: '#e8c25a' },
+        local: { name: 'GUIDE', char: 'ryko', lines: ['Everyone photographs the stones. Nobody photographs the stick.', 'NEFRA is at the far end. Keep your distance and you will still lose.'] },
+        lines: ['The river is patient.', 'You are not. That is the whole lesson.'],
+        win: ['Patience, finally. The Lance is yours.']
+    },
+    {
+        id: 'india', city: 'MUMBAI', country: 'INDIA', master: 'arju', teach: 'chakra',
+        lvl: 10, price: 900, track: 'city', prop: 'palace',
+        pal: { sky: 0x2e1230, fog: 0x341438, floorA: '#3a1840', floorB: '#ffb347', line: '#5a2a5e', glow: '#ff7a1a' },
+        local: { name: 'STUDENT', char: 'hako', lines: ['Kalari starts with the feet and ends wherever it likes.', 'ARJU can hold a bridge for an hour. I timed it. Twice.'] },
+        lines: ['Breathe out. All of it.', 'Now show me what is left.'],
+        win: ['The Chakra listens to a steady hand. Yours will do.']
+    },
+    {
+        id: 'russia', city: 'MOSCOW', country: 'RUSSIA', master: 'sibir', teach: 'sambo',
+        lvl: 11, price: 1100, track: 'subway', prop: 'onion',
+        pal: { sky: 0x101c30, fog: 0x0e1a2e, floorA: '#16263c', floorB: '#9fd8ff', line: '#22405f', glow: '#1f5fbf' },
+        local: { name: 'GATE KEEPER', char: 'brutus', lines: ['Cold outside. Colder in the gym.', 'SIBIR does not warm up. He says the fight is the warm up.'] },
+        lines: ['You are shivering. Good. That is honest.', 'Come. I will make it quick, if not gentle.'],
+        win: ['Solid. The lock is yours - use it on someone larger.']
+    },
+    {
+        id: 'nigeria', city: 'LAGOS', country: 'NIGERIA', master: 'adaku', teach: 'spear',
+        lvl: 12, price: 1300, track: 'city', prop: 'market',
+        pal: { sky: 0x0e2a1e, fog: 0x0d2c20, floorA: '#123423', floorB: '#f5f5f5', line: '#1c4d34', glow: '#0f9d58' },
+        local: { name: 'ROPE BINDER', char: 'kana', lines: ['The rope is not a weapon. The arm inside it is.', 'ADAKU binds her own. Nobody else is trusted to.'] },
+        lines: ['One hand does the talking here.', 'Watch the other one anyway.'],
+        win: ['Sharp. The Spear Fist travels with you now.']
+    },
+    {
+        id: 'korea', city: 'SEOUL', country: 'KOREA', master: 'haru', teach: 'axe',
+        lvl: 13, price: 1500, track: 'subway', prop: 'hanok',
+        pal: { sky: 0x141a3a, fog: 0x161c40, floorA: '#1b2246', floorB: '#ff4d6d', line: '#2c3566', glow: '#4d8bff' },
+        local: { name: 'DOJANG SWEEP', char: 'ryko', lines: ['Heads up in here. Literally - everything lands high.', 'HARU has not been hit below the ribs in four years.'] },
+        lines: ['Guard high.', 'I said guard high. I did not say it would help.'],
+        win: ['Your guard held. Take the Axe and aim it downward.']
+    },
+    {
+        id: 'france', city: 'PARIS', country: 'FRANCE', master: 'marquis', teach: 'fouette',
+        lvl: 14, price: 1800, track: 'roof', prop: 'tower',
+        pal: { sky: 0x1a1630, fog: 0x1d1936, floorA: '#241f42', floorB: '#e8e8e8', line: '#3a3466', glow: '#8fa8ff' },
+        local: { name: 'CAFE OWNER', char: 'nova', lines: ['He fights, then he orders coffee. Always in that order.', 'Savate keeps the hands for politeness and the boots for everything else.'] },
+        lines: ['Shall we?', 'Do try to keep your feet under you.'],
+        win: ['Charming. The Fouette suits you.']
+    },
+    {
+        id: 'thailand', city: 'BANGKOK', country: 'THAILAND', master: 'chai', teach: 'elbow',
+        lvl: 16, price: 2200, track: 'boss', prop: 'temple',
+        pal: { sky: 0x2a1a0e, fog: 0x301e10, floorA: '#3a2614', floorB: '#ffd54f', line: '#5e3f1e', glow: '#ffb300' },
+        local: { name: 'CORNER MAN', char: 'brutus', lines: ['Eight limbs. Count them on the way down.', 'CHAI has fought in this ring since he could stand in it.'] },
+        lines: ['Bow first. It costs nothing.', 'Now keep your chin where I cannot reach it. Good luck.'],
+        win: ['That chin held. The Elbow is yours - it ends rounds.']
+    }
+];
+const COUNTRY_BY_ID = {};
+COUNTRIES.forEach(c => COUNTRY_BY_ID[c.id] = c);
+
+/* --- the terminal you fly out of --- */
+WT_AREAS.airport = {
+    name: 'INTERNATIONAL TERMINAL', stage: 'airport', width: 1700,
+    exits: [{ x: 40, to: 'downtown', label: 'DOWNTOWN' }],
+    npcs: [
+        {
+            id: 'agent', name: 'TICKET DESK', char: 'nova', x: 820, kind: 'travel',
+            lines: ['Ten countries, ten masters, ten ways to be humbled.',
+                'A seat costs zenny once. After that the route is yours for good.']
+        },
+        {
+            id: 'porter', name: 'PORTER', char: 'brutus', x: 1360, kind: 'talk',
+            lines: ['Everyone leaves lighter than they arrive. Usually the wallet.',
+                'Beat a master abroad and you keep their move. Worth the airfare.']
+        }
+    ]
+};
+
+/* --- one street per country, generated from the table above --- */
+COUNTRIES.forEach(c => {
+    const ch = CHAR_BY_ID[c.master];
+    WT_AREAS[c.id] = {
+        name: c.city + ', ' + c.country, stage: 'world:' + c.id, width: 2100, country: c,
+        exits: [{ x: 40, to: 'airport', label: 'AIRPORT' }],
+        npcs: [
+            {
+                id: 'local:' + c.id, name: c.local.name, char: c.local.char, x: 620, kind: 'talk',
+                lines: c.local.lines
+            },
+            {
+                id: c.master, name: ch.name, char: c.master, x: 1620, kind: 'master',
+                level: c.lvl, xp: 120 + c.lvl * 22, money: 140 + c.lvl * 28,
+                teach: { char: c.master, key: c.teach },
+                lines: c.lines, win: c.win
+            }
+        ]
+    };
+});
+
+/* Downtown gains a road to the airport once the street respects you. */
+WT_AREAS.downtown.exits.unshift({
+    x: 40, to: 'airport', label: 'AIRPORT',
+    need: s => s.flags.punksDown,
+    needText: 'THE CAB WON\'T STOP FOR A NOBODY. BEAT THE TWO PUNKS FIRST.'
+});
+
+/* =====================================================================
+   WORLD STAGES
+   Each country gets its own palette and one silhouette that says where
+   you are - domes, pyramids, a lattice tower - built from the same few
+   primitives as everything else.
+   ===================================================================== */
+const AIRPORT_PAL = { sky: 0x0a1622, fog: 0x0a1826, floorA: '#101f2c', floorB: '#7cf7ff', line: '#1b3346', glow: '#7cf7ff' };
+
+function stagePal(name) {
+    if (name === 'airport') return AIRPORT_PAL;
+    if (name.indexOf('world:') === 0) {
+        const c = COUNTRY_BY_ID[name.slice(6)];
+        if (c) return c.pal;
+    }
+    return null;
+}
+
+STAGE3D.world = function (grp, half, theme, prop) {
+    const M = (col, emi) => new THREE.MeshLambertMaterial({
+        color: new THREE.Color(col),
+        emissive: new THREE.Color(emi || '#000'),
+        emissiveIntensity: emi ? 0.5 : 0
+    });
+    const add = (geo, mat, x, y, z, rot) => {
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(x, y, z);
+        if (rot) m.rotation.y = rot;
+        grp.add(m);
+        return m;
+    };
+    const glow = theme.glow, accent = theme.floorB;
+    seed = 17;
+
+    /* a low block skyline behind everything, tinted to the country */
+    for (let i = 0; i < 26; i++) {
+        const h = 2.5 + srnd() * 7;
+        add(new THREE.BoxGeometry(1.4 + srnd() * 1.8, h, 1.6),
+            M(theme.floorA), -half - 5 + srnd() * (half * 2 + 10), h / 2, -13 - srnd() * 14);
+    }
+    const light = new THREE.PointLight(new THREE.Color(glow), 2.2, 46);
+    light.position.set(0, 7, -4);
+    grp.add(light);
+
+    const dome = (x, r, y) => {
+        add(new THREE.SphereGeometry(r, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(accent, accent), x, y, -8);
+        add(new THREE.BoxGeometry(r * 2.1, y, r * 2.1), M(theme.floorA), x, y / 2, -8);
+    };
+    const spire = (x, h, r, col) => {
+        add(new THREE.ConeGeometry(r, h, 10), M(col || accent, col || accent), x, h / 2, -8);
+    };
+
+    switch (prop) {
+        case 'domes':                                   /* Turkiye */
+            dome(-3.4, 1.5, 2.6); dome(3.4, 1.9, 3);
+            [-5.6, -1.4, 1.4, 5.6].forEach(x => {
+                add(new THREE.CylinderGeometry(0.22, 0.26, 7, 8), M('#e8e2d2'), x, 3.5, -8.6);
+                spire(x, 1.2, 0.28, '#e8e2d2');
+                grp.children[grp.children.length - 1].position.y = 7.4;
+            });
+            break;
+        case 'beach':                                   /* Brazil */
+            add(new THREE.ConeGeometry(4.2, 9, 12), M('#1f6b4f'), -9, 4.5, -16);
+            for (let i = -3; i <= 3; i += 2) {
+                add(new THREE.CylinderGeometry(0.16, 0.22, 5.4, 7), M('#6b4a24'), i * 2.4, 2.7, -7.5);
+                for (let k = 0; k < 5; k++) {
+                    const leaf = add(new THREE.BoxGeometry(2.2, 0.12, 0.5), M('#1faa59'), i * 2.4, 5.4, -7.5);
+                    leaf.rotation.y = k * 1.25;
+                    leaf.rotation.z = 0.28;
+                }
+            }
+            break;
+        case 'arena':                                   /* Mexico */
+            for (let i = -4; i <= 4; i++) {
+                add(new THREE.BoxGeometry(0.5, 5.5, 0.5), M('#5c1c2e'), i * 2.4, 2.75, -7.6);
+                add(new THREE.BoxGeometry(2.1, 0.4, 0.5), M(accent, accent), i * 2.4 + 1.2, 5.6, -7.6);
+            }
+            add(new THREE.PlaneGeometry(6, 2.4), M('#d81e3f', '#d81e3f'), 0, 7.4, -7.4);
+            break;
+        case 'pyramid':                                 /* Egypt */
+            add(new THREE.ConeGeometry(7, 7.5, 4), M('#c9a44e'), -10, 3.75, -18, Math.PI / 4);
+            add(new THREE.ConeGeometry(4.6, 5, 4), M('#b8923f'), -2, 2.5, -20, Math.PI / 4);
+            for (let i = -3; i <= 3; i += 3) {
+                add(new THREE.CylinderGeometry(0.4, 0.5, 5.4, 10), M('#e8c25a'), i * 2.6 + 6, 2.7, -8);
+            }
+            break;
+        case 'palace':                                  /* India */
+            dome(0, 2.4, 3.6);
+            [-4.6, 4.6].forEach(x => dome(x, 1.3, 2.4));
+            for (let i = -3; i <= 3; i++) {
+                add(new THREE.BoxGeometry(0.4, 3.2, 0.4), M('#ffb347', '#ffb347'), i * 2.2, 1.6, -6.6);
+            }
+            break;
+        case 'onion':                                   /* Russia */
+            [[-4.4, 1.3], [0, 1.9], [4.4, 1.4]].forEach(o => {
+                add(new THREE.BoxGeometry(o[1] * 1.9, 4.2, o[1] * 1.9), M('#dfe9f5'), o[0], 2.1, -8);
+                add(new THREE.SphereGeometry(o[1], 14, 12), M(accent, accent), o[0], 4.6 + o[1] * 0.4, -8);
+                spire(o[0], 1.1, 0.2, '#ffd54f');
+                grp.children[grp.children.length - 1].position.y = 5.8 + o[1];
+            });
+            break;
+        case 'market':                                  /* Nigeria */
+            for (let i = -4; i <= 4; i++) {
+                add(new THREE.BoxGeometry(1.9, 0.18, 1.5), M(i % 2 ? '#0f9d58' : '#f5f5f5'), i * 2.2, 2.5, -6.5);
+                add(new THREE.CylinderGeometry(0.1, 0.1, 2.5, 6), M('#3a2a18'), i * 2.2 - 0.8, 1.25, -6.5);
+                add(new THREE.CylinderGeometry(0.1, 0.1, 2.5, 6), M('#3a2a18'), i * 2.2 + 0.8, 1.25, -6.5);
+            }
+            add(new THREE.BoxGeometry(2.4, 11, 2.4), M('#123423'), -11, 5.5, -14);
+            add(new THREE.BoxGeometry(2, 9, 2), M('#123423'), 11, 4.5, -15);
+            break;
+        case 'hanok':                                   /* Korea */
+            for (let i = -3; i <= 3; i++) {
+                add(new THREE.BoxGeometry(2.6, 2.2, 1.6), M('#2c3566'), i * 3, 1.1, -7.4);
+                const roof = add(new THREE.ConeGeometry(2.3, 1.1, 4), M('#1b2246'), i * 3, 2.8, -7.4, Math.PI / 4);
+                roof.scale.z = 0.7;
+            }
+            [-6, 6].forEach((x, k) => {
+                add(new THREE.PlaneGeometry(1.1, 3.4), M(k ? '#ff4d6d' : '#4d8bff', k ? '#ff4d6d' : '#4d8bff'), x, 4.6, -7);
+            });
+            break;
+        case 'tower':                                   /* France */
+            for (let k = 0; k < 5; k++) {
+                const w = 3.4 - k * 0.62, h = 2.4;
+                add(new THREE.BoxGeometry(w, h, w), M('#3a3466'), -8, 1.2 + k * h, -15);
+            }
+            spire(-8, 2.4, 0.22, '#e8e8e8');
+            grp.children[grp.children.length - 1].position.set(-8, 13.2, -15);
+            for (let i = -1; i <= 3; i++) {
+                add(new THREE.BoxGeometry(2.6, 3.4, 1.4), M('#241f42'), i * 3.4 + 2, 1.7, -7.2);
+            }
+            break;
+        case 'temple':                                  /* Thailand */
+            [[-5, 5.5], [0, 7.5], [5, 5.5]].forEach(o => {
+                add(new THREE.ConeGeometry(1.2, o[1], 8), M('#ffd54f', '#ffb300'), o[0], o[1] / 2, -9);
+                add(new THREE.BoxGeometry(3, 1.6, 2), M('#5e3f1e'), o[0], 0.8, -8.4);
+            });
+            for (let i = -3; i <= 3; i += 2) {
+                add(new THREE.CylinderGeometry(0.18, 0.18, 3.2, 8), M('#c62828'), i * 2, 1.6, -6.2);
+            }
+            break;
+        default:                                        /* airport */
+            add(new THREE.BoxGeometry(half * 2 + 10, 6.5, 1), M('#101f2c'), 0, 3.25, -8);
+            for (let i = -5; i <= 5; i++) {
+                add(new THREE.PlaneGeometry(2.4, 2.2), M('#0a1622', '#7cf7ff'), i * 2.6, 3.4, -7.4);
+            }
+            add(new THREE.BoxGeometry(9, 0.5, 1.4), M('#dfe9f5'), 5, 4.4, -5.5);          /* a parked wing */
+            add(new THREE.CylinderGeometry(0.9, 0.9, 7, 12), M('#dfe9f5'), 5, 3.4, -4.6, 0)
+                .rotation.z = Math.PI / 2;
+            break;
+    }
+};
+
+/* --- 2D fallback backdrop for the new places --- */
+Stage.world = function (d, t, pal, prop) {
+    const g = ctx.createLinearGradient(0, -400, 0, GROUND_Y);
+    g.addColorStop(0, '#' + pal.sky.toString(16).padStart(6, '0'));
+    g.addColorStop(1, pal.floorA);
+    ctx.fillStyle = g;
+    ctx.fillRect(-600, -600, STAGE_W + 1400, GROUND_Y + 620);
+    ctx.save();
+    const shift = (Cam.x - STAGE_W / 2) * 0.3;
+    for (const b of d.buildings) {
+        const bx = b.x * 0.72 + shift;
+        ctx.fillStyle = pal.line;
+        ctx.fillRect(bx, GROUND_Y - b.h * 0.55 - 40, b.w * 0.9, b.h * 0.55 + 40);
+    }
+    /* one silhouette that names the place */
+    ctx.fillStyle = pal.floorB;
+    ctx.globalAlpha = 0.85;
+    const cx = STAGE_W / 2 + (Cam.x - STAGE_W / 2) * 0.12;
+    if (prop === 'pyramid' || prop === 'temple') {
+        ctx.beginPath();
+        ctx.moveTo(cx - 190, GROUND_Y - 60); ctx.lineTo(cx, GROUND_Y - 330); ctx.lineTo(cx + 190, GROUND_Y - 60);
+        ctx.fill();
+    } else if (prop === 'tower') {
+        ctx.beginPath();
+        ctx.moveTo(cx - 90, GROUND_Y - 60); ctx.lineTo(cx - 16, GROUND_Y - 400);
+        ctx.lineTo(cx + 16, GROUND_Y - 400); ctx.lineTo(cx + 90, GROUND_Y - 60);
+        ctx.fill();
+    } else {
+        for (const o of [[-150, 46], [0, 66], [150, 48]]) {
+            ctx.beginPath();
+            ctx.arc(cx + o[0], GROUND_Y - 190, o[1], Math.PI, 0);
+            ctx.fill();
+            ctx.fillRect(cx + o[0] - o[1], GROUND_Y - 190, o[1] * 2, 130);
+        }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    Stage.crowd(d, t, 'rgba(6,4,12,0.85)');
+};
+
 const WT = {
     s: null, area: null, player: null, npcCache: {},
     camX: 0, mode: 'walk', dialog: null, prompt: '', promptT: 0,
@@ -4357,7 +5073,7 @@ const WT = {
         return {
             style: styleId, level: 1, xp: 0, money: 0,
             hpBonus: 0, atkBonus: 0, defBonus: 0,
-            area: 'downtown', x: 260,
+            area: 'downtown', x: 260, tickets: {},
             slots: null,            // filled in by equipDefaults
             learned: [],            // [{char, key}]
             flags: {}, defeated: {}, cleared: false
@@ -4525,6 +5241,7 @@ const WT = {
         if (this.mode === 'dialog') return this.dialogUpdate(p, tap);
         if (this.mode === 'status') return this.statusUpdate(p, tap);
         if (this.mode === 'shop') return this.shopUpdate(p, tap);
+        if (this.mode === 'travel') return this.travelUpdate(p, tap);
 
         const sp = 4.2;
         let moving = 0;
@@ -4558,6 +5275,12 @@ const WT = {
                 this.mode = 'dialog';
                 return;
             }
+            /* leaving a country means another flight, not a walk */
+            if (COUNTRY_BY_ID[this.s.area] && exit.to === 'airport') {
+                Snd.select();
+                this.fly(this.area.name, 'INTERNATIONAL TERMINAL', 'airport');
+                return;
+            }
             this.s.area = exit.to; this.s.x = exit.x < 200 ? WT_AREAS[exit.to].width - 200 : 200;
             this.save();
             this.enter();
@@ -4574,6 +5297,11 @@ const WT = {
         Snd.select();
         if (npc.need && !npc.need(this.s)) {
             this.dialog = { name: npc.name, lines: [npc.needText || 'Not yet.'], i: 0 };
+            this.mode = 'dialog';
+            return;
+        }
+        if (npc.kind === 'travel') {
+            this.dialog = { name: npc.name, lines: (typeof npc.lines === 'function' ? npc.lines(this.s) : npc.lines).slice(), i: 0, thenTravel: true };
             this.mode = 'dialog';
             return;
         }
@@ -4611,6 +5339,7 @@ const WT = {
         this.mode = 'walk';
         if (d.thenFight) { this.startFight(d.thenFight); return; }
         if (d.thenShop) { this.mode = 'shop'; this.shopI = 0; return; }
+        if (d.thenTravel) { this.mode = 'travel'; this.travelI = 0; return; }
         if (this.endingPending) { this.endingPending = false; Game.go('wtEnd'); }
     },
 
@@ -4715,6 +5444,88 @@ const WT = {
     },
 
 
+    /* ------------------------------ travel ----------------------------- */
+    TRAVEL_ROW(i) { return { x: 150, y: 150 + i * 46, w: W - 300, h: 40 }; },
+    travelUpdate(p, tap) {
+        const n = COUNTRIES.length;
+        if (this.travelI === undefined) this.travelI = 0;
+        if (p.pressed2('down')) { this.travelI = (this.travelI + 1) % n; Snd.menu(); }
+        if (p.pressed2('up')) { this.travelI = (this.travelI + n - 1) % n; Snd.menu(); }
+        if (p.pressed('start')) { this.mode = 'walk'; Snd.select(); return; }
+        if (tap) {
+            const i = COUNTRIES.findIndex((_, k) => inRect(tap, this.TRAVEL_ROW(k)));
+            if (i < 0) {
+                if (tap.y > H - 90) { this.mode = 'walk'; Snd.select(); }
+                return;
+            }
+            if (this.travelI !== i) { this.travelI = i; Snd.menu(); return; }
+        } else if (!BTNS.some(b => p.pressed(b))) return;
+        this.board(COUNTRIES[this.travelI]);
+    },
+    board(c) {
+        const s = this.s;
+        s.tickets = s.tickets || {};
+        if (!s.tickets[c.id]) {
+            if (s.money < c.price) { this.toastUp('NOT ENOUGH ZENNY'); Snd.whiff(); return; }
+            s.money -= c.price;
+            s.tickets[c.id] = true;
+            this.toastUp('TICKET BOUGHT');
+        }
+        this.save();
+        Snd.select();
+        this.fly(this.area.name, c.city + ', ' + c.country, c.id);
+    },
+    fly(fromName, toName, areaId) {
+        this.mode = 'walk';
+        Game.flight = { from: fromName, to: toName, area: areaId, t: 0 };
+        Game.go('flight');
+    },
+    arrive(areaId) {
+        this.s.area = areaId;
+        this.s.x = areaId === 'airport' ? 300 : 220;
+        this.save();
+        this.enter();
+        Game.go('wt');
+    },
+    drawTravel() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(3,2,8,.88)'; ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+        shadowText('DEPARTURES', W / 2, 84, 26, '#00f3ff', 'center', 16);
+        shadowText('A SEAT IS BOUGHT ONCE - THE ROUTE STAYS OPEN', W / 2, 116, 9, '#8a7fa8');
+        const s = this.s;
+        s.tickets = s.tickets || {};
+        COUNTRIES.forEach((c, i) => {
+            const r = this.TRAVEL_ROW(i);
+            const on = this.travelI === i;
+            const owned = !!s.tickets[c.id];
+            const afford = owned || s.money >= c.price;
+            ctx.save();
+            ctx.fillStyle = on ? 'rgba(0,243,255,.14)' : 'rgba(255,255,255,.04)';
+            ctx.fillRect(r.x, r.y, r.w, r.h);
+            ctx.strokeStyle = on ? '#00f3ff' : '#ffffff14';
+            ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.w, r.h);
+            ctx.fillStyle = CHAR_BY_ID[c.master].style.gi;
+            ctx.fillRect(r.x + 8, r.y + 8, 24, 24);
+            ctx.restore();
+            shadowText(c.city, r.x + 44, r.y + 26, 11, on ? '#fff' : '#b9aed2', 'left');
+            shadowText(c.country, r.x + 250, r.y + 26, 9, '#8a7fa8', 'left');
+            shadowText('MASTER ' + CHAR_BY_ID[c.master].name, r.x + 420, r.y + 26, 9,
+                this.s.defeated[c.master] ? '#3dffb0' : '#9d8fb5', 'left');
+            shadowText('LV ' + c.lvl, r.x + 640, r.y + 26, 9, '#8a7fa8', 'left');
+            shadowText(owned ? 'TICKET OWNED' : c.price + ' Z',
+                r.x + r.w - 12, r.y + 26, 10,
+                owned ? '#3dffb0' : (afford ? '#ffd400' : '#ff6b81'), 'right');
+        });
+        shadowText('YOU HAVE ' + s.money + ' Z', 150, H - 56, 12, '#ffd400', 'left');
+        shadowText('START / TAP BELOW TO LEAVE THE DESK', W - 150, H - 56, 9, '#8a7fa8', 'right');
+        if (this.toastT > 0) {
+            ctx.save();
+            ctx.globalAlpha = clamp(this.toastT / 40, 0, 1);
+            shadowText(this.toast, W / 2, H - 96, 18, '#ff4d6d', 'center', 12);
+            ctx.restore();
+        }
+    },
     /* ------------------------------ draw ------------------------------- */
     npcFighter(npc) {
         if (!this.npcCache[npc.id]) {
@@ -4781,6 +5592,7 @@ const WT = {
         if (this.mode === 'dialog') this.drawDialog();
         if (this.mode === 'status') this.drawStatus();
         if (this.mode === 'shop') this.drawShop();
+        if (this.mode === 'travel') this.drawTravel();
     },
     draw3d() {
         R3D.originX = this.area.width / 2;
@@ -4828,6 +5640,7 @@ const WT = {
         if (this.mode === 'dialog') this.drawDialog();
         if (this.mode === 'status') this.drawStatus();
         if (this.mode === 'shop') this.drawShop();
+        if (this.mode === 'travel') this.drawTravel();
     },
     hud() {
         const s = this.s;
@@ -5050,39 +5863,49 @@ const WT = {
         });
     },
 
+    HOME_MASTERS: [
+        { id: 'ryko', ch: 'ryko', where: 'DOWNTOWN', key: 'bolt' },
+        { id: 'hako', ch: 'hako', where: 'DOJO DISTRICT', key: 'crane' },
+        { id: 'brutus', ch: 'brutus', where: 'SUBWAY LINE', key: 'charge' },
+        { id: 'kana', ch: 'kana', where: 'SUBWAY LINE', key: 'claw' },
+        { id: 'nova', ch: 'nova', where: 'ROOFTOPS', key: 'orb' },
+        { id: 'volt', ch: 'volt', where: 'ROOFTOPS', key: null }
+    ],
+    allMasters() {
+        return this.HOME_MASTERS.concat(COUNTRIES.map(c =>
+            ({ id: c.master, ch: c.master, where: c.city, key: c.teach, country: c.country, price: c.price })));
+    },
     tabMasters() {
         const P = this.PANEL;
-        shadowText('MASTERS AND WHAT THEY TEACH', P.x + 26, P.y + 112, 10, '#ffd400', 'left');
-        const masters = [
-            { id: 'ryko', ch: 'ryko', where: 'DOWNTOWN', key: 'bolt' },
-            { id: 'hako', ch: 'hako', where: 'DOJO DISTRICT', key: 'crane' },
-            { id: 'brutus', ch: 'brutus', where: 'SUBWAY LINE', key: 'charge' },
-            { id: 'kana', ch: 'kana', where: 'SUBWAY LINE', key: 'claw' },
-            { id: 'nova', ch: 'nova', where: 'ROOFTOPS', key: 'orb' },
-            { id: 'volt', ch: 'volt', where: 'ROOFTOPS', key: null }
-        ];
-        masters.forEach((m, i) => {
-            const y = P.y + 146 + i * 62;
+        const list = this.allMasters();
+        const beaten = list.filter(m => this.s.defeated[m.id]).length;
+        shadowText('MASTERS  ' + beaten + ' / ' + list.length, P.x + 26, P.y + 112, 10, '#ffd400', 'left');
+        shadowText('EVERY MASTER TEACHES ONE MOVE', P.x + P.w - 26, P.y + 112, 9, '#8a7fa8', 'right');
+        const colW = (P.w - 60) / 2;
+        list.forEach((m, i) => {
+            const col = i % 2, row = Math.floor(i / 2);
+            const x = P.x + 26 + col * (colW + 8);
+            const y = P.y + 142 + row * 52;
             const c = CHAR_BY_ID[m.ch];
             const done = !!this.s.defeated[m.id];
             ctx.save();
             ctx.fillStyle = done ? 'rgba(61,255,176,.08)' : 'rgba(255,255,255,.04)';
-            ctx.fillRect(P.x + 26, y - 26, P.w - 52, 50);
+            ctx.fillRect(x, y - 20, colW, 44);
             ctx.strokeStyle = done ? '#3dffb055' : '#ffffff14';
             ctx.lineWidth = 2;
-            ctx.strokeRect(P.x + 26, y - 26, P.w - 52, 50);
+            ctx.strokeRect(x, y - 20, colW, 44);
             /* a colour chip standing in for the master's portrait */
             ctx.fillStyle = c.style.gi;
-            ctx.fillRect(P.x + 34, y - 20, 38, 38);
+            ctx.fillRect(x + 7, y - 14, 30, 30);
             ctx.fillStyle = c.style.trim;
-            ctx.fillRect(P.x + 34, y + 12, 38, 6);
+            ctx.fillRect(x + 7, y + 10, 30, 6);
             ctx.restore();
-            shadowText(c.name, P.x + 84, y - 2, 12, done ? '#fff' : '#9d8fb5', 'left');
-            shadowText(m.where, P.x + 84, y + 18, 8, '#8a7fa8', 'left');
+            shadowText(c.name, x + 46, y - 2, 10, done ? '#fff' : '#9d8fb5', 'left');
+            shadowText(m.where, x + 46, y + 16, 7, '#8a7fa8', 'left');
             const taught = m.key && c.specials[m.key] ? c.specials[m.key].name : 'THE STORM ITSELF';
-            shadowText(done ? 'LEARNED: ' + taught : (m.key ? 'TEACHES: ' + taught : 'FINAL RIVAL'),
-                P.x + P.w - 40, y - 2, 9, done ? '#3dffb0' : '#7f74a0', 'right');
-            shadowText(done ? 'DEFEATED' : 'NOT BEATEN', P.x + P.w - 40, y + 18, 8,
+            shadowText(done ? taught : (m.key ? taught : 'FINAL RIVAL'),
+                x + colW - 10, y - 2, 8, done ? '#3dffb0' : '#7f74a0', 'right');
+            shadowText(done ? 'LEARNED' : 'NOT BEATEN', x + colW - 10, y + 16, 7,
                 done ? '#3dffb0' : '#ff6b81', 'right');
         });
     },
