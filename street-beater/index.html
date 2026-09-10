@@ -2556,7 +2556,7 @@ const Match = {
             else if (B.mf >= B.move.startup + B.move.active) { counter = 'PUNISH'; mult = 1.35; }
         }
         const scale = m.noScale ? 1 : SCALE[Math.min(A.comboHits, SCALE.length - 1)];
-        const dmg = Math.max(4, Math.round((m.dmg || 40) * scale * mult * (A.dmgMul || 1)));
+        const dmg = Math.max(4, Math.round((m.dmg || 40) * scale * mult * (A.dmgMul || 1) * (B.defMul || 1)));
         B.takeRaw(dmg, A);
         B.stun += (m.stun || 30) * (counter ? 1.3 : 1);
         B.move = null; B.armor = 0;
@@ -3970,6 +3970,19 @@ const R3D = {
         cam.lookAt(this.x3(midX), 1.45, 0);
     },
 
+    /* Status screen framing: orbit the fighter and look past them, so they
+       sit on the left of the frame with the panel beside them. */
+    portraitCamera(gx, angle) {
+        const cam = this.camera;
+        const cx = this.x3(gx);
+        const d = 6.3;                       /* far enough to frame head to heel */
+        const sa = Math.sin(angle), ca = Math.cos(angle);
+        cam.position.set(cx + sa * d, 1.95, ca * d);
+        /* aim past the fighter, along the camera's own right, so they sit on
+           the left of frame however far round the turntable has gone */
+        cam.lookAt(cx + ca * 1.75, 1.62, -sa * 1.75);
+    },
+
     project(gx, gy) {
         this._v.set(this.x3(gx), this.y3(gy), 0);
         this._v.project(this.camera);
@@ -4342,7 +4355,7 @@ const WT = {
     blank(styleId) {
         return {
             style: styleId, level: 1, xp: 0, money: 0,
-            hpBonus: 0, atkBonus: 0,
+            hpBonus: 0, atkBonus: 0, defBonus: 0,
             area: 'downtown', x: 260,
             slots: null,            // filled in by equipDefaults
             learned: [],            // [{char, key}]
@@ -4387,6 +4400,7 @@ const WT = {
         this.area = WT_AREAS[this.s.area] || WT_AREAS.downtown;
         this.player = new Fighter(this.s.style, 0, PADS.cpu1, 0);
         this.player.state = 'idle'; this.player.anim = 'idle';
+        this.player.x = this.s.x; this.player.y = GROUND_Y;
         this.npcCache = {};
         this.camX = this.s.x;
         this.mode = 'walk'; this.dialog = null;
@@ -4396,6 +4410,7 @@ const WT = {
     /* --------------------------- progression --------------------------- */
     maxHpOf() { return CHAR_BY_ID[this.s.style].stats.hp + (this.s.level - 1) * 30 + this.s.hpBonus; },
     dmgMulOf() { return 1 + (this.s.level - 1) * 0.03 + this.s.atkBonus; },
+    defMulOf() { return 1 / (1 + (this.s.defBonus || 0)); },
     xpNeeded() { return this.s.level * 100; },
     gainXp(n) {
         this.s.xp += n;
@@ -4466,6 +4481,7 @@ const WT = {
             onEnd: w => this.fightOver(w === Match.f1)
         });
         Match.f1.dmgMul = this.dmgMulOf();
+        Match.f1.defMul = this.defMulOf();
         Match.f2.maxHp = Math.round(Match.f2.maxHp * (0.8 + oppLvl * 0.05));
         Match.f2.hp = Match.f2.maxHp;
         Match.f2.dmgMul = 0.85 + oppLvl * 0.03;
@@ -4600,6 +4616,7 @@ const WT = {
     SHOP: [
         { name: '+20 MAX HP', cost: 100, apply: s => s.hpBonus += 20 },
         { name: '+3% DAMAGE', cost: 150, apply: s => s.atkBonus += 0.03 },
+        { name: '+4% DEFENCE', cost: 150, apply: s => s.defBonus = (s.defBonus || 0) + 0.04 },
         { name: 'LEAVE', cost: 0, apply: null }
     ],
     SHOP_ROW: i => ({ x: 280, y: 300 + i * 56 - 26, w: W - 560, h: 42 }),
@@ -4626,31 +4643,76 @@ const WT = {
     cycleSlot(i, dir) {
         const slot = WT_SLOTS[i];
         const pool = this.pool();
+        const taken = WT_SLOTS.filter(s => s !== slot).map(s => this.s.slots[s]);
         const cur = pool.findIndex(o => o.char === this.s.slots[slot].char && o.key === this.s.slots[slot].key);
-        this.s.slots[slot] = pool[(cur + dir + pool.length) % pool.length];
+        /* step over anything already sitting in one of the other slots */
+        for (let n = 1; n <= pool.length; n++) {
+            const cand = pool[(cur + dir * n + pool.length * n) % pool.length];
+            if (taken.some(t => t.char === cand.char && t.key === cand.key)) continue;
+            this.s.slots[slot] = cand;
+            break;
+        }
         Snd.menu(); this.save();
     },
+    /* =================================================================
+       PLAYER STATUS
+       Laid out the way a modern World Tour profile is: the fighter stands
+       on the left turning on the spot, and a tabbed panel on the right
+       carries the numbers, the equipped moves and the masters.
+       ================================================================= */
+    TABS: ['STATUS', 'MOVES', 'MASTERS'],
+    PANEL: { x: 452, y: 84, w: 800, h: 574 },
+    TAB_RECT(i) { return { x: this.PANEL.x + 16 + i * 176, y: this.PANEL.y + 14, w: 168, h: 44 }; },
+    STAT_ROW(i) { return { x: this.PANEL.x + 26, y: this.PANEL.y + 122 + i * 52, w: this.PANEL.w - 52, h: 44 }; },
+    MOVE_ROW(i) { return { x: this.PANEL.x + 26, y: this.PANEL.y + 118 + i * 62, w: this.PANEL.w - 52, h: 54 }; },
+    CLOSE_BTN: { x: 1032, y: 668, w: 220, h: 42 },
+
     statusUpdate(p, tap) {
-        if (p.pressed2('down')) { this.statusI = (this.statusI + 1) % 4; Snd.menu(); }
-        if (p.pressed2('up')) { this.statusI = (this.statusI + 3) % 4; Snd.menu(); }
-        if (this.statusI < 3) {
+        const tabs = this.TABS.length;
+        if (this.statusTab === undefined) { this.statusTab = 0; this.statusI = 0; this.spin = 0; }
+        this.spin = (this.spin || 0) + 1;
+        const rows = this.statusTab === 1 ? 3 : 0;
+
+        /* parry / impact act as the shoulder buttons and always change tab -
+           on the moves tab left and right are busy swapping specials */
+        if (p.pressed('impact')) { this.statusTab = (this.statusTab + 1) % tabs; this.statusI = 0; Snd.menu(); }
+        if (p.pressed('parry')) { this.statusTab = (this.statusTab + tabs - 1) % tabs; this.statusI = 0; Snd.menu(); }
+        if (this.statusTab !== 1) {
+            if (p.pressed2('right')) { this.statusTab = (this.statusTab + 1) % tabs; this.statusI = 0; Snd.menu(); }
+            if (p.pressed2('left')) { this.statusTab = (this.statusTab + tabs - 1) % tabs; this.statusI = 0; Snd.menu(); }
+        } else {
+            /* on the moves tab left/right swaps the highlighted slot */
             if (p.pressed2('right')) this.cycleSlot(this.statusI, 1);
             if (p.pressed2('left')) this.cycleSlot(this.statusI, -1);
         }
-        if (tap) {
-            for (let i = 0; i < 3; i++) {
-                if (!inRect(tap, this.SLOT_ROW(i))) continue;
-                if (this.statusI === i) this.cycleSlot(i, 1);
-                else { this.statusI = i; Snd.menu(); }
-                return;
+        if (rows) {
+            if (p.pressed2('down')) { this.statusI = (this.statusI + 1) % rows; Snd.menu(); }
+            if (p.pressed2('up')) { this.statusI = (this.statusI + rows - 1) % rows; Snd.menu(); }
+        } else {
+            if (p.pressed2('down') || p.pressed2('up')) {
+                this.statusTab = (this.statusTab + (p.pressed2('down') ? 1 : tabs - 1)) % tabs;
+                this.statusI = 0; Snd.menu();
             }
-            if (inRect(tap, this.CLOSE_ROW)) { this.mode = 'walk'; Snd.select(); }
+        }
+
+        if (tap) {
+            for (let i = 0; i < tabs; i++) {
+                if (inRect(tap, this.TAB_RECT(i))) { this.statusTab = i; this.statusI = 0; Snd.menu(); return; }
+            }
+            if (this.statusTab === 1) {
+                for (let i = 0; i < 3; i++) {
+                    if (!inRect(tap, this.MOVE_ROW(i))) continue;
+                    if (this.statusI === i) this.cycleSlot(i, 1);
+                    else { this.statusI = i; Snd.menu(); }
+                    return;
+                }
+            }
+            if (inRect(tap, this.CLOSE_BTN)) { this.mode = 'walk'; Snd.select(); }
             return;
         }
-        if (p.pressed('start') || (this.statusI === 3 && BTNS.some(b => p.pressed(b)))) {
-            this.mode = 'walk'; Snd.select();
-        }
+        if (p.pressed('start')) { this.mode = 'walk'; Snd.select(); }
     },
+
 
     /* ------------------------------ draw ------------------------------- */
     npcFighter(npc) {
@@ -4714,7 +4776,7 @@ const WT = {
         drawFighter(this.player, 1);
         ctx.restore();
 
-        this.hud();
+        if (this.mode === 'walk' || this.mode === 'dialog') this.hud();
         if (this.mode === 'dialog') this.drawDialog();
         if (this.mode === 'status') this.drawStatus();
         if (this.mode === 'shop') this.drawShop();
@@ -4741,7 +4803,8 @@ const WT = {
         R3D.render();
 
         /* name plates and markers, projected onto the 3D street */
-        for (const n of this.area.npcs) {
+        const showLabels = this.mode === 'walk' || this.mode === 'dialog';
+        for (const n of (showLabels ? this.area.npcs : [])) {
             const p = R3D.project(n.x, GROUND_Y - 210);
             if (p.x < -80 || p.x > W + 80) continue;
             const beaten = this.s.defeated[n.id];
@@ -4752,7 +4815,7 @@ const WT = {
                 shadowText(mark, p.x, p.y - 26 + Math.sin(this.walkT * 0.12) * 5, 20, col, 'center', 12);
             }
         }
-        for (const e of this.area.exits) {
+        for (const e of (showLabels ? this.area.exits : [])) {
             const locked = e.need && !e.need(this.s);
             const p = R3D.project(e.x, GROUND_Y - 250);
             if (p.x < -120 || p.x > W + 120) continue;
@@ -4760,7 +4823,7 @@ const WT = {
             shadowText(e.x < 200 ? '<<' : '>>', p.x, p.y + 30, 12, locked ? '#ff4d6d' : '#3dffb0');
         }
         FX.draw3d();
-        this.hud();
+        if (this.mode === 'walk' || this.mode === 'dialog') this.hud();
         if (this.mode === 'dialog') this.drawDialog();
         if (this.mode === 'status') this.drawStatus();
         if (this.mode === 'shop') this.drawShop();
@@ -4818,35 +4881,209 @@ const WT = {
         if (Math.floor(this.walkT / 16) % 2 === 0)
             shadowText('>', W - 100, H - 168, 14, '#ffd400', 'right');
     },
+    statBars() {
+        const s = this.s, base = CHAR_BY_ID[s.style];
+        return [
+            ['HEALTH', this.maxHpOf(), 1600, this.maxHpOf() + '', '#3ddc84'],
+            ['ATTACK', this.dmgMulOf(), 2, 'x' + this.dmgMulOf().toFixed(2), '#ff2e63'],
+            ['DEFENCE', 1 + (s.defBonus || 0), 1.6, '+' + Math.round((s.defBonus || 0) * 100) + '%', '#00f3ff'],
+            ['SPEED', base.stats.walkF, 4.2, base.stats.walkF.toFixed(1), '#ffd400'],
+            ['WEIGHT', base.stats.weight, 1.5, base.stats.weight.toFixed(2), '#b388ff'],
+            ['STUN', base.stats.stun, 1300, base.stats.stun + '', '#ff8f1f']
+        ];
+    },
+
     drawStatus() {
+        const s = this.s, P = this.PANEL;
+        if (this.statusTab === undefined) { this.statusTab = 0; this.spin = 0; }
+
+        /* backdrop: dim whatever is behind, keep the fighter lit */
         ctx.save();
-        ctx.fillStyle = 'rgba(4,2,10,.93)'; ctx.fillRect(120, 90, W - 240, H - 200);
-        ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 4; ctx.strokeRect(120, 90, W - 240, H - 200);
+        ctx.fillStyle = 'rgba(3,2,8,.72)';
+        ctx.fillRect(0, 0, W, H);
         ctx.restore();
-        const s = this.s;
-        shadowText('STATUS', W / 2, 140, 24, '#00f3ff', 'center', 14);
-        shadowText('STYLE ' + CHAR_BY_ID[s.style].name + '    LV ' + s.level + '    ' + s.money + ' Z', W / 2, 180, 12, '#fff');
-        shadowText('MAX HP ' + this.maxHpOf() + '    DAMAGE x' + this.dmgMulOf().toFixed(2) +
-            '    XP ' + s.xp + '/' + this.xpNeeded(), W / 2, 208, 11, '#9d8fb5');
-        shadowText('EQUIPPED SPECIALS   (LEFT / RIGHT TO SWAP)', W / 2, 256, 11, '#ffd400');
-        WT_SLOTS.forEach((slot, i) => {
-            const y = 300 + i * 54;
-            const on = this.statusI === i;
-            if (on) {
-                ctx.save();
-                ctx.fillStyle = 'rgba(0,243,255,.14)'; ctx.fillRect(180, y - 28, W - 360, 44);
-                ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.strokeRect(180, y - 28, W - 360, 44);
-                ctx.restore();
-            }
-            const mv = this.moveOf(this.s.slots[slot]);
-            shadowText(SLOT_LABEL[slot], 205, y, 11, on ? '#fff' : '#9d8fb5', 'left');
-            shadowText(mv ? mv.name : '-', W - 205, y, 12, on ? '#ffd400' : '#9d8fb5', 'right');
+
+        /* --- the fighter, turning on the spot --- */
+        if (Game.use3d()) {
+            R3D.originX = this.area.width / 2;
+            this.player.setAnim(this.spin % 260 < 130 ? 'idle' : 'win');
+            this.player.auraT = this.walkT;
+            this.player.updatePose();
+            const id = R3D.syncFighter(this.player, 'wtplayer').id;
+            R3D.hideUnused([id]);
+            R3D.portraitCamera(this.player.x, this.spin * 0.011);
+            R3D.render();
+        } else {
+            const f = this.player;
+            const sx = f.x, sy = f.y, sf = f.facing;
+            f.x = 236; f.y = 590; f.facing = 1;
+            f.setAnim(this.spin % 260 < 130 ? 'idle' : 'win');
+            f.updatePose();
+            ctx.save();
+            ctx.translate(236, 590); ctx.scale(1.7, 1.7); ctx.translate(-236, -590);
+            drawFighter(f, 1);
+            ctx.restore();
+            f.x = sx; f.y = sy; f.facing = sf;
+        }
+
+        /* name plate under the fighter */
+        shadowText(CHAR_BY_ID[s.style].name + ' STYLE', 236, 626, 13, '#fff', 'center', 10);
+        shadowText('"' + CHAR_BY_ID[s.style].title + '"', 236, 652, 9, '#9d8fb5');
+
+        /* --- panel --- */
+        ctx.save();
+        const g = ctx.createLinearGradient(P.x, P.y, P.x, P.y + P.h);
+        g.addColorStop(0, 'rgba(12,6,26,.96)');
+        g.addColorStop(1, 'rgba(5,3,14,.96)');
+        ctx.fillStyle = g;
+        ctx.fillRect(P.x, P.y, P.w, P.h);
+        ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3;
+        ctx.strokeRect(P.x, P.y, P.w, P.h);
+        ctx.fillStyle = '#ff2e63';
+        ctx.fillRect(P.x, P.y, P.w, 4);
+        ctx.restore();
+
+        /* tabs */
+        this.TABS.forEach((t, i) => {
+            const r = this.TAB_RECT(i);
+            const on = this.statusTab === i;
+            ctx.save();
+            ctx.fillStyle = on ? 'rgba(255,46,99,.22)' : 'rgba(255,255,255,.05)';
+            ctx.fillRect(r.x, r.y, r.w, r.h);
+            ctx.strokeStyle = on ? '#ff2e63' : '#ffffff22';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(r.x, r.y, r.w, r.h);
+            ctx.restore();
+            shadowText(t, r.x + r.w / 2, r.y + 28, 12, on ? '#fff' : '#8a7fa8', 'center', on ? 10 : 0);
         });
-        const leaveOn = this.statusI === 3;
-        shadowText('CLOSE', W / 2, 480, 14, leaveOn ? '#fff' : '#9d8fb5', 'center', leaveOn ? 12 : 0);
-        shadowText('LEARNED: ' + (this.s.learned.length ? this.s.learned.map(l => {
-            const m = this.moveOf(l); return m ? m.name : '?';
-        }).join('  /  ') : 'NOTHING YET'), W / 2, 530, 9, '#8a7fa8');
+
+        /* header line: level + experience */
+        const hx = P.x + 26, hy = P.y + 92;
+        shadowText('LV ' + s.level, hx, hy, 20, '#ffd400', 'left', 12);
+        const xw = 300, xp = clamp(s.xp / this.xpNeeded(), 0, 1);
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fillRect(hx + 120, hy - 14, xw, 14);
+        ctx.fillStyle = '#3dffb0'; ctx.fillRect(hx + 120, hy - 14, xw * xp, 14);
+        ctx.strokeStyle = '#ffffff33'; ctx.lineWidth = 1; ctx.strokeRect(hx + 120, hy - 14, xw, 14);
+        ctx.restore();
+        shadowText(s.xp + ' / ' + this.xpNeeded() + ' XP', hx + 120 + xw + 12, hy, 9, '#9d8fb5', 'left');
+        shadowText(s.money + ' Z', P.x + P.w - 26, hy, 14, '#ffd400', 'right');
+
+        if (this.statusTab === 0) this.tabStatus();
+        else if (this.statusTab === 1) this.tabMoves();
+        else this.tabMasters();
+
+        /* close button */
+        const c = this.CLOSE_BTN;
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fillRect(c.x, c.y, c.w, c.h);
+        ctx.strokeStyle = '#ffffff44'; ctx.lineWidth = 2; ctx.strokeRect(c.x, c.y, c.w, c.h);
+        ctx.restore();
+        shadowText('START / TAP TO CLOSE', c.x + c.w / 2, c.y + 27, 9, '#cbbfe0');
+        shadowText('Q / E  OR TAP A TAB TO SWITCH', P.x + 26, c.y + 27, 9, '#8a7fa8', 'left');
+    },
+
+    tabStatus() {
+        const P = this.PANEL;
+        this.statBars().forEach((b, i) => {
+            const r = this.STAT_ROW(i);
+            shadowText(b[0], r.x, r.y + 26, 11, '#cbbfe0', 'left');
+            const bx = r.x + 150, bw = r.w - 260;
+            const p = clamp(b[1] / b[2], 0, 1);
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,.08)';
+            ctx.fillRect(bx, r.y + 12, bw, 18);
+            const grad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+            grad.addColorStop(0, b[4]);
+            grad.addColorStop(1, '#ffffff');
+            ctx.fillStyle = grad;
+            ctx.fillRect(bx, r.y + 12, bw * p, 18);
+            ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 1;
+            ctx.strokeRect(bx, r.y + 12, bw, 18);
+            for (let n = 1; n < 4; n++) {
+                ctx.fillStyle = '#00000055';
+                ctx.fillRect(bx + bw / 4 * n, r.y + 12, 1, 18);
+            }
+            ctx.restore();
+            shadowText(b[3], r.x + r.w, r.y + 26, 11, '#fff', 'right');
+        });
+        const s = this.s;
+        const beaten = Object.keys(s.defeated).length;
+        shadowText('RIVALS BEATEN  ' + beaten + '     MOVES LEARNED  ' + s.learned.length +
+            '     DISTRICT  ' + this.area.name, this.PANEL.x + 26, this.PANEL.y + 470, 9, '#8a7fa8', 'left');
+    },
+
+    tabMoves() {
+        const P = this.PANEL;
+        shadowText('EQUIPPED SPECIALS', P.x + 26, P.y + 112, 10, '#ffd400', 'left');
+        WT_SLOTS.forEach((slot, i) => {
+            const r = this.MOVE_ROW(i);
+            const on = this.statusI === i;
+            ctx.save();
+            ctx.fillStyle = on ? 'rgba(255,46,99,.16)' : 'rgba(255,255,255,.04)';
+            ctx.fillRect(r.x, r.y, r.w, r.h);
+            ctx.strokeStyle = on ? '#ff2e63' : '#ffffff1a';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(r.x, r.y, r.w, r.h);
+            ctx.restore();
+            const ref = this.s.slots[slot], mv = this.moveOf(ref);
+            const input = Game.controls === 'modern'
+                ? (slot === 'neutral' ? 'SPECIAL' : slot === 'down' ? 'DOWN + SPECIAL' : 'FWD + SPECIAL')
+                : (MOTION_TEXT[SLOT_MOTION[slot]] + ' + ' + (mv ? mv.btn : 'P'));
+            shadowText(input, r.x + 14, r.y + 22, 9, on ? '#00f3ff' : '#7f74a0', 'left');
+            shadowText(mv ? mv.name : '-', r.x + 14, r.y + 44, 13, on ? '#fff' : '#b9aed2', 'left');
+            const from = ref && CHAR_BY_ID[ref.char] ? CHAR_BY_ID[ref.char].name : '';
+            shadowText('FROM ' + from, r.x + r.w - 14, r.y + 44, 9, '#8a7fa8', 'right');
+            if (on) shadowText('< LEFT / RIGHT >', r.x + r.w - 14, r.y + 20, 8, '#ffd400', 'right');
+        });
+        const pool = this.pool();
+        shadowText('YOUR MOVE POOL  (' + pool.length + ')', P.x + 26, P.y + 330, 10, '#ffd400', 'left');
+        pool.forEach((o, i) => {
+            const mv = this.moveOf(o);
+            if (!mv) return;
+            const col = i % 2, row = Math.floor(i / 2);
+            const x = P.x + 26 + col * 380, y = P.y + 362 + row * 30;
+            const equipped = WT_SLOTS.some(sl => this.s.slots[sl].char === o.char && this.s.slots[sl].key === o.key);
+            shadowText((equipped ? '* ' : '  ') + mv.name, x, y, 10, equipped ? '#3dffb0' : '#b9aed2', 'left');
+            shadowText(CHAR_BY_ID[o.char].name, x + 350, y, 8, '#8a7fa8', 'right');
+        });
+    },
+
+    tabMasters() {
+        const P = this.PANEL;
+        shadowText('MASTERS AND WHAT THEY TEACH', P.x + 26, P.y + 112, 10, '#ffd400', 'left');
+        const masters = [
+            { id: 'ryko', ch: 'ryko', where: 'DOWNTOWN', key: 'bolt' },
+            { id: 'hako', ch: 'hako', where: 'DOJO DISTRICT', key: 'crane' },
+            { id: 'brutus', ch: 'brutus', where: 'SUBWAY LINE', key: 'charge' },
+            { id: 'kana', ch: 'kana', where: 'SUBWAY LINE', key: 'claw' },
+            { id: 'nova', ch: 'nova', where: 'ROOFTOPS', key: 'orb' },
+            { id: 'volt', ch: 'volt', where: 'ROOFTOPS', key: null }
+        ];
+        masters.forEach((m, i) => {
+            const y = P.y + 146 + i * 62;
+            const c = CHAR_BY_ID[m.ch];
+            const done = !!this.s.defeated[m.id];
+            ctx.save();
+            ctx.fillStyle = done ? 'rgba(61,255,176,.08)' : 'rgba(255,255,255,.04)';
+            ctx.fillRect(P.x + 26, y - 26, P.w - 52, 50);
+            ctx.strokeStyle = done ? '#3dffb055' : '#ffffff14';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(P.x + 26, y - 26, P.w - 52, 50);
+            /* a colour chip standing in for the master's portrait */
+            ctx.fillStyle = c.style.gi;
+            ctx.fillRect(P.x + 34, y - 20, 38, 38);
+            ctx.fillStyle = c.style.trim;
+            ctx.fillRect(P.x + 34, y + 12, 38, 6);
+            ctx.restore();
+            shadowText(c.name, P.x + 84, y - 2, 12, done ? '#fff' : '#9d8fb5', 'left');
+            shadowText(m.where, P.x + 84, y + 18, 8, '#8a7fa8', 'left');
+            const taught = m.key && c.specials[m.key] ? c.specials[m.key].name : 'THE STORM ITSELF';
+            shadowText(done ? 'LEARNED: ' + taught : (m.key ? 'TEACHES: ' + taught : 'FINAL RIVAL'),
+                P.x + P.w - 40, y - 2, 9, done ? '#3dffb0' : '#7f74a0', 'right');
+            shadowText(done ? 'DEFEATED' : 'NOT BEATEN', P.x + P.w - 40, y + 18, 8,
+                done ? '#3dffb0' : '#ff6b81', 'right');
+        });
     },
     drawShop() {
         ctx.save();
