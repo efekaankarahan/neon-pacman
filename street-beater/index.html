@@ -53,6 +53,13 @@
             background: radial-gradient(circle at 50% 40%, #150b28, #05030a 70%);
         }
 
+        /* On a phone held upright the game sits at the top and the controls
+           get the bottom of the screen to themselves. */
+        body.portrait #wrap {
+            align-items: flex-start;
+            padding-top: 6px;
+        }
+
         #game {
             display: block;
             image-rendering: auto;
@@ -157,27 +164,85 @@
             font-size: 8px;
         }
 
-        #rotate {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 18px;
-            background: #05030a;
-            z-index: 50;
-            text-align: center;
-            padding: 24px;
-            font-size: 12px;
-            line-height: 1.9;
-            color: #00f3ff;
+        /* Portrait: a dock behind the controls so they do not float over the
+           background, and roomier buttons now that there is space for them. */
+        body.portrait #touch::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: var(--dockH, 44%);
+            background: linear-gradient(#0d0720, #05030a);
+            border-top: 2px solid rgba(255, 46, 99, .45);
         }
 
-        @media (orientation: portrait) and (max-width: 900px) {
-            #rotate.maybe {
-                display: flex;
-            }
+        body.portrait .tpad {
+            width: 44vw;
+            max-width: 230px;
+            height: 44vw;
+            max-height: 230px;
+            bottom: 26px;
+            left: 4vw;
+        }
+
+        body.portrait .tknob {
+            width: 36%;
+            height: 36%;
+            left: 32%;
+            top: 32%;
+        }
+
+        body.portrait .tbtns {
+            width: 44vw;
+            max-width: 280px;
+            bottom: 26px;
+            right: 4vw;
+            gap: 9px;
+        }
+
+        body.portrait .tb {
+            height: 13vw;
+            max-height: 76px;
+            font-size: 9px;
+        }
+
+        body.portrait .tsys {
+            top: auto;
+            bottom: calc(26px + 46vw);
+            right: 4vw;
+        }
+
+        /* keep the way out clear of the canvas when the dock has room */
+        body.portrait #home {
+            top: auto;
+            bottom: calc(26px + 46vw);
+            left: 4vw;
+            opacity: 1;
+        }
+
+        /* A hint, not a wall: portrait is playable, landscape is just bigger. */
+        #tip {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 46%;
+            z-index: 40;
+            display: none;
+            padding: 10px 14px;
+            border: 2px solid #00f3ff;
+            border-radius: 8px;
+            background: rgba(5, 3, 10, .92);
+            color: #00f3ff;
+            font-size: 9px;
+            line-height: 1.8;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity .6s;
+        }
+
+        body.portrait #tip.show {
+            display: block;
         }
 
         #home {
@@ -228,10 +293,7 @@
         </div>
     </div>
 
-    <div id="rotate" class="maybe">
-        <div>&#128241; &#8635;</div>
-        <div>ROTATE YOUR DEVICE<br>TO PLAY STREET BEATER</div>
-    </div>
+    <div id="tip" class="show">&#8635; TURN YOUR PHONE SIDEWAYS<br>FOR A BIGGER VIEW</div>
 
     <script>
         "use strict";
@@ -252,7 +314,51 @@ const STAGE_W = 1960;          // playable stage width in world units
 const FPS = 60, STEP = 1000 / FPS;
 
 const cv = document.getElementById('game');
+
+/* Phones render at a lower backing resolution and skip the cheapest-to-lose
+   effects. Game code keeps working in 1280x720 space - the base transform
+   does the scaling. */
+/* ?touch=1 forces the phone layout on a desktop, for checking it quickly */
+const IS_TOUCH = /[?&]touch=1/.test(location.search) ||
+    (('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+        Math.min(innerWidth, innerHeight) < 900);   /* viewport, not screen: emulators lie about screen */
+const RS = IS_TOUCH ? 0.72 : 1;
+const LOWFX = RS < 1;
+cv.width = Math.round(W * RS);
+cv.height = Math.round(H * RS);
 const ctx = cv.getContext('2d');
+
+/* A tap on the canvas doubles as "confirm" and, on menus, as a pointer. */
+const TAP = { x: 0, y: 0, fresh: false };
+function markTap(clientX, clientY) {
+    const r = cv.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    TAP.x = (clientX - r.left) / r.width * W;
+    TAP.y = (clientY - r.top) / r.height * H;
+    TAP.fresh = true;
+}
+function takeTap() {
+    if (!TAP.fresh) return null;
+    TAP.fresh = false;
+    return { x: TAP.x, y: TAP.y };
+}
+cv.addEventListener('touchstart', e => {
+    Snd.init(); Snd.resume();
+    const t = e.changedTouches[0];
+    markTap(t.clientX, t.clientY);
+}, { passive: true });
+cv.addEventListener('mousedown', e => { Snd.init(); Snd.resume(); markTap(e.clientX, e.clientY); });
+
+/* Shared menu geometry, so hit testing and drawing can never drift apart. */
+const MENU_ROW = i => ({ x: W / 2 - 350, y: 178 + i * 55 - 30, w: 700, h: 46 });
+const CARD_COLS = 3, CARD_W = 210, CARD_H = 200;
+const CARD_X0 = () => W / 2 - (CARD_COLS * CARD_W) / 2, CARD_Y0 = 110;
+const CARD_RECT = i => ({
+    x: CARD_X0() + (i % CARD_COLS) * CARD_W + 6,
+    y: CARD_Y0 + Math.floor(i / CARD_COLS) * CARD_H,
+    w: CARD_W - 12, h: CARD_H - 14
+});
+const inRect = (t, r) => t.x >= r.x && t.x <= r.x + r.w && t.y >= r.y && t.y <= r.y + r.h;
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -263,14 +369,26 @@ const approach = (v, t, s) => v < t ? Math.min(v + s, t) : Math.max(v - s, t);
 const aabb = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 function fit() {
+    const portrait = innerHeight > innerWidth;
+    document.body.classList.toggle('touch', IS_TOUCH);
+    document.body.classList.toggle('portrait', IS_TOUCH && portrait);
+    document.getElementById('touch').classList.toggle('on', IS_TOUCH);
+    /* upright phone: the game takes the top half, the pad takes the bottom */
     const pad = 8;
-    const s = Math.min((innerWidth - pad) / W, (innerHeight - pad) / H);
-    cv.style.width = Math.floor(W * s) + 'px';
-    cv.style.height = Math.floor(H * s) + 'px';
-    const isTouch = ('ontouchstart' in window) && innerWidth < 1100;
-    document.getElementById('touch').classList.toggle('on', isTouch);
-    document.getElementById('rotate').classList.toggle('maybe', isTouch && innerHeight > innerWidth);
+    const availH = (IS_TOUCH && portrait) ? innerHeight * 0.54 - pad : innerHeight - pad;
+    const s = Math.min((innerWidth - pad) / W, availH / H);
+    const cw = Math.floor(W * s), ch = Math.floor(H * s);
+    cv.style.width = cw + 'px';
+    cv.style.height = ch + 'px';
+    /* the control dock fills everything under the canvas */
+    document.documentElement.style.setProperty('--dockH',
+        (IS_TOUCH && portrait) ? Math.max(240, innerHeight - ch - 14) + 'px' : '44%');
 }
+/* the rotate hint shows for a few seconds, then gets out of the way */
+setTimeout(() => {
+    const tip = document.getElementById('tip');
+    if (tip) { tip.style.opacity = '0'; setTimeout(() => tip.classList.remove('show'), 700); }
+}, 5000);
 addEventListener('resize', fit);
 addEventListener('orientationchange', () => setTimeout(fit, 250));
 
@@ -3086,29 +3204,40 @@ const Game = {
         this.t++;
         if (this.fade > 0) this.fade = Math.max(0, this.fade - 0.05);
         const p1 = PADS.p1, p2 = PADS.p2;
+        const tap = takeTap();
         switch (this.screen) {
-            case 'title': this.titleUpdate(p1, p2); break;
-            case 'mode': this.modeUpdate(p1); break;
-            case 'howto': if (p1.anyPressed() || p2.anyPressed()) { Snd.select(); this.go('mode'); } break;
-            case 'select': this.selectUpdate(p1, p2); break;
+            case 'title': this.titleUpdate(p1, p2, tap); break;
+            case 'mode': this.modeUpdate(p1, tap); break;
+            case 'howto': if (p1.anyPressed() || p2.anyPressed() || tap) { Snd.select(); this.go('mode'); } break;
+            case 'select': this.selectUpdate(p1, p2, tap); break;
             case 'vs':
                 for (const f of this.previews) f.updatePose();
-                if (this.t > 120 || p1.anyPressed()) this.startFight();
+                if (this.t > 120 || p1.anyPressed() || tap) this.startFight();
                 break;
             case 'fight': Match.update(); break;
-            case 'result': this.resultUpdate(p1, p2); break;
-            case 'wt': WT.update(p1); break;
-            case 'wtEnd': if (this.t > 40 && p1.anyPressed()) { Snd.select(); this.go('title'); } break;
-            case 'ending': if (this.t > 40 && (p1.anyPressed() || p2.anyPressed())) { Snd.select(); this.go('title'); } break;
+            case 'result': this.resultUpdate(p1, p2, tap); break;
+            case 'wt': WT.update(p1, tap); break;
+            case 'wtEnd': if (this.t > 40 && (p1.anyPressed() || tap)) { Snd.select(); this.go('title'); } break;
+            case 'ending': if (this.t > 40 && (p1.anyPressed() || p2.anyPressed() || tap)) { Snd.select(); this.go('title'); } break;
         }
         if (this.screen === 'title' || this.screen === 'mode' || this.screen === 'select' || this.screen === 'vs')
             for (const f of this.previews) { if (this.screen !== 'vs') f.updatePose(); }
     },
-    titleUpdate(p1, p2) {
-        if (p1.anyPressed() || p2.anyPressed() || (this.t > 4 && TOUCH.start)) { Snd.select(); this.go('mode'); }
+    titleUpdate(p1, p2, tap) {
+        if (p1.anyPressed() || p2.anyPressed() || tap || (this.t > 4 && TOUCH.start)) { Snd.select(); this.go('mode'); }
     },
-    modeUpdate(p) {
+    modeUpdate(p, tap) {
         const items = 8;
+        if (tap) {
+            /* tapping a row both moves the cursor and picks it */
+            for (let i = 0; i < items; i++) {
+                if (inRect(tap, MENU_ROW(i))) {
+                    if (this.menuI === i || i < 5) { this.menuI = i; this.pickMode(i); }
+                    else { this.menuI = i; Snd.menu(); }
+                    return;
+                }
+            }
+        }
         if (p.pressed2('down')) { this.menuI = (this.menuI + 1) % items; Snd.menu(); }
         if (p.pressed2('up')) { this.menuI = (this.menuI + items - 1) % items; Snd.menu(); }
         const lr = p.pressed2('right') || p.pressed2('left');
@@ -3118,21 +3247,22 @@ const Game = {
             if (p.pressed2('left')) { this.diff = clamp(this.diff - 1, 1, 4); Snd.menu(); }
         }
         if (this.menuI === 7 && lr) { Snd.musicOn = !Snd.musicOn; Snd.menu(); }
-        if (p.anyPressed()) {
-            Snd.select();
-            if (this.menuI === 0) {
-                this.mode = 'worldtour'; this.players = 1;
-                if (WT.hasSave() && WT.resume()) this.go('wt');
-                else { this.selectFor = 'wt'; this.lock = [false, false]; this.go('select'); }
-            }
-            else if (this.menuI === 1) { this.mode = 'arcade'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 2) { this.mode = 'versus'; this.players = 2; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 3) { this.mode = 'training'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
-            else if (this.menuI === 4) { this.go('howto'); }
-            else if (this.menuI === 5) { this.toggleControls(); }
-            else if (this.menuI === 6) { this.diff = this.diff % 4 + 1; }
-            else if (this.menuI === 7) { Snd.musicOn = !Snd.musicOn; }
+        if (p.anyPressed()) this.pickMode(this.menuI);
+    },
+    pickMode(i) {
+        Snd.select();
+        if (i === 0) {
+            this.mode = 'worldtour'; this.players = 1;
+            if (WT.hasSave() && WT.resume()) this.go('wt');
+            else { this.selectFor = 'wt'; this.lock = [false, false]; this.go('select'); }
         }
+        else if (i === 1) { this.mode = 'arcade'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
+        else if (i === 2) { this.mode = 'versus'; this.players = 2; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
+        else if (i === 3) { this.mode = 'training'; this.players = 1; this.selectFor = null; this.lock = [false, false]; this.go('select'); }
+        else if (i === 4) { this.go('howto'); }
+        else if (i === 5) { this.toggleControls(); }
+        else if (i === 6) { this.diff = this.diff % 4 + 1; }
+        else if (i === 7) { Snd.musicOn = !Snd.musicOn; }
     },
     toggleControls() {
         this.controls = this.controls === 'modern' ? 'classic' : 'modern';
@@ -3140,7 +3270,16 @@ const Game = {
         labelTouch();
         Snd.menu();
     },
-    selectUpdate(p1, p2) {
+    selectUpdate(p1, p2, tap) {
+        if (tap) {
+            for (let i = 0; i < CHARS.length; i++) {
+                if (!inRect(tap, CARD_RECT(i))) continue;
+                const who = (this.players === 2 && this.lock[0]) ? 1 : 0;
+                if (this.cur[who] === i) { this.lock[who] = true; Snd.select(); }
+                else { this.cur[who] = i; Snd.menu(); }
+                break;
+            }
+        }
         const move = (pad, i) => {
             if (this.lock[i]) {
                 if (pad.pressed('LK') || pad.pressed('MK') || pad.pressed('HK')) { this.lock[i] = false; Snd.menu(); }
@@ -3205,9 +3344,9 @@ const Game = {
         }
         this.go('result');
     },
-    resultUpdate(p1, p2) {
+    resultUpdate(p1, p2, tap) {
         if (this.t < 60) return;
-        if (!(p1.anyPressed() || p2.anyPressed())) return;
+        if (!(p1.anyPressed() || p2.anyPressed() || tap)) return;
         Snd.select();
         if (this.mode === 'arcade' && this.winnerIsP1) {
             if (this.ladderI >= this.ladder.length) { this.go('ending'); return; }
@@ -3224,7 +3363,7 @@ const Game = {
 
     /* ------------------------------ draw ---------------------------- */
     draw() {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.setTransform(RS, 0, 0, RS, 0, 0);
         ctx.clearRect(0, 0, W, H);
         switch (this.screen) {
             case 'title': this.drawTitle(); break;
@@ -3303,14 +3442,15 @@ const Game = {
             ['MUSIC:  ' + (Snd.musicOn ? 'ON' : 'OFF'), 'LEFT / RIGHT TO TOGGLE']
         ];
         items.forEach((it, i) => {
-            const y = 178 + i * 55;
+            const r = MENU_ROW(i);
+            const y = r.y + 30;
             const on = i === this.menuI;
             if (on) {
                 ctx.save();
                 ctx.fillStyle = 'rgba(255,46,99,.16)';
-                ctx.fillRect(W / 2 - 350, y - 30, 700, 46);
+                ctx.fillRect(r.x, r.y, r.w, r.h);
                 ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3;
-                ctx.strokeRect(W / 2 - 350, y - 30, 700, 46);
+                ctx.strokeRect(r.x, r.y, r.w, r.h);
                 ctx.restore();
             }
             shadowText(it[0], W / 2, y, 18, on ? '#fff' : '#9d8fb5', 'center', on ? 14 : 0);
@@ -3353,8 +3493,8 @@ const Game = {
     drawSelect() {
         this.menuBg();
         shadowText(this.selectFor === 'wt' ? 'CHOOSE YOUR STYLE' : 'SELECT YOUR FIGHTER', W / 2, 66, 24, '#fff', 'center', 16);
-        const cols = 3, cw = 210, chh = 200;
-        const x0 = W / 2 - (cols * cw) / 2, y0 = 110;
+        const cols = CARD_COLS, cw = CARD_W, chh = CARD_H;
+        const x0 = CARD_X0(), y0 = CARD_Y0;
         CHARS.forEach((c, i) => {
             const cx = x0 + (i % cols) * cw, cy = y0 + Math.floor(i / cols) * chh;
             const sel1 = this.cur[0] === i, sel2 = (this.players === 2 || !this.lock[0]) && this.cur[1] === i;
@@ -3805,12 +3945,12 @@ const WT = {
     },
 
     /* ----------------------------- update ------------------------------ */
-    update(p) {
+    update(p, tap) {
         this.walkT++;
         if (this.toastT > 0) this.toastT--;
-        if (this.mode === 'dialog') return this.dialogUpdate(p);
-        if (this.mode === 'status') return this.statusUpdate(p);
-        if (this.mode === 'shop') return this.shopUpdate(p);
+        if (this.mode === 'dialog') return this.dialogUpdate(p, tap);
+        if (this.mode === 'status') return this.statusUpdate(p, tap);
+        if (this.mode === 'shop') return this.shopUpdate(p, tap);
 
         const sp = 4.2;
         let moving = 0;
@@ -3834,7 +3974,8 @@ const WT = {
         else if (exit) this.prompt = 'GO TO ' + exit.label;
 
         if (p.pressed('start')) { this.mode = 'status'; this.statusI = 0; Snd.menu(); return; }
-        if (!BTNS.some(b => p.pressed(b))) return;
+        /* on a phone, tapping the street is the same as pressing a button */
+        if (!BTNS.some(b => p.pressed(b)) && !tap) return;
 
         if (npc) this.talkTo(npc);
         else if (exit) {
@@ -3886,8 +4027,8 @@ const WT = {
             this.save();
         }
     },
-    dialogUpdate(p) {
-        if (!BTNS.some(b => p.pressed(b)) && !p.pressed('start')) return;
+    dialogUpdate(p, tap) {
+        if (!BTNS.some(b => p.pressed(b)) && !p.pressed('start') && !tap) return;
         const d = this.dialog;
         d.i++;
         Snd.menu();
@@ -3904,10 +4045,18 @@ const WT = {
         { name: '+3% DAMAGE', cost: 150, apply: s => s.atkBonus += 0.03 },
         { name: 'LEAVE', cost: 0, apply: null }
     ],
-    shopUpdate(p) {
+    SHOP_ROW: i => ({ x: 280, y: 300 + i * 56 - 26, w: W - 560, h: 42 }),
+    SLOT_ROW: i => ({ x: 180, y: 300 + i * 54 - 28, w: W - 360, h: 44 }),
+    CLOSE_ROW: { x: W / 2 - 140, y: 452, w: 280, h: 46 },
+
+    shopUpdate(p, tap) {
         if (p.pressed2('down')) { this.shopI = (this.shopI + 1) % this.SHOP.length; Snd.menu(); }
         if (p.pressed2('up')) { this.shopI = (this.shopI + this.SHOP.length - 1) % this.SHOP.length; Snd.menu(); }
-        if (!BTNS.some(b => p.pressed(b))) return;
+        if (tap) {
+            const i = this.SHOP.findIndex((_, n) => inRect(tap, this.SHOP_ROW(n)));
+            if (i < 0) return;
+            this.shopI = i;
+        } else if (!BTNS.some(b => p.pressed(b))) return;
         const it = this.SHOP[this.shopI];
         if (!it.apply) { this.mode = 'walk'; Snd.select(); return; }
         if (this.s.money < it.cost) { this.toastUp('NOT ENOUGH ZENNY'); Snd.whiff(); return; }
@@ -3917,15 +4066,29 @@ const WT = {
         Snd.select();
         this.save();
     },
-    statusUpdate(p) {
+    cycleSlot(i, dir) {
+        const slot = WT_SLOTS[i];
+        const pool = this.pool();
+        const cur = pool.findIndex(o => o.char === this.s.slots[slot].char && o.key === this.s.slots[slot].key);
+        this.s.slots[slot] = pool[(cur + dir + pool.length) % pool.length];
+        Snd.menu(); this.save();
+    },
+    statusUpdate(p, tap) {
         if (p.pressed2('down')) { this.statusI = (this.statusI + 1) % 4; Snd.menu(); }
         if (p.pressed2('up')) { this.statusI = (this.statusI + 3) % 4; Snd.menu(); }
         if (this.statusI < 3) {
-            const slot = WT_SLOTS[this.statusI];
-            const pool = this.pool();
-            const cur = pool.findIndex(o => o.char === this.s.slots[slot].char && o.key === this.s.slots[slot].key);
-            if (p.pressed2('right')) { this.s.slots[slot] = pool[(cur + 1) % pool.length]; Snd.menu(); this.save(); }
-            if (p.pressed2('left')) { this.s.slots[slot] = pool[(cur - 1 + pool.length) % pool.length]; Snd.menu(); this.save(); }
+            if (p.pressed2('right')) this.cycleSlot(this.statusI, 1);
+            if (p.pressed2('left')) this.cycleSlot(this.statusI, -1);
+        }
+        if (tap) {
+            for (let i = 0; i < 3; i++) {
+                if (!inRect(tap, this.SLOT_ROW(i))) continue;
+                if (this.statusI === i) this.cycleSlot(i, 1);
+                else { this.statusI = i; Snd.menu(); }
+                return;
+            }
+            if (inRect(tap, this.CLOSE_ROW)) { this.mode = 'walk'; Snd.select(); }
+            return;
         }
         if (p.pressed('start') || (this.statusI === 3 && BTNS.some(b => p.pressed(b)))) {
             this.mode = 'walk'; Snd.select();
