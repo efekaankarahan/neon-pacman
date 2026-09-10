@@ -226,7 +226,8 @@
             position: fixed;
             left: 50%;
             transform: translateX(-50%);
-            bottom: 46%;
+            top: var(--tipTop, 55%);
+            bottom: auto;
             z-index: 40;
             display: none;
             padding: 10px 14px;
@@ -391,6 +392,7 @@ function fit() {
         root.style.setProperty('--dockH', dock + 'px');
         root.style.setProperty('--ctrlBottom', bottom + 'px');
         root.style.setProperty('--sysBottom', Math.round(bottom + stick + 14) + 'px');
+        root.style.setProperty('--tipTop', (ch + 22) + 'px');
     } else {
         root.style.setProperty('--dockH', '44%');
     }
