@@ -182,7 +182,7 @@
             max-width: 230px;
             height: 44vw;
             max-height: 230px;
-            bottom: 26px;
+            bottom: var(--ctrlBottom, 26px);
             left: 4vw;
         }
 
@@ -196,7 +196,7 @@
         body.portrait .tbtns {
             width: 44vw;
             max-width: 280px;
-            bottom: 26px;
+            bottom: var(--ctrlBottom, 26px);
             right: 4vw;
             gap: 9px;
         }
@@ -209,14 +209,14 @@
 
         body.portrait .tsys {
             top: auto;
-            bottom: calc(26px + 46vw);
+            bottom: var(--sysBottom, calc(26px + 46vw));
             right: 4vw;
         }
 
         /* keep the way out clear of the canvas when the dock has room */
         body.portrait #home {
             top: auto;
-            bottom: calc(26px + 46vw);
+            bottom: var(--sysBottom, calc(26px + 46vw));
             left: 4vw;
             opacity: 1;
         }
@@ -380,9 +380,29 @@ function fit() {
     const cw = Math.floor(W * s), ch = Math.floor(H * s);
     cv.style.width = cw + 'px';
     cv.style.height = ch + 'px';
-    /* the control dock fills everything under the canvas */
-    document.documentElement.style.setProperty('--dockH',
-        (IS_TOUCH && portrait) ? Math.max(240, innerHeight - ch - 14) + 'px' : '44%');
+    const root = document.documentElement;
+    if (IS_TOUCH && portrait) {
+        /* the dock fills everything under the canvas, and the controls sit in
+           the middle of it rather than clinging to the bottom edge */
+        const dock = Math.max(240, innerHeight - ch - 14);
+        const stick = Math.min(230, innerWidth * 0.44);
+        const cluster = stick + 54;
+        const bottom = Math.max(18, Math.round((dock - cluster) / 2));
+        root.style.setProperty('--dockH', dock + 'px');
+        root.style.setProperty('--ctrlBottom', bottom + 'px');
+        root.style.setProperty('--sysBottom', Math.round(bottom + stick + 14) + 'px');
+    } else {
+        root.style.setProperty('--dockH', '44%');
+    }
+}
+/* Some browsers (and every embedded preview) never fire resize on an
+   orientation flip, so watch the viewport instead of trusting the event. */
+let lastW = 0, lastH = 0;
+function watchViewport() {
+    if (innerWidth !== lastW || innerHeight !== lastH) {
+        lastW = innerWidth; lastH = innerHeight;
+        fit();
+    }
 }
 /* the rotate hint shows for a few seconds, then gets out of the way */
 setTimeout(() => {
@@ -4298,6 +4318,7 @@ function tick() {
 let acc = 0, last = performance.now();
 function loop(now) {
     requestAnimationFrame(loop);
+    watchViewport();
     let dt = now - last; last = now;
     if (dt > 240) dt = 240;
     acc += dt;
