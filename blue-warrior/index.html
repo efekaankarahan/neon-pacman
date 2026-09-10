@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blue Warrior - Free Online Platform Adventure | Darky Play</title>
+    <meta name="description"
+        content="Blue Warrior is a free online cinematic platformer: run and leap across a neon dungeon, hang from ledges, dodge spikes and blades, and duel guards with a sword. No download.">
+    <meta name="keywords"
+        content="Blue Warrior, platform game, prince of persia style, cinematic platformer, sword fighting game, dungeon game, browser game, Darky Play">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://darkyplay.com/blue-warrior/">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://darkyplay.com/blue-warrior/">
+    <meta property="og:title" content="Blue Warrior - Free Online Platform Adventure | Darky Play">
+    <meta property="og:description"
+        content="Run, leap and hang your way through a neon dungeon of spikes, blades and swordsmen. Free browser platformer, no download.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Blue Warrior - Free Online Platform Adventure | Darky Play">
+    <meta name="twitter:description"
+        content="Run, leap and hang your way through a neon dungeon of spikes, blades and swordsmen. Free browser platformer, no download.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Blue Warrior - Free Online Platform Adventure | Darky Play","url":"https://darkyplay.com/blue-warrior/","description":"Play Blue Warrior free online. A cinematic platformer in a neon dungeon: measured running jumps, ledge hangs, loose floors, spikes and blades, and sword duels with the guards. Works in your browser, no download.","keywords":"blue warrior, platform game, prince of persia style game, cinematic platformer, sword fighting game, dungeon platformer, free online games","genre":"Platformer","gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"Darky Play","url":"https://darkyplay.com/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="../shared/analytics.js?v=2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #03060f;
+            font-family: 'Press Start 2P', monospace;
+            color: #cfe8ff;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #wrap {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 35%, #0b1a33, #03060f 70%);
+        }
+
+        body.portrait #wrap {
+            align-items: flex-start;
+            padding-top: 6px;
+        }
+
+        #game {
+            display: block;
+            background: #000;
+            border-radius: 4px;
+            box-shadow: 0 0 40px rgba(0, 150, 255, .35), 0 0 120px rgba(0, 220, 255, .15);
+        }
+
+        /* ---------- touch controls ---------- */
+        #touch {
+            position: fixed;
+            inset: 0;
+            display: none;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        #touch.on {
+            display: block;
+        }
+
+        body.portrait #touch::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: var(--dockH, 44%);
+            background: linear-gradient(#061428, #03060f);
+            border-top: 2px solid rgba(0, 180, 255, .4);
+        }
+
+        .pad {
+            position: absolute;
+            bottom: var(--ctrlBottom, 20px);
+            left: 3vw;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 6px;
+            width: 46vw;
+            max-width: 260px;
+            pointer-events: auto;
+        }
+
+        .acts {
+            position: absolute;
+            bottom: var(--ctrlBottom, 20px);
+            right: 3vw;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 40vw;
+            max-width: 230px;
+            pointer-events: auto;
+        }
+
+        .b {
+            height: 14vw;
+            max-height: 78px;
+            min-height: 46px;
+            border: 2px solid rgba(0, 200, 255, .5);
+            background: rgba(0, 140, 220, .12);
+            color: #9fe4ff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            text-align: center;
+        }
+
+        .b.round {
+            border-radius: 50%;
+        }
+
+        .b:active,
+        .b.on {
+            background: rgba(0, 200, 255, .34);
+            color: #fff;
+        }
+
+        .b.blank {
+            visibility: hidden;
+        }
+
+        .sys {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .sys .b {
+            width: 84px;
+            height: 40px;
+            min-height: 0;
+            font-size: 8px;
+            border-radius: 8px;
+        }
+
+        #tip {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            top: var(--tipTop, 55%);
+            z-index: 40;
+            display: none;
+            padding: 10px 14px;
+            border: 2px solid #00c8ff;
+            border-radius: 8px;
+            background: rgba(3, 6, 15, .92);
+            color: #9fe4ff;
+            font-size: 9px;
+            line-height: 1.8;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity .6s;
+        }
+
+        body.portrait #tip.show {
+            display: block;
+        }
+
+        #home {
+            position: fixed;
+            left: 10px;
+            top: 10px;
+            z-index: 30;
+            font-size: 9px;
+            color: #00c8ff;
+            text-decoration: none;
+            border: 2px solid #00c8ff;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: #061428;
+            opacity: .55;
+        }
+
+        #home:hover {
+            opacity: 1;
+            background: #00c8ff;
+            color: #000;
+        }
+
+        body.portrait #home {
+            top: auto;
+            bottom: var(--sysBottom, 20px);
+            left: 3vw;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrap"><canvas id="game" width="1280" height="720"></canvas></div>
+    <a id="home" href="../index.html">&#8592; ARCADE</a>
+
+    <div id="touch">
+        <div class="sys">
+            <div class="b" data-k="restart">RETRY</div>
+            <div class="b" data-k="start">START</div>
+        </div>
+        <div class="pad">
+            <div class="b blank"></div>
+            <div class="b round" data-k="up">&#9650;</div>
+            <div class="b blank"></div>
+            <div class="b round" data-k="left">&#9664;</div>
+            <div class="b blank"></div>
+            <div class="b round" data-k="right">&#9654;</div>
+            <div class="b blank"></div>
+            <div class="b round" data-k="down">&#9660;</div>
+            <div class="b blank"></div>
+        </div>
+        <div class="acts">
+            <div class="b" data-k="jump">JUMP</div>
+            <div class="b" data-k="attack">SWORD</div>
+            <div class="b" data-k="step">STEP</div>
+            <div class="b" data-k="block">BLOCK</div>
+        </div>
+    </div>
+
+    <div id="tip" class="show">&#8635; TURN YOUR PHONE SIDEWAYS<br>FOR A BIGGER VIEW</div>
+
+    <script>
+        "use strict";
+
+/* =====================================================================
+   BLUE WARRIOR
+   A cinematic platformer in the Prince of Persia tradition: the dungeon
+   is a grid of rooms ten tiles wide and three tall, the camera cuts from
+   room to room rather than scrolling, and the warrior carries his own
+   momentum - you plant a foot before a leap, you catch a ledge on the way
+   down, and you cross swords instead of stomping on anyone.
+   ===================================================================== */
+
+/* ------------------------------- core ------------------------------- */
+const W = 1280, H = 720;
+const TW = 128, TH = 216;              /* one dungeon tile */
+const ROOM_C = 10, ROOM_R = 3;         /* tiles per room, as in the original */
+const HUD_H = 72;
+const FPS = 60, STEP = 1000 / FPS;
+
+const cv = document.getElementById('game');
+const IS_TOUCH = /[?&]touch=1/.test(location.search) ||
+    (('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+        Math.min(innerWidth, innerHeight) < 900);
+const ctx = cv.getContext('2d');
+
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const rnd = (a = 1, b = 0) => b + Math.random() * (a - b);
+const rndi = (a, b) => Math.floor(rnd(a, b));
+const sign = v => v < 0 ? -1 : v > 0 ? 1 : 0;
+const approach = (v, t, s) => v < t ? Math.min(v + s, t) : Math.max(v - s, t);
+
+function fit() {
+    const portrait = innerHeight > innerWidth;
+    document.body.classList.toggle('touch', IS_TOUCH);
+    document.body.classList.toggle('portrait', IS_TOUCH && portrait);
+    document.getElementById('touch').classList.toggle('on', IS_TOUCH);
+    const pad = 8;
+    const availH = (IS_TOUCH && portrait) ? innerHeight * 0.54 - pad : innerHeight - pad;
+    const s = Math.min((innerWidth - pad) / W, availH / H);
+    const ch = Math.floor(H * s);
+    cv.style.width = Math.floor(W * s) + 'px';
+    cv.style.height = ch + 'px';
+    const root = document.documentElement;
+    if (IS_TOUCH && portrait) {
+        const dock = Math.max(240, innerHeight - ch - 14);
+        const cluster = Math.min(260, innerWidth * 0.46) + 40;
+        const bottom = Math.max(18, Math.round((dock - cluster) / 2));
+        root.style.setProperty('--dockH', dock + 'px');
+        root.style.setProperty('--ctrlBottom', bottom + 'px');
+        root.style.setProperty('--sysBottom', Math.round(bottom + cluster - 20) + 'px');
+        root.style.setProperty('--tipTop', (ch + 22) + 'px');
+    } else root.style.setProperty('--dockH', '44%');
+}
+addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 250));
+setTimeout(() => {
+    const tip = document.getElementById('tip');
+    if (tip) { tip.style.opacity = '0'; setTimeout(() => tip.classList.remove('show'), 700); }
+}, 5000);
+
+/* ------------------------------- audio ------------------------------ */
+const Snd = {
+    ac: null, master: null, on: true, ready: false, noiseBuf: null,
+    init() {
+        if (this.ac) return;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ac = new AC();
+        this.master = this.ac.createGain();
+        this.master.gain.value = 0.5;
+        this.master.connect(this.ac.destination);
+        this.noiseBuf = this.ac.createBuffer(1, this.ac.sampleRate, this.ac.sampleRate);
+        const d = this.noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        this.ready = true;
+    },
+    resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); },
+    tone(f, dur, type, vol, to) {
+        if (!this.ready || !this.on) return;
+        const t = this.ac.currentTime;
+        const o = this.ac.createOscillator(), g = this.ac.createGain();
+        o.type = type || 'square';
+        o.frequency.setValueAtTime(f, t);
+        if (to) o.frequency.exponentialRampToValueAtTime(Math.max(20, to), t + dur);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(vol === undefined ? 0.25 : vol, t + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+        o.connect(g); g.connect(this.master);
+        o.start(t); o.stop(t + dur + 0.02);
+    },
+    noise(dur, vol, f0, f1) {
+        if (!this.ready || !this.on) return;
+        const t = this.ac.currentTime;
+        const s = this.ac.createBufferSource(); s.buffer = this.noiseBuf;
+        const f = this.ac.createBiquadFilter(); f.type = 'lowpass';
+        f.frequency.setValueAtTime(f0, t);
+        f.frequency.exponentialRampToValueAtTime(Math.max(60, f1), t + dur);
+        const g = this.ac.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+        s.connect(f); f.connect(g); g.connect(this.master);
+        s.start(t); s.stop(t + dur);
+    },
+    step() { this.noise(0.06, 0.12, 1200, 300); },
+    land(hard) { this.noise(0.12, hard ? 0.3 : 0.16, 900, 120); if (hard) this.tone(90, 0.14, 'square', 0.16, 45); },
+    jump() { this.tone(300, 0.12, 'square', 0.12, 520); },
+    grab() { this.noise(0.09, 0.16, 2200, 500); },
+    climb() { this.noise(0.14, 0.12, 800, 200); },
+    clang() { this.tone(1400, 0.14, 'square', 0.16, 700); this.noise(0.12, 0.16, 6000, 1500); },
+    cut() { this.noise(0.12, 0.22, 3000, 400); this.tone(220, 0.14, 'sawtooth', 0.14, 80); },
+    hurt() { this.tone(180, 0.24, 'sawtooth', 0.22, 60); this.noise(0.2, 0.18, 1400, 200); },
+    spike() { this.tone(1200, 0.1, 'square', 0.2, 200); this.noise(0.25, 0.25, 3000, 200); },
+    gate() { this.noise(0.5, 0.2, 700, 120); this.tone(80, 0.5, 'square', 0.12, 40); },
+    plate() { this.tone(700, 0.08, 'square', 0.18); this.tone(1050, 0.14, 'square', 0.12); },
+    potion() { [660, 880, 1320].forEach((f, i) => setTimeout(() => this.tone(f, 0.16, 'triangle', 0.2), i * 70)); },
+    crumble() { this.noise(0.4, 0.22, 1600, 150); },
+    die() { this.tone(200, 0.7, 'sawtooth', 0.26, 45); this.noise(0.6, 0.2, 1200, 80); },
+    win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 'triangle', 0.22), i * 130)); },
+    menu() { this.tone(620, 0.05, 'square', 0.14); },
+    select() { this.tone(520, 0.08, 'square', 0.18); setTimeout(() => this.tone(880, 0.14, 'square', 0.18), 70); }
+};
+
+/* ------------------------------- input ------------------------------ */
+const KEYS = Object.create(null);
+const BLOCK_SCROLL = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight'];
+function codeOf(e) {
+    if (e.code) return e.code;
+    const k = e.key || '';
+    if (k.length === 1) {
+        if (/[a-zA-Z]/.test(k)) return 'Key' + k.toUpperCase();
+        if (k === ' ') return 'Space';
+    }
+    if (k.indexOf('Arrow') === 0) return k;
+    return k;
+}
+addEventListener('keydown', e => {
+    const c = codeOf(e);
+    if (BLOCK_SCROLL.indexOf(c) >= 0) e.preventDefault();
+    KEYS[c] = true;
+    Snd.init(); Snd.resume();
+});
+addEventListener('keyup', e => { KEYS[codeOf(e)] = false; });
+addEventListener('blur', () => { for (const k in KEYS) KEYS[k] = false; });
+
+const TOUCH = {};
+const MAP = {
+    left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
+    up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
+    jump: ['Space', 'KeyK'], attack: ['KeyJ', 'KeyZ'], block: ['KeyL', 'KeyX'],
+    step: ['ShiftLeft', 'ShiftRight'], start: ['Enter'], restart: ['KeyR']
+};
+const Pad = {
+    cur: {}, prev: {},
+    poll() {
+        this.prev = Object.assign({}, this.cur);
+        for (const k in MAP) {
+            this.cur[k] = MAP[k].some(c => KEYS[c]) || !!TOUCH[k];
+        }
+    },
+    down(k) { return !!this.cur[k]; },
+    hit(k) { return !!this.cur[k] && !this.prev[k]; },
+    any() { return ['jump', 'attack', 'block', 'start', 'up'].some(k => this.hit(k)); }
+};
+
+const TAP = { x: 0, y: 0, fresh: false };
+function markTap(cx, cy) {
+    const r = cv.getBoundingClientRect();
+    if (!r.width) return;
+    TAP.x = (cx - r.left) / r.width * W;
+    TAP.y = (cy - r.top) / r.height * H;
+    TAP.fresh = true;
+}
+function takeTap() { if (!TAP.fresh) return null; TAP.fresh = false; return { x: TAP.x, y: TAP.y }; }
+cv.addEventListener('touchstart', e => {
+    Snd.init(); Snd.resume();
+    markTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+}, { passive: true });
+cv.addEventListener('mousedown', e => { Snd.init(); Snd.resume(); markTap(e.clientX, e.clientY); });
+
+document.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.dataset.k;
+    const set = on => { Snd.init(); Snd.resume(); TOUCH[k] = on; el.classList.toggle('on', on); };
+    el.addEventListener('touchstart', e => { e.preventDefault(); set(true); }, { passive: false });
+    el.addEventListener('touchend', e => { e.preventDefault(); set(false); }, { passive: false });
+    el.addEventListener('touchcancel', () => set(false));
+    el.addEventListener('mousedown', e => { e.preventDefault(); set(true); });
+    addEventListener('mouseup', () => set(false));
+});
+
+/* =====================================================================
+   THE DUNGEON
+   Levels are written as text. Every character is one tile, every row is
+   one floor, and ten by three of them make a room - the unit the camera
+   cuts between.
+     #  floor      =  loose floor    |  pillar
+     ^  spikes     X  blade trap     G  gate
+     P  plate      h  small potion   H  life potion
+     S  start      E  exit           g  guard    B  captain
+   ===================================================================== */
+const LEVELS = [
+    {
+        /* Row 5 is the road: its gaps are never wider than a running jump.
+           Anything you pick up sits on the row above a floor, and the door
+           stands at the far end. */
+        name: 'THE CELLS', time: 150,
+        rows: [
+            '..............................',
+            '..............................',
+            '..............................',
+            '..............................',
+            '...........h..................',
+            '#S####..#######..#############'
+        ]
+    },
+    {
+        name: 'LOOSE STONES', time: 165,
+        rows: [
+            '..............................',
+            '..............................',
+            '..............................',
+            '..............................',
+            '.................h............',
+            '#S####=###^^####=###..###^^###'
+        ]
+    },
+    {
+        name: 'THE GUARDROOM', time: 180,
+        rows: [
+            '..............................',
+            '..............................',
+            '..............................',
+            '..............................',
+            '..........h.........GG........',
+            '#S#####g######P###############'
+        ]
+    },
+    {
+        name: 'BLADES', time: 195,
+        rows: [
+            '..............................',
+            '..............................',
+            '..............................',
+            '..............................',
+            '........h.....................',
+            '#S####X####^^####X####..#g####'
+        ]
+    },
+    {
+        /* the one that goes up: three ledges to the life potion */
+        name: 'THE LONG DROP', time: 210,
+        rows: [
+            '.....H........................',
+            '.....#####....................',
+            '...###........................',
+            '.###..........................',
+            '.....................h........',
+            '#S###.#####^^#####..####^^####'
+        ]
+    },
+    {
+        name: 'THE CAPTAIN', time: 240,
+        rows: [
+            '..............................',
+            '..............................',
+            '..............................',
+            '..............................',
+            '..........h.........GG........',
+            '#S####^^###g####P#####..###B##'
+        ]
+    }
+];
+/* The door stands ON the floor, so it belongs in the row above it - put it
+   at the far end of every level and make sure there is ground beneath. */
+LEVELS.forEach(L => {
+    const ground = L.rows[5].split('');
+    const door = L.rows[4].split('');
+    for (let i = 0; i < ground.length; i++) if (ground[i] === 'E') ground[i] = '#';
+    ground[ground.length - 1] = '#';
+    door[door.length - 1] = 'E';
+    L.rows[5] = ground.join('');
+    L.rows[4] = door.join('');
+    L.cols = L.rows[0].length;
+    L.rowsN = L.rows.length;
+});
+
+const SOLID = '#=|G^XP';   /* a pressure plate is floor you can stand on */
+const Map = {
+    L: null, grid: null, cols: 0, rows: 0, gatesOpen: false,
+    load(idx) {
+        const L = LEVELS[idx];
+        this.L = L;
+        this.cols = L.cols; this.rows = L.rowsN;
+        this.grid = L.rows.map(r => r.split(''));
+        this.gatesOpen = false;
+        return L;
+    },
+    at(c, r) {
+        if (c < 0 || c >= this.cols || r < 0 || r >= this.rows) return c < 0 || c >= this.cols ? '|' : '.';
+        return this.grid[r][c];
+    },
+    set(c, r, ch) { if (c >= 0 && c < this.cols && r >= 0 && r < this.rows) this.grid[r][c] = ch; },
+    solid(c, r) {
+        const t = this.at(c, r);
+        if (t === 'G') return !this.gatesOpen;
+        return SOLID.indexOf(t) >= 0 && t !== 'G';
+    },
+    /* the surface a point stands on */
+    colAt(x) { return Math.floor(x / TW); },
+    rowAt(y) { return Math.floor(y / TH); },
+    floorUnder(x, y) {
+        const c = this.colAt(x);
+        for (let r = Math.max(0, Math.floor(y / TH)); r < this.rows; r++) {
+            if (this.solid(c, r)) return r * TH;
+        }
+        return this.rows * TH + 400;          /* the pit */
+    },
+    standingOn(x, y) {
+        const c = this.colAt(x), r = Math.round(y / TH);
+        return this.solid(c, r) ? r : -1;
+    }
+};
+
+/* =====================================================================
+   THE WARRIOR - poses
+   Local space: feet at the origin, -y is up, +x is the way he faces.
+   ===================================================================== */
+const BASE = {
+    pel: [0, -74], ch: [1, -110], hd: [6, -134],
+    e1: [20, -96], h1: [27, -110],
+    e2: [-12, -94], h2: [7, -104],
+    k1: [10, -40], f1: [13, -1],
+    k2: [-12, -40], f2: [-17, -1],
+    rot: 0
+};
+const PK = ['pel', 'ch', 'hd', 'e1', 'h1', 'e2', 'h2', 'k1', 'f1', 'k2', 'f2'];
+function mk(o, rot) {
+    const p = { rot: rot || 0 };
+    for (const k of PK) p[k] = o[k] ? o[k].slice() : BASE[k].slice();
+    return p;
+}
+function blend(a, b, t) {
+    const p = { rot: lerp(a.rot || 0, b.rot || 0, t) };
+    for (const k of PK) p[k] = [lerp(a[k][0], b[k][0], t), lerp(a[k][1], b[k][1], t)];
+    return p;
+}
+
+const POSE = {
+    stand: mk({}),
+    stand2: mk({ pel: [0, -72], ch: [1, -108], hd: [6, -132], e1: [20, -94], h1: [27, -108], k1: [10, -38], k2: [-12, -38] }),
+    /* a heavy four-step run with the body thrown forward */
+    run1: mk({ pel: [4, -72], ch: [10, -108], hd: [18, -130], e1: [24, -92], h1: [8, -78], e2: [-4, -96], h2: [-24, -86], k1: [28, -44], f1: [44, -14], k2: [-16, -38], f2: [-34, -2] }),
+    run2: mk({ pel: [4, -78], ch: [10, -114], hd: [18, -136], e1: [18, -96], h1: [-2, -88], e2: [2, -98], h2: [-12, -78], k1: [12, -42], f1: [4, -18], k2: [-8, -40], f2: [-12, -1] }),
+    run3: mk({ pel: [4, -72], ch: [10, -108], hd: [18, -130], e1: [12, -96], h1: [-10, -84], e2: [10, -94], h2: [26, -80], k1: [2, -40], f1: [-14, -1], k2: [-2, -46], f2: [16, -16] }),
+    run4: mk({ pel: [4, -78], ch: [10, -114], hd: [18, -136], e1: [16, -96], h1: [0, -86], e2: [4, -98], h2: [-8, -80], k1: [14, -42], f1: [10, -16], k2: [-10, -40], f2: [-16, -1] }),
+    stepP: mk({ pel: [2, -74], ch: [3, -110], hd: [9, -134], e1: [20, -96], h1: [30, -104], e2: [-12, -94], h2: [4, -104], k1: [18, -42], f1: [30, -3], k2: [-12, -40], f2: [-18, -1] }),
+    crouch: mk({ pel: [-2, -44], ch: [0, -76], hd: [6, -98], e1: [16, -66], h1: [26, -74], e2: [-14, -64], h2: [2, -72], k1: [20, -26], f1: [18, -1], k2: [-20, -26], f2: [-22, -1] }),
+    /* leaving the ground and in the air */
+    crouchJump: mk({ pel: [0, -54], ch: [2, -88], hd: [8, -110], e1: [10, -76], h1: [-6, -86], e2: [-16, -74], h2: [-24, -62], k1: [18, -30], f1: [16, -1], k2: [-18, -30], f2: [-20, -1] }),
+    air: mk({ pel: [2, -78], ch: [6, -112], hd: [14, -134], e1: [24, -100], h1: [34, -122], e2: [-8, -100], h2: [-22, -112], k1: [22, -46], f1: [30, -18], k2: [-14, -46], f2: [-26, -12] }),
+    fall: mk({ pel: [0, -76], ch: [0, -110], hd: [4, -134], e1: [18, -104], h1: [22, -128], e2: [-16, -102], h2: [-22, -126], k1: [14, -42], f1: [16, -6], k2: [-14, -44], f2: [-20, -8] }),
+    land: mk({ pel: [-2, -50], ch: [0, -84], hd: [6, -106], e1: [18, -70], h1: [28, -60], e2: [-16, -70], h2: [-26, -58], k1: [20, -28], f1: [20, -1], k2: [-20, -28], f2: [-22, -1] }),
+    /* hanging from a ledge and pulling up */
+    hang: mk({ pel: [-4, -84], ch: [-2, -120], hd: [2, -144], e1: [10, -152], h1: [14, -186], e2: [-10, -150], h2: [-6, -186], k1: [4, -46], f1: [2, -2], k2: [-14, -46], f2: [-18, -2] }),
+    climb1: mk({ pel: [-2, -108], ch: [2, -142], hd: [8, -164], e1: [14, -168], h1: [16, -190], e2: [-8, -166], h2: [-4, -190], k1: [14, -66], f1: [8, -26], k2: [-12, -68], f2: [-18, -28] }),
+    climb2: mk({ pel: [8, -150], ch: [12, -184], hd: [18, -206], e1: [24, -196], h1: [26, -206], e2: [0, -196], h2: [4, -208], k1: [26, -110], f1: [34, -78], k2: [-4, -114], f2: [-10, -84] }),
+    /* sword work */
+    swIdle: mk({ pel: [-4, -74], ch: [-4, -110], hd: [0, -134], e1: [14, -100], h1: [30, -114], e2: [-16, -96], h2: [-6, -108], k1: [12, -40], f1: [16, -1], k2: [-16, -40], f2: [-24, -1] }),
+    swAdv: mk({ pel: [2, -74], ch: [2, -110], hd: [8, -134], e1: [20, -100], h1: [38, -114], e2: [-12, -96], h2: [0, -108], k1: [22, -40], f1: [32, -1], k2: [-14, -40], f2: [-22, -1] }),
+    swBack: mk({ pel: [-10, -74], ch: [-12, -110], hd: [-6, -134], e1: [8, -100], h1: [24, -116], e2: [-22, -96], h2: [-14, -106], k1: [2, -42], f1: [8, -6], k2: [-22, -40], f2: [-32, -1] }),
+    swStrike: mk({ pel: [8, -72], ch: [12, -108], hd: [18, -132], e1: [34, -104], h1: [62, -108], e2: [-4, -96], h2: [-14, -102], k1: [28, -40], f1: [40, -1], k2: [-12, -42], f2: [-24, -1] }),
+    swWind: mk({ pel: [-6, -74], ch: [-8, -110], hd: [-2, -134], e1: [4, -104], h1: [-14, -126], e2: [-18, -96], h2: [-8, -108], k1: [8, -40], f1: [12, -1], k2: [-18, -40], f2: [-26, -1] }),
+    swBlock: mk({ pel: [-6, -74], ch: [-8, -110], hd: [-2, -134], e1: [14, -114], h1: [26, -140], e2: [-16, -98], h2: [-4, -112], k1: [10, -40], f1: [14, -1], k2: [-18, -40], f2: [-26, -1] }),
+    /* the bad days */
+    hurt: mk({ pel: [-8, -72], ch: [-16, -106], hd: [-26, -128], e1: [-2, -96], h1: [4, -118], e2: [-26, -92], h2: [-38, -106], k1: [4, -40], f1: [2, -1], k2: [-20, -40], f2: [-30, -1] }),
+    die: mk({ pel: [-8, -26], ch: [-38, -24], hd: [-62, -28], e1: [-34, -10], h1: [-16, -6], e2: [-50, -12], h2: [-64, -8], k1: [22, -22], f1: [40, -6], k2: [14, -12], f2: [34, -4] }),
+    drink: mk({ pel: [-2, -74], ch: [-2, -110], hd: [2, -136], e1: [16, -120], h1: [10, -146], e2: [-14, -96], h2: [-4, -106], k1: [12, -40], f1: [16, -1], k2: [-16, -40], f2: [-24, -1] })
+};
+
+const ANIM = {
+    stand: { loop: true, f: [['stand', 40], ['stand2', 40]] },
+    run: { loop: true, f: [['run1', 7], ['run2', 6], ['run3', 7], ['run4', 6]] },
+    step: { loop: false, f: [['stepP', 99]] },
+    crouch: { loop: false, f: [['crouch', 99]] },
+    takeoff: { loop: false, f: [['crouchJump', 99]] },
+    air: { loop: false, f: [['air', 99]] },
+    fall: { loop: false, f: [['fall', 99]] },
+    land: { loop: false, f: [['land', 99]] },
+    hang: { loop: true, f: [['hang', 60], ['hang', 60]] },
+    climb: { loop: false, f: [['hang', 8], ['climb1', 14], ['climb2', 14]] },
+    swIdle: { loop: true, f: [['swIdle', 44], ['swAdv', 6], ['swIdle', 44]] },
+    swAdv: { loop: false, f: [['swAdv', 99]] },
+    swBack: { loop: false, f: [['swBack', 99]] },
+    swStrike: { loop: false, f: [['swWind', 6], ['swStrike', 99]] },
+    swBlock: { loop: false, f: [['swBlock', 99]] },
+    hurt: { loop: false, f: [['hurt', 99]] },
+    die: { loop: false, f: [['hurt', 10], ['die', 999]] },
+    drink: { loop: false, f: [['drink', 99]] }
+};
+
+/* --------------------------- drawing a body -------------------------- */
+function joints(e, pose) {
+    const out = {}, f = e.facing, s = e.scale || 1;
+    const rot = pose.rot || 0, px = pose.pel[0], py = pose.pel[1];
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    for (const k of PK) {
+        let lx = pose[k][0], ly = pose[k][1];
+        if (rot) {
+            const dx = lx - px, dy = ly - py;
+            lx = px + dx * cos - dy * sin;
+            ly = py + dx * sin + dy * cos;
+        }
+        out[k] = { x: e.x + lx * s * f, y: e.y + ly * s };
+    }
+    const off = (a, dx, dy) => ({ x: a.x + dx * s * f, y: a.y + dy * s });
+    out.s1 = off(out.ch, 10, -6); out.s2 = off(out.ch, -9, -6);
+    out.g1 = off(out.pel, 8, 0); out.g2 = off(out.pel, -8, 0);
+    return out;
+}
+function limb(a, b, c, w, col, outline) {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (outline) {
+        ctx.strokeStyle = outline; ctx.lineWidth = w + 4;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+    }
+    ctx.strokeStyle = col; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+}
+function drawBody(e, pose, pal, armed) {
+    const P = joints(e, pose), s = e.scale || 1;
+    const dark = 'rgba(0,0,0,.6)';
+    ctx.save();
+    if (e.flash > 0 && Math.floor(e.flash / 3) % 2 === 0) ctx.globalAlpha = 0.45;
+
+    limb(P.s2, P.e2, P.h2, 9 * s, pal.dark, dark);
+    limb(P.g2, P.k2, P.f2, 12 * s, pal.dark, dark);
+
+    /* torso */
+    ctx.beginPath();
+    ctx.moveTo(P.s1.x, P.s1.y); ctx.lineTo(P.s2.x, P.s2.y);
+    ctx.lineTo(P.g2.x, P.g2.y); ctx.lineTo(P.g1.x, P.g1.y);
+    ctx.closePath();
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = dark; ctx.lineWidth = 16 * s; ctx.stroke();
+    ctx.strokeStyle = pal.body; ctx.lineWidth = 12 * s; ctx.stroke();
+    ctx.fillStyle = pal.body; ctx.fill();
+    /* sash */
+    ctx.strokeStyle = pal.trim; ctx.lineWidth = 5 * s;
+    ctx.beginPath(); ctx.moveTo(P.g1.x, P.g1.y); ctx.lineTo(P.g2.x, P.g2.y); ctx.stroke();
+
+    limb(P.g1, P.k1, P.f1, 13 * s, pal.body, dark);
+    limb(P.ch, { x: (P.ch.x + P.hd.x) / 2, y: (P.ch.y + P.hd.y) / 2 }, P.hd, 9 * s, pal.skin, dark);
+
+    /* head */
+    const hr = 13 * s;
+    ctx.beginPath(); ctx.arc(P.hd.x, P.hd.y, hr, 0, 7);
+    ctx.fillStyle = pal.skin; ctx.fill();
+    ctx.strokeStyle = dark; ctx.lineWidth = 3; ctx.stroke();
+    /* headwrap */
+    ctx.fillStyle = pal.trim;
+    ctx.beginPath(); ctx.arc(P.hd.x, P.hd.y - hr * 0.2, hr * 1.04, Math.PI * 1.02, Math.PI * 2.08); ctx.fill();
+    ctx.fillRect(P.hd.x - hr, P.hd.y - hr * 0.55, hr * 2, 5 * s);
+    ctx.beginPath();
+    ctx.moveTo(P.hd.x - e.facing * hr, P.hd.y - hr * 0.4);
+    ctx.quadraticCurveTo(P.hd.x - e.facing * hr * 2.6, P.hd.y + Math.sin(e.t * 0.2) * 8,
+        P.hd.x - e.facing * hr * 2.4, P.hd.y + hr * 1.2);
+    ctx.lineTo(P.hd.x - e.facing * hr * 1.6, P.hd.y + hr * 0.9);
+    ctx.quadraticCurveTo(P.hd.x - e.facing * hr * 1.9, P.hd.y + hr * 0.2, P.hd.x - e.facing * hr * 0.9, P.hd.y - hr * 0.1);
+    ctx.fill();
+    if (!e.dead) {
+        ctx.fillStyle = '#20242e';
+        ctx.fillRect(P.hd.x + e.facing * hr * 0.24, P.hd.y - hr * 0.1, 4 * s * e.facing, 3 * s);
+    }
+
+    limb(P.s1, P.e1, P.h1, 10 * s, pal.body, dark);
+    ctx.fillStyle = pal.trim;
+    ctx.beginPath(); ctx.arc(P.h1.x, P.h1.y, 6 * s, 0, 7); ctx.fill();
+
+    /* the sword, when it is out */
+    if (armed) {
+        const dir = { x: P.h1.x - P.e1.x, y: P.h1.y - P.e1.y };
+        const len = Math.hypot(dir.x, dir.y) || 1;
+        const ux = dir.x / len, uy = dir.y / len;
+        const tipX = P.h1.x + ux * 62 * s, tipY = P.h1.y + uy * 62 * s;
+        ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 8 * s;
+        ctx.beginPath(); ctx.moveTo(P.h1.x, P.h1.y); ctx.lineTo(tipX, tipY); ctx.stroke();
+        const g = ctx.createLinearGradient(P.h1.x, P.h1.y, tipX, tipY);
+        g.addColorStop(0, '#cfe8ff'); g.addColorStop(1, '#ffffff');
+        ctx.strokeStyle = g; ctx.lineWidth = 5 * s;
+        ctx.beginPath(); ctx.moveTo(P.h1.x, P.h1.y); ctx.lineTo(tipX, tipY); ctx.stroke();
+        ctx.strokeStyle = pal.trim; ctx.lineWidth = 9 * s;
+        ctx.beginPath();
+        ctx.moveTo(P.h1.x - uy * 9 * s, P.h1.y + ux * 9 * s);
+        ctx.lineTo(P.h1.x + uy * 9 * s, P.h1.y - ux * 9 * s);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+/* =====================================================================
+   PHYSICS AND THE WARRIOR
+   ===================================================================== */
+const GRAV = 0.92, TERMINAL = 26;
+const RUN = 8.2, ACC = 0.62, FRIC = 0.72;
+const FENCE = 2.6;                     /* the shuffle you use with a sword out */
+const SAFE_FALL = TH * 1.2, DEADLY_FALL = TH * 2.5;
+
+const PAL = {
+    hero: { body: '#1f6fd0', dark: '#134a90', trim: '#8fe3ff', skin: '#e8c9a8' },
+    guard: { body: '#7a2b3a', dark: '#4d1a24', trim: '#e0b24a', skin: '#d0a173' },
+    captain: { body: '#2b2f4a', dark: '#181b2e', trim: '#ffd166', skin: '#c99b6d' }
+};
+
+class Actor {
+    constructor(x, y, pal) {
+        this.x = x; this.y = y; this.vx = 0; this.vy = 0;
+        this.facing = 1; this.scale = 1; this.pal = pal;
+        this.state = 'stand'; this.st = 0; this.t = 0;
+        this.anim = 'stand'; this.animI = 0; this.animT = 0;
+        this.pose = POSE.stand; this.prevPose = POSE.stand;
+        this.hp = 3; this.maxHp = 3; this.flash = 0; this.dead = false;
+        this.armed = false; this.air = false; this.fallFrom = y;
+        this.blocking = false; this.hitDone = false;
+    }
+    setAnim(n) {
+        if (this.anim === n) return;
+        this.prevPose = this.pose;
+        this.anim = n; this.animI = 0; this.animT = 0;
+    }
+    animate() {
+        const a = ANIM[this.anim] || ANIM.stand;
+        const fr = a.f[Math.min(this.animI, a.f.length - 1)];
+        const from = this.animI === 0 ? this.prevPose : (POSE[a.f[this.animI - 1][0]] || POSE.stand);
+        const to = POSE[fr[0]] || POSE.stand;
+        const t = clamp(this.animT / fr[1], 0, 1);
+        this.pose = blend(from, to, t);
+        this.animT++;
+        if (this.animT >= fr[1]) {
+            this.animT = 0;
+            if (this.animI < a.f.length - 1) this.animI++;
+            else if (a.loop) this.animI = 0;
+        }
+        this.t++;
+        if (this.flash > 0) this.flash--;
+    }
+    animDone() {
+        const a = ANIM[this.anim] || ANIM.stand;
+        return !a.loop && this.animI >= a.f.length - 1 && this.animT >= a.f[a.f.length - 1][1] - 1;
+    }
+    /* the box that swords and spikes test against */
+    box() { return { x: this.x - 30, y: this.y - 150, w: 60, h: 150 }; }
+    gravity() {
+        this.vy = Math.min(TERMINAL, this.vy + GRAV);
+        this.y += this.vy;
+    }
+    /* walls stop you; floors catch you */
+    moveX(dx) {
+        if (!dx) return;
+        const nx = this.x + dx;
+        const c = Map.colAt(nx + sign(dx) * 26);
+        /* the body fills the row above whatever floor you are standing on */
+        const rBody = Math.round(this.y / TH) - 1;
+        if (Map.solid(c, rBody)) {
+            this.x = sign(dx) > 0 ? c * TW - 27 : (c + 1) * TW + 27;
+            this.vx = 0;
+            return;
+        }
+        this.x = clamp(nx, 22, Map.cols * TW - 22);
+    }
+}
+
+class Hero extends Actor {
+    constructor(x, y) {
+        super(x, y, PAL.hero);
+        this.hp = this.maxHp = 3;
+        this.stepLeft = 0; this.jumpBuf = 0; this.landLag = 0;
+        this.hangC = 0; this.hangTop = 0; this.climbT = 0;
+        this.strikeT = 0; this.drinkT = 0; this.won = false;
+    }
+
+    update(G) {
+        this.t++;
+        if (this.flash > 0) this.flash--;
+        if (this.state === 'die') { this.animate(); return; }
+        const p = Pad;
+
+        /* sword comes out on its own when a guard is close, as it should */
+        const foe = G.nearestGuard(this);
+        this.armed = !!foe && Math.abs(foe.x - this.x) < 460 && !this.air;
+
+        switch (this.state) {
+            case 'hang': this.hangTick(p); break;
+            case 'climb': this.climbTick(); break;
+            case 'hurt': if (--this.st <= 0) this.state = 'stand'; this.vx *= 0.8; break;
+            case 'drink': this.drinkTick(); break;
+            case 'strike': this.strikeTick(G); break;
+            case 'land': this.vx *= 0.6; if (--this.landLag <= 0) this.state = 'stand'; break;
+            default: this.freeTick(p, G); break;
+        }
+        if (this.state !== 'hang' && this.state !== 'climb') this.physics(G);
+        this.chooseAnim();
+        this.animate();
+    }
+
+    /* ------------------------- ordinary movement ---------------------- */
+    freeTick(p, G) {
+        const dir = p.down('right') ? 1 : p.down('left') ? -1 : 0;
+        const stepping = p.down('step');
+
+        if (!this.air && p.hit('attack') && this.armed) { this.startStrike(); return; }
+        this.blocking = this.armed && !this.air && p.down('block');
+        if (this.blocking) { this.vx *= 0.6; this.state = 'block'; if (dir) this.facing = dir; return; }
+
+        if (!this.air && p.hit('jump')) { this.jump(dir); return; }
+        if (!this.air && p.down('down') && !dir) { this.state = 'crouch'; this.vx *= 0.5; return; }
+
+        if (this.stepLeft > 0) {                       /* a measured step */
+            this.stepLeft--;
+            this.vx = this.facing * (this.armed ? FENCE : 2.9);
+            this.state = 'step';
+            return;
+        }
+        if (!this.air && stepping && dir) {
+            this.facing = dir;
+            this.stepLeft = this.armed ? 12 : 16;
+            return;
+        }
+
+        if (dir) {
+            if (dir !== this.facing && !this.air && Math.abs(this.vx) > 3) {
+                this.vx *= 0.4;                        /* skid before turning */
+            }
+            this.facing = dir;
+            const top = this.armed ? FENCE : RUN;
+            this.vx = approach(this.vx, dir * top, ACC);
+            this.state = this.air ? this.state : 'run';
+        } else {
+            this.vx *= FRIC;
+            if (Math.abs(this.vx) < 0.2) this.vx = 0;
+            if (!this.air) this.state = 'stand';
+        }
+    }
+    jump(dir) {
+        const running = Math.abs(this.vx) > 4.5;
+        this.air = true;
+        this.fallFrom = this.y;
+        if (running) { this.vy = -16.5; this.vx *= 1.15; }
+        else if (dir) { this.vy = -15.2; this.vx = dir * 5.4; this.facing = dir; }
+        else { this.vy = -15.8; this.vx *= 0.3; }
+        this.state = 'air';
+        Snd.jump();
+    }
+    physics(G) {
+        this.moveX(this.vx);
+
+        if (this.air) {
+            this.gravity();
+            if (this.vy > 0 && this.tryGrab()) return;
+            const floor = Map.floorUnder(this.x, this.y - 4);
+            if (this.y >= floor) {
+                this.y = floor;
+                this.air = false;
+                const drop = this.y - this.fallFrom;
+                this.vy = 0;
+                if (drop > DEADLY_FALL) { this.kill(G, 'fall'); return; }
+                if (drop > SAFE_FALL) { this.damage(G, 1, 'fall'); Snd.land(true); }
+                else Snd.land(false);
+                this.landLag = drop > SAFE_FALL ? 18 : (drop > TH * 0.4 ? 9 : 0);
+                if (this.landLag) { this.state = 'land'; this.vx *= 0.4; }
+                if (this.y > Map.rows * TH) this.kill(G, 'pit');
+            }
+            if (this.y > Map.rows * TH + 300) this.kill(G, 'pit');
+        } else {
+            /* walked off an edge? */
+            const floor = Map.floorUnder(this.x, this.y - 4);
+            if (this.y < floor - 2) { this.air = true; this.fallFrom = this.y; this.vy = 0; this.state = 'air'; }
+            else this.y = floor;
+        }
+    }
+    /* catch a ledge on the way down */
+    tryGrab() {
+        const hold = Pad.down('right') ? 1 : Pad.down('left') ? -1 : this.facing;
+        for (const dir of [hold, this.facing, -this.facing]) {
+            const fc = Map.colAt(this.x + dir * 44);
+            const hy = this.y - 150;
+            for (let r = Math.max(0, Math.floor(hy / TH)); r <= Math.floor(hy / TH) + 1; r++) {
+                if (r < 0 || !Map.solid(fc, r) || Map.solid(fc, r - 1)) continue;
+                const top = r * TH;
+                if (hy < top - 46 || hy > top + 76) continue;
+                this.facing = dir;
+                this.hangC = fc; this.hangTop = top;
+                this.x = dir > 0 ? fc * TW - 30 : (fc + 1) * TW + 30;
+                this.y = top + 170;
+                this.vx = this.vy = 0;
+                this.air = false;
+                this.state = 'hang';
+                this.setAnim('hang');
+                Snd.grab();
+                return true;
+            }
+        }
+        return false;
+    }
+    hangTick(p) {
+        this.vx = this.vy = 0;
+        if (p.hit('up') || p.hit('jump')) {
+            this.state = 'climb'; this.climbT = 0;
+            this.setAnim('climb');
+            Snd.climb();
+        } else if (p.down('down')) {
+            this.state = 'air'; this.air = true;
+            this.fallFrom = this.y; this.vy = 1;
+        }
+    }
+    climbTick() {
+        this.climbT++;
+        const t = clamp(this.climbT / 36, 0, 1);
+        const tx = this.hangC * TW + TW / 2;
+        this.x = lerp(this.x, tx, 0.09);
+        this.y = lerp(this.hangTop + 170, this.hangTop, t * t);
+        if (this.climbT >= 36) {
+            this.x = tx; this.y = this.hangTop;
+            this.state = 'stand'; this.air = false; this.vy = 0;
+        }
+    }
+
+    /* ------------------------------ sword ----------------------------- */
+    startStrike() {
+        this.state = 'strike'; this.strikeT = 0; this.hitDone = false;
+        this.vx = this.facing * 1.6;
+        this.setAnim('swStrike');
+        Snd.cut();
+    }
+    strikeTick(G) {
+        this.strikeT++;
+        this.vx *= 0.86;
+        if (this.strikeT >= 9 && this.strikeT <= 16 && !this.hitDone) {
+            const hb = { x: this.facing > 0 ? this.x + 30 : this.x - 130, y: this.y - 132, w: 100, h: 92 };
+            for (const g of G.guards) {
+                if (g.dead) continue;
+                const b = g.box();
+                if (hb.x < b.x + b.w && hb.x + hb.w > b.x && hb.y < b.y + b.h && hb.y + hb.h > b.y) {
+                    this.hitDone = true;
+                    g.takeHit(G, this);
+                }
+            }
+        }
+        if (this.strikeT > 30) this.state = 'stand';
+    }
+    drinkTick() {
+        this.drinkT++;
+        this.vx = 0;
+        if (this.drinkT > 42) this.state = 'stand';
+    }
+
+    /* ------------------------------ damage ---------------------------- */
+    damage(G, n, why) {
+        if (this.flash > 8 || this.state === 'die') return;
+        this.hp -= n;
+        this.flash = 34;
+        Snd.hurt();
+        G.shake = 12;
+        if (this.hp <= 0) { this.kill(G, why); return; }
+        if (why === 'sword') {
+            this.state = 'hurt'; this.st = 20;
+            this.vx = -this.facing * 5;
+        }
+    }
+    kill(G, why) {
+        if (this.state === 'die') return;
+        this.state = 'die'; this.dead = true;
+        this.vx = 0; this.vy = 0; this.hp = 0;
+        this.setAnim('die');
+        Snd.die();
+        G.onDeath(why);
+    }
+    heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); this.state = 'drink'; this.drinkT = 0; Snd.potion(); }
+    grow() { this.maxHp++; this.hp = this.maxHp; this.state = 'drink'; this.drinkT = 0; Snd.potion(); }
+
+    chooseAnim() {
+        switch (this.state) {
+            case 'hang': this.setAnim('hang'); break;
+            case 'climb': this.setAnim('climb'); break;
+            case 'strike': this.setAnim('swStrike'); break;
+            case 'block': this.setAnim('swBlock'); break;
+            case 'crouch': this.setAnim('crouch'); break;
+            case 'step': this.setAnim(this.armed ? (this.vx * this.facing > 0 ? 'swAdv' : 'swBack') : 'step'); break;
+            case 'hurt': this.setAnim('hurt'); break;
+            case 'drink': this.setAnim('drink'); break;
+            case 'land': this.setAnim('land'); break;
+            case 'die': this.setAnim('die'); break;
+            case 'air': this.setAnim(this.vy < 0 ? 'air' : 'fall'); break;
+            case 'run': this.setAnim(this.armed ? (this.vx * this.facing > 0 ? 'swAdv' : 'swBack') : 'run'); break;
+            default: this.setAnim(this.armed ? 'swIdle' : 'stand');
+        }
+    }
+    draw() { drawBody(this, this.pose, this.pal, this.armed || this.state === 'strike' || this.state === 'block'); }
+}
+
+/* =====================================================================
+   GUARDS
+   ===================================================================== */
+class Guard extends Actor {
+    constructor(x, y, boss) {
+        super(x, y, boss ? PAL.captain : PAL.guard);
+        this.boss = !!boss;
+        this.hp = this.maxHp = boss ? 6 : 3;
+        this.scale = boss ? 1.1 : 1;
+        this.armed = true;
+        this.facing = -1;
+        this.think = 0; this.strikeT = 0;
+        this.homeX = x;
+    }
+    update(G) {
+        this.t++;
+        if (this.flash > 0) this.flash--;
+        if (this.dead) { this.animate(); return; }
+        const h = G.hero;
+        const d = h.x - this.x;
+        const near = Math.abs(d) < 620 && Math.abs(h.y - this.y) < TH * 0.8;
+
+        if (!near || h.state === 'die') {
+            this.vx *= 0.7; this.blocking = false;
+            this.state = 'stand';
+        } else if (this.state === 'strike') {
+            this.strikeT++;
+            this.vx *= 0.85;
+            if (this.strikeT >= 10 && this.strikeT <= 17 && !this.hitDone) {
+                const hb = { x: this.facing > 0 ? this.x + 26 : this.x - 126, y: this.y - 130, w: 100, h: 92 };
+                const b = h.box();
+                if (hb.x < b.x + b.w && hb.x + hb.w > b.x && hb.y < b.y + b.h && hb.y + hb.h > b.y) {
+                    this.hitDone = true;
+                    if (h.blocking && sign(h.facing) !== sign(this.facing)) {
+                        Snd.clang(); G.spark(this.x + this.facing * 70, this.y - 100, '#cfe8ff');
+                        this.vx = -this.facing * 4;
+                    } else h.damage(G, 1, 'sword');
+                }
+            }
+            if (this.strikeT > 34) this.state = 'stand';
+        } else if (this.state === 'hurt') {
+            this.vx *= 0.8;
+            if (--this.st <= 0) this.state = 'stand';
+        } else {
+            this.facing = sign(d) || this.facing;
+            const gap = Math.abs(d);
+            this.blocking = false;
+            if (--this.think <= 0) {
+                this.think = rndi(24, 70);
+                const r = Math.random();
+                if (gap < 150 && r < (this.boss ? 0.62 : 0.44)) { this.startStrike(); }
+                else if (gap < 118) { this.vx = -this.facing * FENCE; this.state = 'step'; }
+                else { this.vx = this.facing * FENCE; this.state = 'step'; }
+            }
+            if (this.state !== 'strike') {
+                /* hold the guard up when the hero winds up */
+                this.blocking = h.state === 'strike' && Math.random() < (this.boss ? 0.5 : 0.3);
+                this.vx *= 0.94;
+            }
+        }
+        this.moveX(this.vx);
+        const floor = Map.floorUnder(this.x, this.y - 4);
+        if (this.y < floor) { this.vy += GRAV; this.y = Math.min(floor, this.y + this.vy); }
+        else { this.y = floor; this.vy = 0; }
+        this.chooseAnim();
+        this.animate();
+    }
+    startStrike() {
+        this.state = 'strike'; this.strikeT = 0; this.hitDone = false;
+        this.vx = this.facing * 2.2;
+        this.setAnim('swStrike');
+        Snd.cut();
+    }
+    takeHit(G, from) {
+        if (this.dead) return;
+        if (this.blocking && sign(this.facing) !== sign(from.facing)) {
+            Snd.clang();
+            G.spark(this.x - this.facing * 60, this.y - 100, '#cfe8ff');
+            this.vx = this.facing * -3;
+            from.vx = -from.facing * 3;
+            return;
+        }
+        this.hp--;
+        this.flash = 30;
+        this.state = 'hurt'; this.st = 22;
+        this.vx = -this.facing * 6;
+        G.shake = 10;
+        G.spark(this.x, this.y - 110, '#ff5a6e');
+        Snd.hurt();
+        if (this.hp <= 0) {
+            this.dead = true; this.state = 'die'; this.setAnim('die');
+            G.spark(this.x, this.y - 90, '#ff5a6e');
+            Snd.die();
+            G.guardDown(this);
+        }
+    }
+    chooseAnim() {
+        if (this.dead) { this.setAnim('die'); return; }
+        if (this.state === 'strike') this.setAnim('swStrike');
+        else if (this.blocking) this.setAnim('swBlock');
+        else if (this.state === 'hurt') this.setAnim('hurt');
+        else if (this.state === 'step') this.setAnim(this.vx * this.facing > 0 ? 'swAdv' : 'swBack');
+        else this.setAnim('swIdle');
+    }
+    draw() { drawBody(this, this.pose, this.pal, true); }
+}
+
+/* =====================================================================
+   THE GAME
+   ===================================================================== */
+function px(n) { return 'bold ' + n + 'px "Press Start 2P", monospace'; }
+function text(str, x, y, size, col, align, blur) {
+    ctx.save();
+    ctx.font = px(size); ctx.textAlign = align || 'center';
+    if (blur) { ctx.shadowBlur = blur; ctx.shadowColor = col; }
+    ctx.lineWidth = Math.max(4, size * 0.24); ctx.strokeStyle = 'rgba(0,0,0,.8)';
+    ctx.strokeText(str, x, y);
+    ctx.fillStyle = col; ctx.fillText(str, x, y);
+    ctx.restore();
+}
+
+const G = {
+    screen: 'title', t: 0, fade: 0, level: 0,
+    hero: null, guards: [], sparks: [], loose: [], gateT: 0,
+    time: 0, shake: 0, camX: 0, camY: 0, msg: '', msgT: 0,
+    best: { level: 0 }, deaths: 0, menuI: 0,
+
+    boot() {
+        try { this.best = Object.assign(this.best, JSON.parse(localStorage.getItem('bw_best') || '{}')); } catch (e) { }
+        this.go('title');
+    },
+    save() { try { localStorage.setItem('bw_best', JSON.stringify(this.best)); } catch (e) { } },
+    go(s) { this.screen = s; this.t = 0; this.fade = 1; },
+
+    load(i) {
+        this.level = clamp(i, 0, LEVELS.length - 1);
+        const L = Map.load(this.level);
+        this.guards = []; this.sparks = []; this.loose = [];
+        this.gateT = 0; this.shake = 0;
+        this.time = L.time * 60;
+        for (let r = 0; r < Map.rows; r++) {
+            for (let c = 0; c < Map.cols; c++) {
+                const t = Map.at(c, r);
+                if (t === 'S') {
+                    this.hero = new Hero(c * TW + TW / 2, r * TH);
+                    Map.set(c, r, '#');
+                } else if (t === 'g' || t === 'B') {
+                    this.guards.push(new Guard(c * TW + TW / 2, r * TH, t === 'B'));
+                    Map.set(c, r, '#');
+                }
+            }
+        }
+        if (!this.hero) this.hero = new Hero(TW * 1.5, 5 * TH);
+        this.snapCamera();
+    },
+
+    /* -------------------------- the room camera ----------------------- */
+    roomOf(x, y) {
+        return {
+            rx: clamp(Math.floor(x / (ROOM_C * TW)), 0, Math.ceil(Map.cols / ROOM_C) - 1),
+            ry: clamp(Math.floor(y / (ROOM_R * TH)), 0, Math.ceil(Map.rows / ROOM_R) - 1)
+        };
+    },
+    snapCamera() {
+        const r = this.roomOf(this.hero.x, this.hero.y - 100);
+        this.camX = r.rx * ROOM_C * TW;
+        this.camY = r.ry * ROOM_R * TH;
+    },
+    followCamera() {
+        const r = this.roomOf(this.hero.x, this.hero.y - 100);
+        const tx = r.rx * ROOM_C * TW, ty = r.ry * ROOM_R * TH;
+        this.camX = Math.abs(tx - this.camX) < 2 ? tx : lerp(this.camX, tx, 0.18);
+        this.camY = Math.abs(ty - this.camY) < 2 ? ty : lerp(this.camY, ty, 0.18);
+    },
+
+    nearestGuard(from) {
+        let best = null, bd = 1e9;
+        for (const g of this.guards) {
+            if (g.dead) continue;
+            if (Math.abs(g.y - from.y) > TH * 0.8) continue;
+            const d = Math.abs(g.x - from.x);
+            if (d < bd) { bd = d; best = g; }
+        }
+        return best;
+    },
+    guardDown() { this.msgFlash('GUARD DOWN'); },
+    onDeath() { this.deaths++; setTimeout(() => { if (this.screen === 'play') this.go('dead'); }, 1400); },
+    msgFlash(m) { this.msg = m; this.msgT = 90; },
+    spark(x, y, col) {
+        for (let i = 0; i < 12; i++) {
+            const a = rnd(Math.PI * 2), s = rnd(7, 1);
+            this.sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: rndi(16, 34), col });
+        }
+    },
+
+    /* ------------------------------ update ---------------------------- */
+    update() {
+        this.t++;
+        if (this.fade > 0) this.fade = Math.max(0, this.fade - 0.05);
+        if (this.msgT > 0) this.msgT--;
+        if (this.shake > 0) this.shake *= 0.86;
+        const tap = takeTap();
+        Pad.poll();
+
+        switch (this.screen) {
+            case 'title':
+                if (Pad.any() || tap) { Snd.select(); this.go('howto'); }
+                break;
+            case 'howto':
+                if (this.t > 20 && (Pad.any() || tap)) { Snd.select(); this.load(0); this.go('play'); }
+                break;
+            case 'play': this.playUpdate(); break;
+            case 'dead':
+                if (this.t > 30 && (Pad.any() || Pad.hit('restart') || tap)) {
+                    Snd.select(); this.load(this.level); this.go('play');
+                }
+                break;
+            case 'clear':
+                if (this.t > 40 && (Pad.any() || tap)) {
+                    Snd.select();
+                    if (this.level + 1 >= LEVELS.length) this.go('win');
+                    else { this.load(this.level + 1); this.go('play'); }
+                }
+                break;
+            case 'win':
+                if (this.t > 40 && (Pad.any() || tap)) { Snd.select(); this.go('title'); }
+                break;
+        }
+    },
+    playUpdate() {
+        if (Pad.hit('restart')) { this.load(this.level); return; }
+        const h = this.hero;
+        if (this.time > 0 && !h.dead) {
+            this.time--;
+            if (this.time <= 0) h.kill(this, 'time');
+        }
+        h.update(this);
+        for (const g of this.guards) g.update(this);
+        this.traps();
+        this.pickups();
+        if (this.gateT > 0 && --this.gateT === 0) { Map.gatesOpen = false; Snd.gate(); }
+        for (let i = this.sparks.length - 1; i >= 0; i--) {
+            const s = this.sparks[i];
+            s.x += s.vx; s.y += s.vy; s.vy += 0.4; s.vx *= 0.96;
+            if (--s.life <= 0) this.sparks.splice(i, 1);
+        }
+        for (let i = this.loose.length - 1; i >= 0; i--) {
+            const L = this.loose[i];
+            L.t++;
+            if (L.t === L.fall) {
+                Map.set(L.c, L.r, '.');
+                Snd.crumble();
+                this.spark(L.c * TW + TW / 2, L.r * TH + 20, '#8899aa');
+            }
+            if (L.t > L.fall + 40) this.loose.splice(i, 1);
+        }
+        this.followCamera();
+    },
+    traps() {
+        const h = this.hero;
+        if (h.dead) return;
+        const c = Map.colAt(h.x), r = Math.round(h.y / TH);
+        const under = Map.at(c, r);
+
+        if (under === '^' && !h.air) { h.kill(this, 'spikes'); Snd.spike(); return; }
+        if (under === 'X' && !h.air) {
+            const phase = (this.t + c * 23) % 110;
+            if (phase < 22) { h.kill(this, 'blades'); Snd.spike(); return; }
+        }
+        if (under === '=' && !h.air) {
+            if (!this.loose.some(L => L.c === c && L.r === r)) {
+                this.loose.push({ c, r, t: 0, fall: 26 });
+                Snd.crumble();
+            }
+        }
+        if (under === 'P') {
+            if (!Map.gatesOpen) { Snd.plate(); this.msgFlash('THE GATES OPEN'); }
+            Map.gatesOpen = true;
+            this.gateT = 420;
+        }
+        /* a blade in the air is deadly to walk through as well */
+        const bodyR = r - 1;
+        if (Map.at(c, bodyR) === 'X') {
+            const phase = (this.t + c * 23) % 110;
+            if (phase < 22) { h.kill(this, 'blades'); Snd.spike(); }
+        }
+    },
+    pickups() {
+        const h = this.hero;
+        if (h.dead) return;
+        const c = Map.colAt(h.x), r = Math.round(h.y / TH) - 1;
+        const t = Map.at(c, r);
+        if (t === 'h') { Map.set(c, r, '.'); h.heal(1); this.msgFlash('LIFE RESTORED'); }
+        else if (t === 'H') { Map.set(c, r, '.'); h.grow(); this.msgFlash('MAXIMUM LIFE UP'); }
+        else if (t === 'E' && !h.air) {
+            if (this.guards.some(g => !g.dead && Math.abs(g.x - h.x) < 400)) {
+                this.msgFlash('THE GUARD BLOCKS THE DOOR');
+            } else {
+                this.best.level = Math.max(this.best.level || 0, this.level + 1);
+                this.save();
+                Snd.win();
+                this.go('clear');
+            }
+        }
+    },
+
+    /* ------------------------------- draw ----------------------------- */
+    draw() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        switch (this.screen) {
+            case 'title': this.drawTitle(); break;
+            case 'howto': this.drawHowto(); break;
+            case 'play': case 'dead': case 'clear': this.drawPlay(); break;
+            case 'win': this.drawWin(); break;
+        }
+        if (this.screen === 'dead') this.overlayDead();
+        if (this.screen === 'clear') this.overlayClear();
+        if (this.fade > 0) {
+            ctx.fillStyle = 'rgba(0,0,0,' + this.fade + ')';
+            ctx.fillRect(0, 0, W, H);
+        }
+    },
+    bg() {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#061428'); g.addColorStop(0.6, '#03060f'); g.addColorStop(1, '#020409');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    },
+    drawPlay() {
+        this.bg();
+        ctx.save();
+        const sx = this.shake > 0.4 ? rnd(this.shake, -this.shake) : 0;
+        const sy = this.shake > 0.4 ? rnd(this.shake, -this.shake) : 0;
+        ctx.translate(-this.camX + sx, HUD_H - this.camY + sy);
+        this.drawRoom();
+        for (const g of this.guards) g.draw();
+        this.hero.draw();
+        for (const s of this.sparks) {
+            ctx.globalAlpha = clamp(s.life / 24, 0, 1);
+            ctx.fillStyle = s.col;
+            ctx.fillRect(s.x - 3, s.y - 3, 6, 6);
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        this.hud();
+    },
+    drawRoom() {
+        const c0 = Math.floor(this.camX / TW) - 1, r0 = Math.floor(this.camY / TH) - 1;
+        for (let r = r0; r <= r0 + ROOM_R + 1; r++) {
+            for (let c = c0; c <= c0 + ROOM_C + 1; c++) {
+                if (c < 0 || c >= Map.cols || r < 0 || r >= Map.rows) continue;
+                this.drawTile(c, r, Map.at(c, r));
+            }
+        }
+    },
+    drawTile(c, r, t) {
+        const x = c * TW, y = r * TH;
+        const solidTop = () => {
+            /* the walkable slab: a thick lip with a lit edge */
+            const g = ctx.createLinearGradient(0, y, 0, y + 54);
+            g.addColorStop(0, '#22405e'); g.addColorStop(1, '#0d1e30');
+            ctx.fillStyle = g;
+            ctx.fillRect(x, y, TW, 54);
+            ctx.fillStyle = '#3f7fb5';
+            ctx.fillRect(x, y, TW, 5);
+            ctx.fillStyle = '#0a1622';
+            ctx.fillRect(x, y + 54, TW, TH - 54);
+            ctx.strokeStyle = 'rgba(63,127,181,.18)';
+            ctx.lineWidth = 2;
+            for (let k = 1; k < 3; k++) {
+                ctx.beginPath();
+                ctx.moveTo(x + (k % 2 ? 0 : TW / 2), y + 54 + k * 52);
+                ctx.lineTo(x + (k % 2 ? TW : TW / 2) + 0, y + 54 + k * 52);
+                ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(0,0,0,.5)';
+            ctx.strokeRect(x, y, TW, TH);
+        };
+        switch (t) {
+            case '#': solidTop(); break;
+            case '=': {
+                solidTop();
+                const L = this.loose.find(o => o.c === c && o.r === r);
+                const sh = L ? Math.sin(L.t * 0.9) * Math.min(6, L.t * 0.3) : 0;
+                ctx.save();
+                ctx.translate(sh, 0);
+                ctx.fillStyle = '#2b4f70';
+                ctx.fillRect(x + 6, y + 4, TW - 12, 46);
+                ctx.strokeStyle = '#7fc4ff'; ctx.lineWidth = 2;
+                ctx.setLineDash([9, 7]);
+                ctx.strokeRect(x + 6, y + 4, TW - 12, 46);
+                ctx.setLineDash([]);
+                ctx.restore();
+                break;
+            }
+            case '^': {
+                solidTop();
+                ctx.fillStyle = '#cfe8ff';
+                for (let i = 0; i < 5; i++) {
+                    const bx = x + 12 + i * 24;
+                    ctx.beginPath();
+                    ctx.moveTo(bx, y + 2); ctx.lineTo(bx + 10, y - 34); ctx.lineTo(bx + 20, y + 2);
+                    ctx.fill();
+                }
+                ctx.fillStyle = 'rgba(255,90,110,.5)';
+                ctx.fillRect(x, y - 36, TW, 4);
+                break;
+            }
+            case 'X': {
+                solidTop();
+                const phase = (this.t + c * 23) % 110;
+                const open = phase < 22 ? 0 : clamp((phase - 22) / 40, 0, 1);
+                const gap = 20 + open * 120;
+                ctx.save();
+                ctx.fillStyle = phase < 22 ? '#ff8fa3' : '#9fd4ff';
+                ctx.beginPath();
+                ctx.moveTo(x + 18, y - TH + 20); ctx.lineTo(x + TW - 18, y - TH + 20);
+                ctx.lineTo(x + TW / 2, y - TH + 20 + (TH - gap) / 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(x + 18, y - 4); ctx.lineTo(x + TW - 18, y - 4);
+                ctx.lineTo(x + TW / 2, y - 4 - (TH - gap) / 2);
+                ctx.fill();
+                ctx.restore();
+                break;
+            }
+            case '|': {
+                ctx.fillStyle = '#132a42';
+                ctx.fillRect(x, y, TW, TH);
+                ctx.fillStyle = '#1d3d5c';
+                ctx.fillRect(x + 10, y, TW - 20, TH);
+                ctx.strokeStyle = 'rgba(0,0,0,.5)';
+                ctx.strokeRect(x, y, TW, TH);
+                break;
+            }
+            case 'G': {
+                const open = Map.gatesOpen;
+                ctx.save();
+                ctx.fillStyle = '#0a1622';
+                ctx.fillRect(x + 8, y, TW - 16, TH);
+                ctx.strokeStyle = open ? '#3dffb0' : '#7fc4ff';
+                ctx.lineWidth = 7;
+                const top = open ? y - TH * 0.75 : y;
+                for (let i = 0; i < 4; i++) {
+                    const bx = x + 18 + i * 30;
+                    ctx.beginPath(); ctx.moveTo(bx, top); ctx.lineTo(bx, top + TH); ctx.stroke();
+                }
+                ctx.fillStyle = open ? '#3dffb0' : '#7fc4ff';
+                ctx.fillRect(x + 6, top + TH - 10, TW - 12, 10);
+                ctx.restore();
+                break;
+            }
+            case 'P': {
+                solidTop();
+                ctx.fillStyle = Map.gatesOpen ? '#3dffb0' : '#ffd166';
+                ctx.fillRect(x + 20, y - 8, TW - 40, 12);
+                ctx.fillStyle = 'rgba(0,0,0,.4)';
+                ctx.fillRect(x + 20, y + 2, TW - 40, 4);
+                break;
+            }
+            case 'h': case 'H': {
+                const big = t === 'H';
+                const by = y + TH - 40 + Math.sin(this.t * 0.06 + c) * 5;
+                ctx.save();
+                ctx.shadowBlur = 18; ctx.shadowColor = big ? '#3dffb0' : '#ff5a6e';
+                ctx.fillStyle = big ? '#3dffb0' : '#ff5a6e';
+                ctx.beginPath();
+                ctx.ellipse(x + TW / 2, by, big ? 15 : 12, big ? 19 : 15, 0, 0, 7);
+                ctx.fill();
+                ctx.fillStyle = '#cfe8ff';
+                ctx.fillRect(x + TW / 2 - 5, by - (big ? 30 : 25), 10, 14);
+                ctx.restore();
+                break;
+            }
+            case 'E': {
+                ctx.save();
+                ctx.fillStyle = '#08111c';
+                ctx.fillRect(x + 14, y + TH - 178, TW - 28, 178);
+                ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 5;
+                ctx.strokeRect(x + 14, y + TH - 178, TW - 28, 178);
+                ctx.shadowBlur = 26; ctx.shadowColor = '#ffd166';
+                ctx.fillStyle = 'rgba(255,209,102,' + (0.25 + Math.sin(this.t * 0.07) * 0.12) + ')';
+                ctx.fillRect(x + 20, y + TH - 172, TW - 40, 166);
+                ctx.restore();
+                text('EXIT', x + TW / 2, y + TH - 190, 11, '#ffd166');
+                break;
+            }
+        }
+    },
+    hud() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(3,8,18,.9)';
+        ctx.fillRect(0, 0, W, HUD_H);
+        ctx.strokeStyle = '#1d3d5c'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, HUD_H); ctx.lineTo(W, HUD_H); ctx.stroke();
+        ctx.restore();
+        const h = this.hero;
+        for (let i = 0; i < h.maxHp; i++) {
+            const x = 26 + i * 30, filled = i < h.hp;
+            ctx.save();
+            ctx.fillStyle = filled ? '#ff5a6e' : 'rgba(255,255,255,.12)';
+            if (filled) { ctx.shadowBlur = 10; ctx.shadowColor = '#ff5a6e'; }
+            ctx.beginPath(); ctx.ellipse(x, 42, 8, 11, 0, 0, 7); ctx.fill();
+            ctx.restore();
+        }
+        const foe = this.nearestGuard(h);
+        if (foe && h.armed) {
+            for (let i = 0; i < foe.maxHp; i++) {
+                const x = W - 26 - i * 30, filled = i < foe.hp;
+                ctx.save();
+                ctx.fillStyle = filled ? '#ffd166' : 'rgba(255,255,255,.12)';
+                ctx.beginPath(); ctx.ellipse(x, 42, 8, 11, 0, 0, 7); ctx.fill();
+                ctx.restore();
+            }
+        }
+        const secs = Math.max(0, Math.ceil(this.time / 60));
+        const m = Math.floor(secs / 60), s = secs % 60;
+        text(Map.L.name + '   LEVEL ' + (this.level + 1) + ' / ' + LEVELS.length, W / 2, 30, 12, '#9fe4ff');
+        text(m + ':' + String(s).padStart(2, '0'), W / 2, 56, 14, secs < 30 ? '#ff5a6e' : '#cfe8ff');
+        if (this.msgT > 0) {
+            ctx.save();
+            ctx.globalAlpha = clamp(this.msgT / 30, 0, 1);
+            text(this.msg, W / 2, 190, 16, '#ffd166', 'center', 12);
+            ctx.restore();
+        }
+    },
+    overlayDead() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(20,0,6,.6)'; ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+        text('YOU HAVE FALLEN', W / 2, 300, 34, '#ff5a6e', 'center', 20);
+        text('DEATHS: ' + this.deaths, W / 2, 348, 12, '#cfe8ff');
+        if (this.t > 30 && Math.floor(this.t / 22) % 2 === 0)
+            text('PRESS ANY BUTTON TO TRY AGAIN', W / 2, 420, 14, '#fff');
+    },
+    overlayClear() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,12,24,.65)'; ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+        text('LEVEL ' + (this.level + 1) + ' CLEARED', W / 2, 300, 30, '#3dffb0', 'center', 20);
+        const secs = Math.ceil(this.time / 60);
+        text('TIME LEFT: ' + secs + 's', W / 2, 348, 12, '#cfe8ff');
+        if (this.t > 40 && Math.floor(this.t / 22) % 2 === 0)
+            text('PRESS ANY BUTTON', W / 2, 420, 14, '#fff');
+    },
+    drawTitle() {
+        this.bg();
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = '#0d2b47'; ctx.lineWidth = 2;
+        for (let i = 0; i < 12; i++) {
+            const y = 120 + i * 52;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+        ctx.restore();
+        const bob = Math.sin(this.t * 0.05) * 5;
+        text('BLUE', W / 2 - 168, 220 + bob, 76, '#cfe8ff', 'center', 26);
+        text('WARRIOR', W / 2 + 138, 220 + bob, 76, '#1f9fe0', 'center', 30);
+        /* a hero standing on the title */
+        if (!this.demo) { this.demo = new Hero(W / 2, 560); this.demo.armed = true; }
+        this.demo.facing = 1; this.demo.scale = 1.45;
+        this.demo.setAnim(Math.floor(this.t / 150) % 2 ? 'swIdle' : 'stand');
+        this.demo.animate();
+        this.demo.draw();
+        if (Math.floor(this.t / 26) % 2 === 0)
+            text('PRESS ANY BUTTON', W / 2, 330, 20, '#ffd166', 'center', 16);
+        text('BEST: LEVEL ' + (this.best.level || 0) + ' / ' + LEVELS.length, W / 2, 380, 11, '#6d8ba8');
+        text('DARKY PLAY', W / 2, H - 34, 10, '#3c5a75');
+    },
+    drawHowto() {
+        this.bg();
+        text('HOW TO PLAY', W / 2, 96, 26, '#9fe4ff', 'center', 16);
+        const lines = [
+            'ARROWS / A D   WALK AND RUN',
+            'SPACE   JUMP - run first to leap further',
+            'SHIFT + ARROW   careful step near a ledge',
+            'UP while falling   catch the ledge, UP again to climb',
+            'J   SWORD        L   BLOCK',
+            'RED VIALS restore life, GREEN raise it',
+            'MIND THE LOOSE STONES, SPIKES AND BLADES'
+        ];
+        lines.forEach((l, i) => text(l, W / 2, 180 + i * 48, 12, i === 6 ? '#ff8fa3' : '#cfe8ff'));
+        if (this.t > 20 && Math.floor(this.t / 24) % 2 === 0)
+            text('PRESS ANY BUTTON TO BEGIN', W / 2, H - 80, 15, '#ffd166');
+    },
+    drawWin() {
+        this.bg();
+        text('THE DUNGEON IS BEHIND YOU', W / 2, 200, 26, '#ffd166', 'center', 22);
+        if (!this.demo) this.demo = new Hero(W / 2, 560);
+        this.demo.scale = 1.5; this.demo.facing = 1;
+        this.demo.setAnim('stand'); this.demo.animate(); this.demo.draw();
+        text('ALL ' + LEVELS.length + ' LEVELS CLEARED', W / 2, 260, 14, '#cfe8ff');
+        text('DEATHS: ' + this.deaths, W / 2, 300, 12, '#9fe4ff');
+        if (Math.floor(this.t / 24) % 2 === 0) text('PRESS ANY BUTTON', W / 2, 380, 14, '#fff');
+    }
+};
+
+/* ------------------------------ main loop ---------------------------- */
+let acc = 0, last = performance.now(), lastW = 0, lastH = 0;
+function tick() { G.update(); }
+function loop(now) {
+    requestAnimationFrame(loop);
+    if (innerWidth !== lastW || innerHeight !== lastH) { lastW = innerWidth; lastH = innerHeight; fit(); }
+    let dt = now - last; last = now;
+    if (dt > 240) dt = 240;
+    acc += dt;
+    let guard = 0;
+    while (acc >= STEP && guard++ < 6) { tick(); acc -= STEP; }
+    G.draw();
+}
+fit();
+G.boot();
+requestAnimationFrame(loop);
+    </script>
+</body>
+
+</html>
