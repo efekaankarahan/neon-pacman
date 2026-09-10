@@ -3972,15 +3972,16 @@ const R3D = {
 
     /* Status screen framing: orbit the fighter and look past them, so they
        sit on the left of the frame with the panel beside them. */
-    portraitCamera(gx, angle) {
+    portraitCamera(gx, angle, build) {
         const cam = this.camera;
         const cx = this.x3(gx);
-        const d = 6.3;                       /* far enough to frame head to heel */
+        const b = build || 1;
+        const d = 7.4 * b;                   /* far enough to frame head to heel, hair included */
         const sa = Math.sin(angle), ca = Math.cos(angle);
-        cam.position.set(cx + sa * d, 1.95, ca * d);
+        cam.position.set(cx + sa * d, 1.95 * b, ca * d);
         /* aim past the fighter, along the camera's own right, so they sit on
            the left of frame however far round the turntable has gone */
-        cam.lookAt(cx + ca * 1.75, 1.62, -sa * 1.75);
+        cam.lookAt(cx + ca * 1.85 * b, 1.62 * b, -sa * 1.85 * b);
     },
 
     project(gx, gy) {
@@ -4911,7 +4912,7 @@ const WT = {
             this.player.updatePose();
             const id = R3D.syncFighter(this.player, 'wtplayer').id;
             R3D.hideUnused([id]);
-            R3D.portraitCamera(this.player.x, this.spin * 0.011);
+            R3D.portraitCamera(this.player.x, this.spin * 0.011, this.player.style.build);
             R3D.render();
         } else {
             const f = this.player;
