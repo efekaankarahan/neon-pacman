@@ -4154,19 +4154,47 @@ const R3D = {
         this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !LOWFX, alpha: false });
         this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LOWFX ? 1.5 : 2));
         this.renderer.setSize(W, H, false);
+        /* A filmic curve so highlights roll off instead of clipping. This
+           three build has no colour management, so the palette stays in
+           sRGB throughout - converting only the output would brighten
+           every colour in the game by the same mistake twice. */
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.02;
+        this.shadows = !LOWFX;
+        if (this.shadows) {
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        }
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 400);
         this.scene.fog = new THREE.Fog(0x0a0618, 26, 90);
 
-        const amb = new THREE.AmbientLight(0xffffff, 0.55);
-        const key = new THREE.DirectionalLight(0xffffff, 0.85);
-        key.position.set(4, 12, 9);
-        const rimA = new THREE.PointLight(0xff2e63, 1.5, 60);
-        const rimB = new THREE.PointLight(0x00f3ff, 1.4, 60);
-        rimA.position.set(-9, 5, -5);
-        rimB.position.set(9, 5, -5);
-        this.scene.add(amb, key, rimA, rimB);
-        this.lights = { amb, key, rimA, rimB };
+        /* key, fill and two rims - the back lights are what give a fighter
+           that lit-from-behind edge */
+        const amb = new THREE.HemisphereLight(0x9fc4ff, 0x241a30, 0.3);
+        const key = new THREE.DirectionalLight(0xfff2e0, 0.95);
+        key.position.set(5, 13, 8);
+        if (this.shadows) {
+            key.castShadow = true;
+            key.shadow.mapSize.set(1024, 1024);
+            const c = key.shadow.camera;
+            c.left = -9; c.right = 9; c.top = 9; c.bottom = -4;
+            c.near = 1; c.far = 42;
+            key.shadow.bias = -0.0016;
+            key.shadow.radius = 3;
+        }
+        const fill = new THREE.DirectionalLight(0x8fb6ff, 0.2);
+        fill.position.set(-6, 4, 7);
+        const rimA = new THREE.PointLight(0xff2e63, 1.3, 55);
+        const rimB = new THREE.PointLight(0x00f3ff, 1.2, 55);
+        rimA.position.set(-8, 5.5, -5);
+        rimB.position.set(8, 5.5, -5);
+        /* Two shared glow lights, not one per fighter: lights are global to
+           the shader, so a light per rig would recompile every material
+           each time a new fighter walked on. */
+        this.auras = [new THREE.PointLight(0xffffff, 0, 9), new THREE.PointLight(0xffffff, 0, 9)];
+        this.scene.add(amb, key, fill, rimA, rimB, this.auras[0], this.auras[1]);
+        this.lights = { amb, key, fill, rimA, rimB };
 
         this.stageGroup = new THREE.Group();
         this.projGroup = new THREE.Group();
@@ -4184,65 +4212,221 @@ const R3D = {
     v3(gx, gy, z) { return new THREE.Vector3(this.x3(gx), this.y3(gy), z || 0); },
 
     /* ---- a fighter rig, built once and posed every frame ---- */
+    /* ---- shared geometry, built once: tapered muscle profiles rather
+            than plain tubes, so the silhouette reads as a body ---- */
+    buildGeo() {
+        if (this.GEO) return this.GEO;
+        const V = (x, y) => new THREE.Vector2(x, y);
+        const lathe = (pts, seg) => new THREE.LatheGeometry(pts, seg || (LOWFX ? 8 : 14));
+        this.GEO = {
+            upperArm: lathe([V(0.5, 0), V(0.86, 0.14), V(1, 0.34), V(0.9, 0.58), V(0.7, 0.82), V(0.54, 1)]),
+            foreArm: lathe([V(0.6, 0), V(0.82, 0.18), V(0.72, 0.46), V(0.58, 0.74), V(0.46, 1)]),
+            thigh: lathe([V(0.66, 0), V(1.06, 0.16), V(1, 0.46), V(0.8, 0.76), V(0.62, 1)]),
+            shin: lathe([V(0.66, 0), V(0.9, 0.16), V(0.72, 0.5), V(0.54, 0.82), V(0.44, 1)]),
+            neck: lathe([V(0.5, 0), V(0.46, 0.5), V(0.5, 1)], 10),
+            torso: lathe([V(0.62, 0), V(0.72, 0.16), V(0.68, 0.36), V(0.82, 0.6), V(0.96, 0.8), V(0.86, 0.95), V(0.58, 1)]),
+            /* the jacket is the same shell with a quarter cut out of the front */
+            jacket: new THREE.LatheGeometry(
+                [V(0.66, 0), V(0.78, 0.2), V(0.74, 0.4), V(0.9, 0.64), V(1.02, 0.84), V(0.9, 1)],
+                LOWFX ? 8 : 14, Math.PI * 0.26, Math.PI * 1.48),
+            skull: new THREE.SphereGeometry(1, LOWFX ? 10 : 18, LOWFX ? 8 : 14),
+            jaw: lathe([V(0.2, 0), V(0.72, 0.3), V(0.92, 0.7), V(0.8, 1)], LOWFX ? 8 : 12),
+            ball: new THREE.SphereGeometry(1, LOWFX ? 8 : 12, LOWFX ? 6 : 10),
+            box: new THREE.BoxGeometry(1, 1, 1),
+            cone: new THREE.ConeGeometry(1, 1, LOWFX ? 6 : 10),
+            belt: new THREE.TorusGeometry(1, 0.22, 6, LOWFX ? 10 : 16),
+            band: new THREE.CylinderGeometry(1, 1, 1, LOWFX ? 8 : 12)
+        };
+        return this.GEO;
+    },
+
+    /* ---- procedural maps: cloth weave and skin mottle, so surfaces are
+            not flat colour under the lights ---- */
+    tex(kind, col) {
+        this._tex = this._tex || {};
+        const key = kind + col;
+        if (this._tex[key]) return this._tex[key];
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const g = c.getContext('2d');
+        g.fillStyle = col; g.fillRect(0, 0, 64, 64);
+        if (kind === 'cloth') {
+            g.globalAlpha = 0.14;
+            for (let i = -64; i < 64; i += 3) {
+                g.strokeStyle = i % 6 ? '#000' : '#fff';
+                g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 64, 64); g.stroke();
+            }
+        } else {
+            g.globalAlpha = 0.1;
+            for (let i = 0; i < 260; i++) {
+                g.fillStyle = Math.random() < 0.5 ? '#000' : '#fff';
+                g.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
+            }
+        }
+        const t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.repeat.set(2, 2);
+        this._tex[key] = t;
+        return t;
+    },
+
     rigFor(f, key) {
         /* keyed by slot AND character, or a rematch would wear the last
            fighter's colours */
         const id = (key || 'f' + f.side) + ':' + f.ch.id + ':' + f.style.gi;
         if (this.rigs[id]) return this.rigs[id];
-        const S = f.style;
-        const mat = (col, emissive, emi) => new THREE.MeshLambertMaterial({
-            color: new THREE.Color(col),
-            emissive: new THREE.Color(emissive || '#000'),
-            emissiveIntensity: emi === undefined ? 0.35 : emi
+        const S = f.style, GEO = this.buildGeo();
+
+        const skinMat = (col) => new THREE.MeshStandardMaterial({
+            color: new THREE.Color(col), map: this.tex('skin', col),
+            roughness: 0.66, metalness: 0.02
         });
+        const clothMat = (col, rough) => new THREE.MeshStandardMaterial({
+            color: new THREE.Color(col), map: this.tex('cloth', col),
+            roughness: rough === undefined ? 0.92 : rough, metalness: 0.02
+        });
+        const trimMat = (col) => new THREE.MeshStandardMaterial({
+            color: new THREE.Color(col), roughness: 0.38, metalness: 0.25,
+            emissive: new THREE.Color(col), emissiveIntensity: 0.28
+        });
+
+        const skinM = skinMat(S.skin);
+        const giM = clothMat(S.gi);
+        const giDM = clothMat(S.giDark);
+        const trimM = trimMat(S.trim);
+        const hairM = new THREE.MeshStandardMaterial({ color: new THREE.Color(S.hair), roughness: 0.78 });
+        const bootM = clothMat('#1b1b23', 0.55);
+        const eyeW = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.3 });
+        const eyeD = new THREE.MeshStandardMaterial({ color: 0x161018, roughness: 0.25 });
+
         const g = new THREE.Group();
-        const cyl = new THREE.CylinderGeometry(1, 1, 1, 10);
-        const sph = new THREE.SphereGeometry(1, 14, 10);
-        const box = new THREE.BoxGeometry(1, 1, 1);
+        const mesh = (geo, m, parent) => {
+            const x = new THREE.Mesh(geo, m);
+            x.castShadow = this.shadows;
+            (parent || g).add(x);
+            return x;
+        };
 
-        const skinM = mat(S.skin);
-        const giM = mat(S.gi, S.gi, 0.06);
-        const giDM = mat(S.giDark, S.giDark, 0.05);
-        const trimM = mat(S.trim, S.trim, 0.7);
-        const hairM = mat(S.hair);
-        const bootM = mat('#1a1a22');
-
-        const limb = (m) => { const x = new THREE.Mesh(cyl, m); g.add(x); return x; };
-        const ball = (m, r) => { const x = new THREE.Mesh(sph, m); x.scale.setScalar(r); g.add(x); return x; };
+        /* the head is a little group of its own so it can turn as one */
+        const head = new THREE.Group();
+        const skull = mesh(GEO.skull, skinM, head);
+        skull.scale.set(1, 1.06, 0.94);
+        const jaw = mesh(GEO.jaw, skinM, head);
+        jaw.rotation.x = Math.PI;
+        const nose = mesh(GEO.cone, skinM, head);
+        const browL = mesh(GEO.box, hairM, head), browR = mesh(GEO.box, hairM, head);
+        const earL = mesh(GEO.ball, skinM, head), earR = mesh(GEO.ball, skinM, head);
+        const eyeLW = mesh(GEO.ball, eyeW, head), eyeRW = mesh(GEO.ball, eyeW, head);
+        const eyeLD = mesh(GEO.ball, eyeD, head), eyeRD = mesh(GEO.ball, eyeD, head);
+        const hair = new THREE.Group(); head.add(hair);
+        this.buildHair(hair, S, hairM, trimM, GEO, mesh);
+        g.add(head);
 
         const rig = {
-            group: g,
-            armF: [limb(giM), limb(giM)], armB: [limb(giDM), limb(giDM)],
-            legF: [limb(giM), limb(giM)], legB: [limb(giDM), limb(giDM)],
-            neck: limb(skinM),
-            torso: new THREE.Mesh(box, giM),
-            belt: new THREE.Mesh(box, trimM),
-            head: ball(skinM, 1), hair: ball(hairM, 1),
-            handF: ball(trimM, 1), handB: ball(trimM, 1),
-            footF: ball(bootM, 1), footB: ball(bootM, 1),
+            group: g, head, hair,
+            skull, jaw, nose, browL, browR, earL, earR, eyeLW, eyeRW, eyeLD, eyeRD,
+            armF: [mesh(GEO.upperArm, skinM), mesh(GEO.foreArm, skinM)],
+            armB: [mesh(GEO.upperArm, skinM), mesh(GEO.foreArm, skinM)],
+            sleeveF: mesh(GEO.upperArm, giM), sleeveB: mesh(GEO.upperArm, giDM),
+            deltF: mesh(GEO.ball, giM), deltB: mesh(GEO.ball, giDM),
+            legF: [mesh(GEO.thigh, giM), mesh(GEO.shin, giM)],
+            legB: [mesh(GEO.thigh, giDM), mesh(GEO.shin, giDM)],
+            neck: mesh(GEO.neck, skinM),
+            torso: mesh(GEO.torso, skinM),
+            jacket: mesh(GEO.jacket, giM),
+            belt: mesh(GEO.belt, trimM),
+            pecF: mesh(GEO.ball, skinM), pecB: mesh(GEO.ball, skinM),
+            absU: mesh(GEO.ball, skinM), absL: mesh(GEO.ball, skinM),
+            lapelF: mesh(GEO.box, giM), lapelB: mesh(GEO.box, giM),
+            kneeF: mesh(GEO.ball, giM), kneeB: mesh(GEO.ball, giDM),
+            handF: mesh(GEO.ball, skinM), handB: mesh(GEO.ball, skinM),
+            wristF: mesh(GEO.band, trimM), wristB: mesh(GEO.band, trimM),
+            footF: mesh(GEO.box, bootM), footB: mesh(GEO.box, bootM),
+            shinF: mesh(GEO.band, trimM), shinB: mesh(GEO.band, trimM),
             shadow: new THREE.Mesh(new THREE.CircleGeometry(1, 18),
-                new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.36 })),
-            aura: new THREE.PointLight(new THREE.Color(S.aura), 0, 8),
-            mats: { giM, trimM, skinM }
+                new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 })),
+            mats: { giM, trimM, skinM, giDM }
         };
-        g.add(rig.torso, rig.belt);
         rig.shadow.rotation.x = -Math.PI / 2;
         g.add(rig.shadow);
-        g.add(rig.aura);
         this.scene.add(g);
+        /* compile now, while a menu is on screen, not on the first punch */
+        if (this.camera) this.renderer.compile(this.scene, this.camera);
         this.rigs[id] = rig;
         rig.id = id;
         return rig;
     },
 
-    segment(mesh, a, b, r) {
-        const v = this._v;
-        v.subVectors(b, a);
-        const len = Math.max(0.02, v.length());
-        mesh.position.copy(a).add(b).multiplyScalar(0.5);
-        v.normalize();
-        mesh.quaternion.setFromUnitVectors(this._up, v);
-        mesh.scale.set(r, len, r);
+    buildHair(hair, S, hairM, trimM, GEO, mesh) {
+        /* hair sits back on the skull so the face is not swallowed by it */
+        const cap = mesh(GEO.skull, hairM, hair);
+        cap.scale.set(0.99, 0.88, 1.01);
+        cap.position.set(-0.17, 0.2, 0);
+        switch (S.hairStyle) {
+            case 'band': {
+                const b = mesh(GEO.band, trimM, hair);
+                b.scale.set(1.04, 0.2, 1.04);
+                b.position.y = 0.34;
+                const tail = mesh(GEO.box, trimM, hair);
+                tail.scale.set(0.16, 1.3, 0.5);
+                tail.position.set(-1.1, -0.2, 0);
+                tail.rotation.z = 0.5;
+                break;
+            }
+            case 'tail': {
+                const t = mesh(GEO.ball, hairM, hair);
+                t.scale.set(0.62, 0.5, 0.5);
+                t.position.set(-1.05, 0.1, 0);
+                const t2 = mesh(GEO.ball, hairM, hair);
+                t2.scale.set(0.9, 0.34, 0.34);
+                t2.position.set(-1.5, -0.5, 0);
+                t2.rotation.z = 0.6;
+                break;
+            }
+            case 'spiky':
+                for (let i = -2; i <= 2; i++) {
+                    const s = mesh(GEO.cone, hairM, hair);
+                    s.scale.set(0.3, 0.85, 0.3);
+                    s.position.set(i * 0.36, 0.95, 0);
+                    s.rotation.z = -i * 0.24;
+                }
+                break;
+            case 'bald':
+                cap.visible = false;
+                break;
+            case 'hood': {
+                const h = mesh(GEO.skull, hairM, hair);
+                h.scale.set(1.24, 1.2, 1.18);
+                h.position.y = 0.1;
+                const brim = mesh(GEO.cone, hairM, hair);
+                brim.scale.set(1.0, 0.7, 1.0);
+                brim.position.set(0.2, 0.75, 0);
+                brim.rotation.z = -0.3;
+                break;
+            }
+            case 'topknot': {
+                const k = mesh(GEO.ball, hairM, hair);
+                k.scale.setScalar(0.42);
+                k.position.set(-0.2, 1.12, 0);
+                const pin = mesh(GEO.band, trimM, hair);
+                pin.scale.set(0.08, 1.0, 0.08);
+                pin.position.set(-0.2, 1.12, 0);
+                pin.rotation.z = Math.PI / 2;
+                break;
+            }
+            case 'crown': {
+                const c = mesh(GEO.band, trimM, hair);
+                c.scale.set(1.06, 0.34, 1.06);
+                c.position.y = 0.62;
+                for (let i = 0; i < 5; i++) {
+                    const sp = mesh(GEO.cone, trimM, hair);
+                    const a = (i / 5) * Math.PI * 2;
+                    sp.scale.set(0.17, 0.5, 0.17);
+                    sp.position.set(Math.cos(a) * 0.95, 0.95, Math.sin(a) * 0.95);
+                }
+                break;
+            }
+        }
     },
 
     /* pose the rig from the fighter's current 2D skeleton */
@@ -4250,7 +4434,7 @@ const R3D = {
         const rig = this.rigFor(f, key);
         const P = poseWorld(f, f.pose);
         const b = f.style.build;
-        const zF = 0.17 * b, zB = -0.17 * b, zLF = 0.11 * b, zLB = -0.11 * b;
+        const zF = 0.19 * b, zB = -0.19 * b, zLF = 0.12 * b, zLB = -0.12 * b;
         const V = (p, z) => new THREE.Vector3(this.x3(p.x), this.y3(p.y), z);
 
         const s1 = V(P.s1, zF), e1 = V(P.e1, zF), h1 = V(P.h1, zF);
@@ -4259,53 +4443,122 @@ const R3D = {
         const g2 = V(P.g2, zLB), k2 = V(P.k2, zLB), f2 = V(P.f2, zLB);
         const ch = V(P.ch, 0), pel = V(P.pel, 0), hd = V(P.hd, 0);
 
-        const R = 0.115 * b;   /* matches the 2D line weights once scaled */
-        this.segment(rig.armF[0], s1, e1, R * 1.05); this.segment(rig.armF[1], e1, h1, R * 0.95);
-        this.segment(rig.armB[0], s2, e2, R); this.segment(rig.armB[1], e2, h2, R * 0.9);
-        this.segment(rig.legF[0], g1, k1, R * 1.35); this.segment(rig.legF[1], k1, f1, R * 1.15);
-        this.segment(rig.legB[0], g2, k2, R * 1.3); this.segment(rig.legB[1], k2, f2, R * 1.1);
-        this.segment(rig.neck, ch, hd, R * 0.85);
+        const R = 0.1 * b;
+        this.seg(rig.armF[0], s1, e1, R * 1.02); this.seg(rig.armF[1], e1, h1, R * 0.9);
+        this.seg(rig.armB[0], s2, e2, R * 0.98); this.seg(rig.armB[1], e2, h2, R * 0.86);
+        /* a short sleeve over the top of each upper arm */
+        this.seg(rig.sleeveF, s1, e1, R * 1.16, 0.52);
+        this.seg(rig.sleeveB, s2, e2, R * 1.12, 0.52);
+        this.seg(rig.legF[0], g1, k1, R * 1.3); this.seg(rig.legF[1], k1, f1, R * 1.08);
+        this.seg(rig.legB[0], g2, k2, R * 1.26); this.seg(rig.legB[1], k2, f2, R * 1.04);
+        this.seg(rig.neck, ch, hd, R * 0.62, 0.72);
 
-        /* torso: a slab from the shoulders down to the hips */
-        const mid = ch.clone().add(pel).multiplyScalar(0.5);
-        rig.torso.position.copy(mid);
-        const spine = new THREE.Vector3().subVectors(ch, pel);
-        const len = Math.max(0.1, spine.length());
-        rig.torso.quaternion.setFromUnitVectors(this._up, spine.normalize());
-        rig.torso.scale.set(0.52 * b, len * 1.14, 0.34 * b);
+        rig.deltF.position.copy(s1); rig.deltF.scale.setScalar(R * 1.3);
+        rig.deltB.position.copy(s2); rig.deltB.scale.setScalar(R * 1.24);
+
+        /* torso and the jacket over it */
+        this.seg(rig.torso, pel, ch, R * 2.05);
+        rig.torso.scale.z = R * 2.05 * 0.62;
+        this.seg(rig.jacket, pel, ch, R * 2.16);
+        rig.jacket.scale.z = R * 2.16 * 0.66;
+        rig.jacket.rotateY(f.facing > 0 ? 0 : Math.PI);
 
         rig.belt.position.copy(pel);
         rig.belt.quaternion.copy(rig.torso.quaternion);
-        rig.belt.scale.set(0.56 * b, 0.1 * b, 0.37 * b);
+        rig.belt.rotateX(Math.PI / 2);
+        rig.belt.scale.set(R * 1.5, R * 1.5, R * 1.5);
+        rig.belt.scale.z = R * 1.1;
 
+        /* head: sits on the neck and turns with the fighter */
         rig.head.position.copy(hd);
-        rig.head.scale.setScalar(0.31 * b);
-        rig.hair.position.copy(hd);
-        rig.hair.position.y += 0.07 * b;
-        rig.hair.position.x -= 0.03 * b * f.facing;
-        rig.hair.scale.set(0.33 * b, 0.28 * b, 0.33 * b);
+        rig.head.scale.setScalar(0.3 * b);
+        rig.head.rotation.set(0, f.facing > 0 ? 0 : Math.PI, (f.pose.rot || 0) * f.facing);
+        rig.skull.position.set(0, 0.06, 0);
+        rig.jaw.position.set(0.1, -0.52, 0);
+        rig.jaw.scale.set(0.86, 0.72, 0.8);
+        rig.nose.position.set(0.86, -0.1, 0);
+        rig.nose.rotation.z = -Math.PI / 2;
+        rig.nose.scale.set(0.28, 0.42, 0.3);
+        rig.browL.position.set(0.66, 0.32, 0.3); rig.browL.scale.set(0.5, 0.15, 0.26);
+        rig.browR.position.set(0.66, 0.32, -0.3); rig.browR.scale.set(0.5, 0.15, 0.26);
+        rig.browL.rotation.z = rig.browR.rotation.z = -0.18;
+        rig.earL.position.set(-0.18, -0.02, 0.92); rig.earL.scale.set(0.14, 0.26, 0.12);
+        rig.earR.position.set(-0.18, -0.02, -0.92); rig.earR.scale.set(0.14, 0.26, 0.12);
+        rig.eyeLW.position.set(0.68, 0.1, 0.3); rig.eyeLW.scale.set(0.13, 0.17, 0.15);
+        rig.eyeRW.position.set(0.68, 0.1, -0.3); rig.eyeRW.scale.set(0.13, 0.17, 0.15);
+        rig.eyeLD.position.set(0.78, 0.09, 0.31); rig.eyeLD.scale.setScalar(0.08);
+        rig.eyeRD.position.set(0.78, 0.09, -0.31); rig.eyeRD.scale.setScalar(0.08);
 
-        rig.handF.position.copy(h1); rig.handF.scale.setScalar(0.15 * b);
-        rig.handB.position.copy(h2); rig.handB.scale.setScalar(0.14 * b);
-        rig.footF.position.copy(f1); rig.footF.scale.setScalar(0.16 * b);
-        rig.footB.position.copy(f2); rig.footB.scale.setScalar(0.15 * b);
+        /* chest, stomach and the jacket's lapels - without them the torso
+           reads as a smooth tube at any distance */
+        const along = (t, fwd, z) => {
+            const p = new THREE.Vector3().lerpVectors(pel, ch, t);
+            p.x += f.facing * R * (fwd || 0);
+            p.z += (z || 0) * R;
+            return p;
+        };
+        rig.pecF.position.copy(along(0.78, 0.5, 0.72)); rig.pecF.scale.set(R * 0.8, R * 0.62, R * 0.5);
+        rig.pecB.position.copy(along(0.78, 0.5, -0.72)); rig.pecB.scale.set(R * 0.8, R * 0.62, R * 0.5);
+        rig.absU.position.copy(along(0.52, 0.42, 0)); rig.absU.scale.set(R * 0.72, R * 0.5, R * 1.0);
+        rig.absL.position.copy(along(0.3, 0.36, 0)); rig.absL.scale.set(R * 0.66, R * 0.46, R * 0.95);
+        const lap = (m, z) => {
+            m.position.copy(along(0.56, 0.52, z));
+            m.quaternion.copy(rig.torso.quaternion);
+            m.scale.set(R * 0.34, R * 2.2, R * 0.5);
+            m.rotateZ(-f.facing * 0.12);
+        };
+        lap(rig.lapelF, 0.62); lap(rig.lapelB, -0.62);
+        rig.kneeF.position.copy(k1); rig.kneeF.scale.setScalar(R * 1.12);
+        rig.kneeB.position.copy(k2); rig.kneeB.scale.setScalar(R * 1.08);
 
-        /* blob shadow, faded by height off the floor */
+        rig.handF.position.copy(h1); rig.handF.scale.set(R * 1.05, R * 1.25, R * 0.85);
+        rig.handB.position.copy(h2); rig.handB.scale.set(R * 1, R * 1.2, R * 0.8);
+        this.seg(rig.wristF, e1, h1, R * 1.02, 0.22, 0.74);
+        this.seg(rig.wristB, e2, h2, R * 0.98, 0.22, 0.74);
+        this.seg(rig.shinF, k1, f1, R * 1.16, 0.26, 0.66);
+        this.seg(rig.shinB, k2, f2, R * 1.12, 0.26, 0.66);
+
+        /* feet point the way the fighter faces */
+        const foot = (m, j, w) => {
+            m.position.copy(j);
+            m.position.y += R * 0.35;
+            m.position.x += f.facing * R * 0.45;
+            m.rotation.set(0, 0, 0);
+            m.scale.set(R * 2.3, R * 0.7, w);
+        };
+        foot(rig.footF, f1, R * 1.15);
+        foot(rig.footB, f2, R * 1.1);
+
+        /* blob shadow only when there is no real one */
         const lift = clamp(1 - (GROUND_Y - f.y) / 300, 0.2, 1);
+        rig.shadow.visible = !this.shadows;
         rig.shadow.position.set(this.x3(f.x), 0.012, 0);
         rig.shadow.scale.setScalar(0.55 * b * lift);
-        rig.shadow.material.opacity = 0.38 * lift;
+        rig.shadow.material.opacity = 0.34 * lift;
 
-        /* glow when something special is happening */
-        const hot = (f.exGlow > 0 || f.superFreeze > 0 || (f.move && f.move.type === 'super')) ? 3.4
-            : (f.hitFlash > 0 ? 2.2 : 0);
-        rig.aura.intensity = lerp(rig.aura.intensity, hot, 0.35);
-        rig.aura.position.set(this.x3(f.x), this.y3(f.y - 100), 0.6);
-        if (f.hitFlash > 0) rig.aura.color.set('#ffffff');
-        else rig.aura.color.set(f.style.aura);
+        const hot = (f.exGlow > 0 || f.superFreeze > 0 || (f.move && f.move.type === 'super')) ? 3.6
+            : (f.hitFlash > 0 ? 2.4 : 0);
+        const aura = this.auras[key === 'p2' ? 1 : 0];
+        aura.intensity = lerp(aura.intensity, hot, 0.35);
+        aura.position.set(this.x3(f.x), this.y3(f.y - 100), 0.6);
+        aura.color.set(f.hitFlash > 0 ? '#ffffff' : f.style.aura);
 
         rig.group.visible = true;
         return rig;
+    },
+
+    /* place a piece that runs from a to b. The lathes are modelled from
+       y=0 to y=1, so they are anchored at the joint, not the midpoint.
+       "span" shortens it, "from" slides it along the bone. */
+    seg(mesh, a, b, r, span, from) {
+        const v = this._v;
+        v.subVectors(b, a);
+        const len = Math.max(0.02, v.length());
+        v.normalize();
+        mesh.position.copy(a);
+        if (from) mesh.position.addScaledVector(v, len * from);
+        mesh.quaternion.setFromUnitVectors(this._up, v);
+        mesh.scale.set(r, len * (span || 1), r);
     },
 
     hideUnused(activeIds) {
@@ -4448,6 +4701,7 @@ const STAGE3D = {
         );
         floor.rotation.x = -Math.PI / 2;
         floor.position.z = -4;
+        floor.receiveShadow = R3D.shadows;
         grp.add(floor);
 
         /* the neon strip the fighters stand on */
@@ -4478,7 +4732,7 @@ const STAGE3D = {
             const d = 1.5 + srnd() * 2;
             const m = new THREE.Mesh(
                 new THREE.BoxGeometry(w, h, d),
-                new THREE.MeshLambertMaterial({ map: (i % 2 ? tex : tex2), emissive: 0x140a28, emissiveIntensity: 0.6 })
+                new THREE.MeshLambertMaterial({ map: (i % 2 ? tex : tex2), emissive: 0x140a28, emissiveIntensity: 0.28 })
             );
             m.position.set(-half - 6 + srnd() * (half * 2 + 12), h / 2, -9 - srnd() * 22);
             grp.add(m);
@@ -4491,7 +4745,7 @@ const STAGE3D = {
             );
             sign.position.set(s[0], 6.5, -8.5);
             grp.add(sign);
-            const l = new THREE.PointLight(new THREE.Color(s[1]), 2.2, 26);
+            const l = new THREE.PointLight(new THREE.Color(s[1]), 1.1, 26);
             l.position.set(s[0], 6, -6);
             grp.add(l);
         });
@@ -4505,7 +4759,7 @@ const STAGE3D = {
         grp.add(wall);
         const banner = new THREE.Mesh(
             new THREE.PlaneGeometry(5, 5.4),
-            new THREE.MeshLambertMaterial({ color: 0x8c1c1c, emissive: 0x2a0808, emissiveIntensity: 0.6 })
+            new THREE.MeshLambertMaterial({ color: 0x8c1c1c, emissive: 0x2a0808, emissiveIntensity: 0.28 })
         );
         banner.position.set(0, 5, -6.4);
         grp.add(banner);
@@ -4517,7 +4771,7 @@ const STAGE3D = {
             );
             lamp.position.set(i * 2.6, 5.4, -5.6);
             grp.add(lamp);
-            const l = new THREE.PointLight(0xff9d3d, 1.1, 12);
+            const l = new THREE.PointLight(0xff9d3d, 0.55, 12);
             l.position.copy(lamp.position);
             grp.add(l);
         }
@@ -4557,7 +4811,7 @@ const STAGE3D = {
             strip.position.set(i * 3.1, 6.6, -5.4);
             grp.add(strip);
         }
-        const l = new THREE.PointLight(0x7cf7ff, 2, 40);
+        const l = new THREE.PointLight(0x7cf7ff, 1, 40);
         l.position.set(0, 7, -3);
         grp.add(l);
     },
@@ -4578,7 +4832,7 @@ const STAGE3D = {
         );
         sun.position.set(0, 4.4, -20);
         grp.add(sun);
-        const l = new THREE.PointLight(0xffb457, 2.4, 60);
+        const l = new THREE.PointLight(0xffb457, 1.2, 60);
         l.position.set(0, 6, -8);
         grp.add(l);
         const parapet = new THREE.Mesh(
@@ -4912,7 +5166,7 @@ STAGE3D.world = function (grp, half, theme, prop) {
         add(new THREE.BoxGeometry(1.4 + srnd() * 1.8, h, 1.6),
             M(theme.floorA), -half - 5 + srnd() * (half * 2 + 10), h / 2, -13 - srnd() * 14);
     }
-    const light = new THREE.PointLight(new THREE.Color(glow), 2.2, 46);
+    const light = new THREE.PointLight(new THREE.Color(glow), 1.1, 46);
     light.position.set(0, 7, -4);
     grp.add(light);
 
