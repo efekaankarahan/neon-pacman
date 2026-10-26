@@ -25,6 +25,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="../shared/analytics.js?v=2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- post processing, so the neon actually blooms -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <style>
         * {
             margin: 0;
@@ -4401,6 +4408,27 @@ const R3D = {
         this.scene.add(amb, key, fill, rimA, rimB, this.auras[0], this.auras[1]);
         this.lights = { amb, key, fill, rimA, rimB };
 
+        /* An environment to reflect. Physical materials with nothing around
+           them read as plastic - this gives every surface something to pick
+           up, which is most of what separates "lit" from "rendered". */
+        this.buildEnvironment();
+
+        /* Bloom, so the neon in the stage and the glow on a super actually
+           spill. Skipped on phones, and skipped if the CDN did not land. */
+        if (!LOWFX && typeof THREE.EffectComposer === 'function' && typeof THREE.UnrealBloomPass === 'function') {
+            try {
+                /* the blur runs at a quarter of the frame and is upsampled -
+                   bloom is low frequency, so nobody can tell, and it is the
+                   difference between a cost you notice and one you do not */
+                this.renderer.setPixelRatio(1);
+                this.composer = new THREE.EffectComposer(this.renderer);
+                this.composer.setSize(W, H);
+                this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
+                this.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W / 4, H / 4), 0.5, 0.75, 0.8);
+                this.composer.addPass(this.bloom);
+            } catch (e) { this.composer = null; }
+        }
+
         this.stageGroup = new THREE.Group();
         this.projGroup = new THREE.Group();
         this.scene.add(this.stageGroup, this.projGroup);
@@ -4417,12 +4445,94 @@ const R3D = {
     v3(gx, gy, z) { return new THREE.Vector3(this.x3(gx), this.y3(gy), z || 0); },
 
     /* ---- a fighter rig, built once and posed every frame ---- */
+    /* A painted sky, prefiltered into an environment map: a dark dome, a
+       warm band where the key light is, and two neon strips for the rims. */
+    buildEnvironment() {
+        const c = document.createElement('canvas');
+        c.width = 512; c.height = 256;
+        const g = c.getContext('2d');
+        const sky = g.createLinearGradient(0, 0, 0, 256);
+        sky.addColorStop(0, '#0d1430');
+        sky.addColorStop(0.45, '#2a2140');
+        sky.addColorStop(0.55, '#3a2a3e');
+        sky.addColorStop(1, '#0a0810');
+        g.fillStyle = sky; g.fillRect(0, 0, 512, 256);
+        /* the key, as a soft warm patch */
+        const warm = g.createRadialGradient(150, 70, 10, 150, 70, 150);
+        warm.addColorStop(0, 'rgba(255,240,215,0.95)');
+        warm.addColorStop(1, 'rgba(255,240,215,0)');
+        g.fillStyle = warm; g.fillRect(0, 0, 512, 256);
+        /* two neon strips behind, which become the edge light in reflections */
+        g.fillStyle = 'rgba(255,46,99,0.5)'; g.fillRect(330, 92, 150, 26);
+        g.fillStyle = 'rgba(0,243,255,0.45)'; g.fillRect(20, 110, 120, 20);
+        g.fillStyle = 'rgba(255,255,255,0.07)';
+        for (let i = 0; i < 70; i++) g.fillRect(Math.random() * 512, Math.random() * 120, 2, 2);
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        try {
+            const pm = new THREE.PMREMGenerator(this.renderer);
+            pm.compileEquirectangularShader();
+            this.envMap = pm.fromEquirectangular(tex).texture;
+            this.scene.environment = this.envMap;
+            pm.dispose();
+        } catch (e) { this.envMap = null; }
+    },
+
+    /* a height field turned into a normal map, so cloth has a weave you
+       can see the light catch and skin is not glass */
+    normalMap(kind) {
+        this._nrm = this._nrm || {};
+        if (this._nrm[kind]) return this._nrm[kind];
+        const n = 64;
+        const h = document.createElement('canvas');
+        h.width = h.height = n;
+        const g = h.getContext('2d');
+        g.fillStyle = '#808080'; g.fillRect(0, 0, n, n);
+        if (kind === 'cloth') {
+            for (let i = -n; i < n; i += 4) {
+                g.strokeStyle = '#b4b4b4'; g.lineWidth = 2;
+                g.beginPath(); g.moveTo(i, 0); g.lineTo(i + n, n); g.stroke();
+                g.strokeStyle = '#4c4c4c';
+                g.beginPath(); g.moveTo(i + 2, 0); g.lineTo(i + 2 + n, n); g.stroke();
+            }
+        } else {
+            for (let i = 0; i < 400; i++) {
+                g.fillStyle = Math.random() < 0.5 ? '#6e6e6e' : '#929292';
+                g.fillRect(Math.random() * n, Math.random() * n, 2, 2);
+            }
+        }
+        const src = g.getImageData(0, 0, n, n).data;
+        const out = g.createImageData(n, n);
+        const at = (x, y) => src[((y + n) % n * n + (x + n) % n) * 4];
+        for (let y = 0; y < n; y++) {
+            for (let x = 0; x < n; x++) {
+                const dx = (at(x + 1, y) - at(x - 1, y)) / 255;
+                const dy = (at(x, y + 1) - at(x, y - 1)) / 255;
+                const i = (y * n + x) * 4;
+                const s = kind === 'cloth' ? 2.2 : 1.2;
+                let nx = -dx * s, ny = -dy * s, nz = 1;
+                const len = Math.hypot(nx, ny, nz);
+                out.data[i] = (nx / len * 0.5 + 0.5) * 255;
+                out.data[i + 1] = (ny / len * 0.5 + 0.5) * 255;
+                out.data[i + 2] = (nz / len * 0.5 + 0.5) * 255;
+                out.data[i + 3] = 255;
+            }
+        }
+        g.putImageData(out, 0, 0);
+        const t = new THREE.CanvasTexture(h);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.repeat.set(3, 3);
+        this._nrm[kind] = t;
+        return t;
+    },
+
     /* ---- shared geometry, built once: tapered muscle profiles rather
             than plain tubes, so the silhouette reads as a body ---- */
     buildGeo() {
         if (this.GEO) return this.GEO;
         const V = (x, y) => new THREE.Vector2(x, y);
-        const lathe = (pts, seg) => new THREE.LatheGeometry(pts, seg || (LOWFX ? 8 : 14));
+        const lathe = (pts, seg) => new THREE.LatheGeometry(pts, seg || (LOWFX ? 8 : 26));
         this.GEO = {
             upperArm: lathe([V(0.5, 0), V(0.86, 0.14), V(1, 0.34), V(0.9, 0.58), V(0.7, 0.82), V(0.54, 1)]),
             foreArm: lathe([V(0.6, 0), V(0.82, 0.18), V(0.72, 0.46), V(0.58, 0.74), V(0.46, 1)]),
@@ -4433,10 +4543,10 @@ const R3D = {
             /* the jacket is the same shell with a quarter cut out of the front */
             jacket: new THREE.LatheGeometry(
                 [V(0.66, 0), V(0.78, 0.2), V(0.74, 0.4), V(0.9, 0.64), V(1.02, 0.84), V(0.9, 1)],
-                LOWFX ? 8 : 14, Math.PI * 0.26, Math.PI * 1.48),
-            skull: new THREE.SphereGeometry(1, LOWFX ? 10 : 18, LOWFX ? 8 : 14),
+                LOWFX ? 8 : 26, Math.PI * 0.26, Math.PI * 1.48),
+            skull: new THREE.SphereGeometry(1, LOWFX ? 10 : 28, LOWFX ? 8 : 22),
             jaw: lathe([V(0.2, 0), V(0.72, 0.3), V(0.92, 0.7), V(0.8, 1)], LOWFX ? 8 : 12),
-            ball: new THREE.SphereGeometry(1, LOWFX ? 8 : 12, LOWFX ? 6 : 10),
+            ball: new THREE.SphereGeometry(1, LOWFX ? 8 : 18, LOWFX ? 6 : 14),
             box: new THREE.BoxGeometry(1, 1, 1),
             cone: new THREE.ConeGeometry(1, 1, LOWFX ? 6 : 10),
             belt: new THREE.TorusGeometry(1, 0.22, 6, LOWFX ? 10 : 16),
@@ -4482,27 +4592,36 @@ const R3D = {
         if (this.rigs[id]) return this.rigs[id];
         const S = f.style, GEO = this.buildGeo();
 
+        const NS = new THREE.Vector2(0.6, 0.6), NC = new THREE.Vector2(1.1, 1.1);
         const skinMat = (col) => new THREE.MeshStandardMaterial({
             color: new THREE.Color(col), map: this.tex('skin', col),
-            roughness: 0.66, metalness: 0.02
+            normalMap: this.normalMap('skin'), normalScale: NS,
+            roughness: 0.52, metalness: 0.0, envMapIntensity: 0.85
         });
         const clothMat = (col, rough) => new THREE.MeshStandardMaterial({
             color: new THREE.Color(col), map: this.tex('cloth', col),
-            roughness: rough === undefined ? 0.92 : rough, metalness: 0.02
+            normalMap: this.normalMap('cloth'), normalScale: NC,
+            roughness: rough === undefined ? 0.84 : rough, metalness: 0.03,
+            envMapIntensity: 0.5
         });
         const trimMat = (col) => new THREE.MeshStandardMaterial({
-            color: new THREE.Color(col), roughness: 0.38, metalness: 0.25,
-            emissive: new THREE.Color(col), emissiveIntensity: 0.28
+            color: new THREE.Color(col), roughness: 0.3, metalness: 0.55,
+            envMapIntensity: 1.3,
+            emissive: new THREE.Color(col), emissiveIntensity: 0.22
         });
 
         const skinM = skinMat(S.skin);
         const giM = clothMat(S.gi);
         const giDM = clothMat(S.giDark);
         const trimM = trimMat(S.trim);
-        const hairM = new THREE.MeshStandardMaterial({ color: new THREE.Color(S.hair), roughness: 0.78 });
+        const hairM = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(S.hair), roughness: 0.46, metalness: 0.04,
+            normalMap: this.normalMap('cloth'), normalScale: new THREE.Vector2(0.5, 0.5),
+            envMapIntensity: 0.9
+        });
         const bootM = clothMat('#1b1b23', 0.55);
-        const eyeW = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.3 });
-        const eyeD = new THREE.MeshStandardMaterial({ color: 0x161018, roughness: 0.25 });
+        const eyeW = new THREE.MeshStandardMaterial({ color: 0xf6f6f6, roughness: 0.14, envMapIntensity: 1.4 });
+        const eyeD = new THREE.MeshStandardMaterial({ color: 0x120d16, roughness: 0.08, envMapIntensity: 1.6 });
 
         const g = new THREE.Group();
         const mesh = (geo, m, parent) => {
@@ -4832,7 +4951,10 @@ const R3D = {
         return { x: (this._v.x * 0.5 + 0.5) * W, y: (-this._v.y * 0.5 + 0.5) * H };
     },
 
-    render() { this.renderer.render(this.scene, this.camera); },
+    render() {
+        if (this.composer) this.composer.render();
+        else this.renderer.render(this.scene, this.camera);
+    },
 
     setVisible(on) {
         const c = document.getElementById('g3d');
