@@ -41,6 +41,9 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 .av{font-size:30px;aspect-ratio:1;border-radius:12px;background:var(--panel2);border:3px solid transparent;transition:transform .1s}
 .av:hover{transform:scale(1.08)}
 .av.sel{border-color:var(--gold);background:#3d3418}
+.box h2{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.more{color:#7ee8ff;text-decoration:none;font-size:9px}
+.tokens{font-family:'Press Start 2P',monospace;color:var(--gold);font-size:14px;margin-bottom:20px;text-align:center}
 .sets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .set{padding:12px;border-radius:12px;background:var(--panel2);border:3px solid transparent;text-align:left;font-weight:900;font-size:15px}
 .set small{display:block;font-weight:700;color:var(--muted);font-size:12px;margin-top:2px}
@@ -136,7 +139,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 .endmsg{font-weight:900;font-size:18px;margin-bottom:6px;text-align:center}
 .endstats{color:var(--muted);margin-bottom:22px;text-align:center}
 .endbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.ghost{font-family:'Press Start 2P',monospace;font-size:12px;padding:16px 22px;border-radius:14px;background:var(--panel2);border:3px solid #57509a}
+.ghost{display:inline-flex;align-items:center;font-family:'Press Start 2P',monospace;font-size:12px;padding:16px 22px;border-radius:14px;background:var(--panel2);border:3px solid #57509a}
 
 .float{position:fixed;font-family:'Press Start 2P',monospace;font-size:18px;pointer-events:none;z-index:30;
   animation:up 1.1s ease-out forwards;text-shadow:2px 2px 0 #000}
@@ -169,7 +172,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   <p class="tag">Answer right, open a chest, finish with the most gold.</p>
 
   <div class="box">
-    <h2>1. PICK YOUR CRITTER</h2>
+    <h2>1. PICK YOUR DARKY <a class="more" href="../darkys/">GET MORE &rarr;</a></h2>
     <div class="avatars" id="avatars"></div>
   </div>
 
@@ -218,18 +221,20 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   <div class="podium" id="podium"></div>
   <div class="endmsg" id="endmsg"></div>
   <div class="endstats" id="endstats"></div>
+  <div class="tokens" id="endtokens"></div>
   <div class="endbtns">
     <button class="big" id="againBtn">PLAY AGAIN</button>
     <button class="ghost" id="menuBtn">CHANGE SET</button>
+    <a class="ghost" href="../darkys/" style="text-decoration:none;color:#7ee8ff">OPEN BOXES</a>
   </div>
 </section>
 
+<script src="../darkys.js?v=1"></script>
 <script>
 (function () {
 'use strict';
 
 var ROUND_SECONDS = 120;
-var AVATARS = ['🐸','🦊','🐼','🐙','🦄','🐲','🐧','🦉','🐯','🐢','🤖','👽'];
 var RIVALS = [
   { name: 'Bolt',  em: '🐶' }, { name: 'Mochi', em: '🐱' }, { name: 'Ziggy', em: '🐵' },
   { name: 'Nova',  em: '🦁' }, { name: 'Pixel', em: '🐰' }, { name: 'Taco',  em: '🐻' }
@@ -360,7 +365,7 @@ function nextQuestion() {
 // STATE
 // ---------------------------------------------------------------
 var state = {
-  avatar: AVATARS[0], set: 'mixed',
+  avatar: Darkys.selected().em, set: 'mixed',
   players: [], me: null, timeLeft: ROUND_SECONDS, running: false,
   streak: 0, right: 0, asked: 0, timer: null, botTimers: []
 };
@@ -375,12 +380,16 @@ function show(id) {
 // ---------- start screen ----------
 function buildStart() {
   var av = $('avatars');
-  AVATARS.forEach(function (e, i) {
+  var cur = Darkys.selected().id;
+  Darkys.ownedList().forEach(function (d) {
     var b = document.createElement('button');
-    b.className = 'av' + (i === 0 ? ' sel' : '');
-    b.textContent = e;
+    b.className = 'av' + (d.id === cur ? ' sel' : '');
+    b.textContent = d.em;
+    b.title = d.name;
+    b.style.borderBottom = '4px solid ' + Darkys.RARITY[d.r].color;
     b.onclick = function () {
-      state.avatar = e;
+      state.avatar = d.em;
+      Darkys.select(d.id);
       [].forEach.call(av.children, function (c) { c.classList.remove('sel'); });
       b.classList.add('sel');
     };
@@ -669,6 +678,9 @@ function endRound() {
   var msgs = ['YOU WIN! 👑', '2nd place, so close!', '3rd place, nice!', '4th place, try again!', '5th place, you got this next time!'];
   $('endmsg').textContent = msgs[place - 1];
   $('endstats').textContent = state.me.gold + ' gold · ' + state.right + ' right answers out of ' + state.asked;
+  var earned = state.right ? Math.min(80, state.right * 2 + Math.round(state.me.gold / 25) + [10, 6, 4, 2, 1][place - 1]) : 0;
+  var total = Darkys.addTokens(earned);
+  $('endtokens').textContent = earned ? '+' + earned + ' 🎟️ tokens  (you have ' + total + ')' : 'Answer questions to earn 🎟️ tokens!';
   show('end');
   if (window.gtag) gtag('event', 'gold_quiz_end', { place: place, gold: state.me.gold });
   if (window.DarkyScores) setTimeout(function () { DarkyScores.submit('gold-quiz', Math.min(state.me.gold, 1000000)); }, 1200);
