@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Darkys - Open Boxes and Collect Darkys | Darky Play Arcade</title>
+<meta name="description" content="Collect Darkys: open a free box every day, earn tokens in Arcade games and unlock rare, epic and legendary Darkys. Free, no sign up.">
+<link rel="canonical" href="https://darkyplay.com/arcade/darkys/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<style>
+:root{ --panel:#1d1b2b; --panel2:#272440; --line:#3a3660; --gold:#ffc83d; --muted:#a9a6c4; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  min-height:100dvh;color:#fff;font-family:'Nunito',system-ui,sans-serif;user-select:none;
+  background:radial-gradient(ellipse at top,#2a1f4d 0%,#111 65%);
+  display:flex;flex-direction:column;align-items:center;padding:16px 16px 60px;
+}
+.pixel{font-family:'Press Start 2P',monospace}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+.top{width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center}
+.top a{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);text-decoration:none}
+.top a:hover{color:#fff}
+.pill{background:var(--panel);border:3px solid var(--line);border-radius:999px;padding:8px 14px;
+  font-family:'Press Start 2P',monospace;font-size:12px;color:var(--gold);white-space:nowrap}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#7ee8ff;margin:34px 0 6px;
+  text-shadow:0 0 22px rgba(126,232,255,.5),4px 4px 0 #1d4f63;text-align:center}
+.tag{color:var(--muted);margin-bottom:24px;text-align:center}
+.wrap{width:100%;max-width:900px;display:flex;flex-direction:column;gap:16px}
+.box{background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:16px}
+.box h2{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between}
+
+/* equipped */
+.me{display:flex;align-items:center;gap:16px}
+.me .big{width:92px;height:92px;border-radius:20px;display:grid;place-items:center;font-size:52px;background:var(--panel2);border:4px solid}
+.me .nm{font-weight:900;font-size:22px}
+.me .rr{font-family:'Press Start 2P',monospace;font-size:10px;margin-top:6px}
+.me .hint{color:var(--muted);font-size:13px;margin-top:6px}
+
+/* shop */
+.shop{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.crate{background:var(--panel2);border:3px solid var(--line);border-radius:16px;padding:18px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.crate .ic{font-size:58px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))}
+.crate .nm{font-family:'Press Start 2P',monospace;font-size:12px}
+.crate .odds{font-size:12px;color:var(--muted);line-height:1.45}
+.crate.free{border-color:#7ee8ff}
+.buy{font-family:'Press Start 2P',monospace;font-size:11px;padding:13px 16px;border-radius:12px;background:var(--gold);color:#3b2400;box-shadow:0 5px 0 #a06a00;width:100%}
+.buy:active{transform:translateY(3px);box-shadow:0 2px 0 #a06a00}
+.free .buy{background:#7ee8ff;color:#0b3442;box-shadow:0 5px 0 #2a8aa6}
+.buy:disabled{background:#3a3660;color:#8d8aa8;box-shadow:none;cursor:default}
+
+/* collection */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.card{background:var(--panel2);border:3px solid;border-radius:14px;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.card .em{font-size:38px;line-height:1.1}
+.card .nm{font-weight:900;font-size:13px}
+.card .rr{font-family:'Press Start 2P',monospace;font-size:7px}
+.card .ct{position:absolute;top:5px;right:7px;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--muted)}
+.card.on{box-shadow:0 0 0 3px #fff inset}
+.card.on::after{content:'PLAYING';position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#fff;color:#111;
+  font-family:'Press Start 2P',monospace;font-size:7px;padding:3px 5px;border-radius:5px}
+.card.lock{opacity:.4;cursor:default}
+.card.lock .em{filter:brightness(0) opacity(.7)}
+
+/* reveal */
+.reveal{position:fixed;inset:0;background:rgba(8,6,18,.95);z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px}
+.reveal.on{display:flex}
+.shake{font-size:110px;animation:shake .5s ease-in-out infinite}
+@keyframes shake{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-12deg) scale(1.05)}75%{transform:rotate(12deg) scale(1.05)}}
+.prize{display:none;flex-direction:column;align-items:center;gap:10px;animation:pop .5s ease-out}
+.prize.on{display:flex}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.prize .em{font-size:110px;width:190px;height:190px;border-radius:30px;display:grid;place-items:center;background:var(--panel2);border:5px solid}
+.prize .nm{font-weight:900;font-size:28px}
+.prize .rr{font-family:'Press Start 2P',monospace;font-size:13px}
+.prize .note{font-weight:900;font-size:16px;color:var(--muted)}
+.prize .new{font-family:'Press Start 2P',monospace;font-size:14px;color:#7dffb2}
+.rbtns{display:none;gap:12px}
+.rbtns.on{display:flex}
+.ghost{font-family:'Press Start 2P',monospace;font-size:11px;padding:13px 18px;border-radius:12px;background:var(--panel2);border:3px solid #57509a}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#ff4f6d;padding:10px 16px;border-radius:10px;font-weight:900;display:none;z-index:30}
+
+.play{display:block;text-align:center;font-family:'Press Start 2P',monospace;font-size:12px;color:#3b2400;background:var(--gold);
+  padding:15px;border-radius:12px;text-decoration:none;box-shadow:0 5px 0 #a06a00}
+@media (max-width:520px){ .shop{grid-template-columns:1fr} .me .big{width:76px;height:76px;font-size:42px} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a href="../">&larr; ARCADE</a>
+    <span class="pill">🎟️ <span id="tokens">0</span></span>
+  </div>
+
+  <h1>DARKYS</h1>
+  <p class="tag">Collect them all. Your first Darky is free!</p>
+
+  <div class="wrap">
+    <div class="box">
+      <h2><span>YOU PLAY AS</span></h2>
+      <div class="me" id="me"></div>
+    </div>
+
+    <div class="box">
+      <h2><span>OPEN A BOX</span></h2>
+      <div class="shop">
+        <div class="crate free">
+          <div class="ic">🎁</div>
+          <div class="nm">FREE BOX</div>
+          <div class="odds">Free once a day<br>Common · Uncommon · Rare</div>
+          <button class="buy" id="freeBtn">OPEN FREE</button>
+        </div>
+        <div class="crate">
+          <div class="ic">📦</div>
+          <div class="nm">DARK BOX</div>
+          <div class="odds">Every rarity, even<br>Epic &amp; Legendary</div>
+          <button class="buy" id="darkBtn">OPEN · 🎟️ 25</button>
+        </div>
+      </div>
+    </div>
+
+    <a class="play" href="../gold-quiz/">PLAY GOLD QUIZ TO EARN 🎟️</a>
+
+    <div class="box">
+      <h2><span>COLLECTION</span><span id="count"></span></h2>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <div class="reveal" id="reveal">
+    <div class="shake" id="shake">📦</div>
+    <div class="prize" id="prize"></div>
+    <div class="rbtns" id="rbtns">
+      <button class="buy" id="equipBtn" style="width:auto">PLAY AS IT</button>
+      <button class="ghost" id="closeBtn">CLOSE</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="../darkys.js?v=1"></script>
+<script>
+(function () {
+'use strict';
+var $ = function (id) { return document.getElementById(id); };
+var R = Darkys.RARITY;
+var last = null;
+
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+function timeLeft(ms) {
+  var h = Math.floor(ms / 3600000), m = Math.ceil((ms % 3600000) / 60000);
+  if (m === 60) { h++; m = 0; }
+  return h ? h + 'h ' + m + 'm' : m + 'm';
+}
+
+function render() {
+  $('tokens').textContent = Darkys.tokens();
+
+  var me = Darkys.selected(), r = R[me.r];
+  $('me').innerHTML = '<div class="big" style="border-color:' + r.color + '">' + me.em + '</div>' +
+    '<div><div class="nm">' + esc(me.name) + '</div><div class="rr" style="color:' + r.color + '">' + r.name.toUpperCase() +
+    '</div><div class="hint">Tap a Darky below to play as it.</div></div>';
+
+  var wait = Darkys.freeReadyIn();
+  $('freeBtn').disabled = wait > 0;
+  $('freeBtn').textContent = wait > 0 ? 'IN ' + timeLeft(wait) : 'OPEN FREE';
+  $('darkBtn').disabled = Darkys.tokens() < Darkys.BOXES.dark.cost;
+
+  var grid = $('grid');
+  grid.innerHTML = '';
+  var have = 0;
+  Darkys.LIST.forEach(function (d) {
+    var owned = Darkys.owns(d.id), rr = R[d.r];
+    if (owned) have++;
+    var c = document.createElement(owned ? 'button' : 'div');
+    c.className = 'card' + (owned ? '' : ' lock') + (owned && me.id === d.id ? ' on' : '');
+    c.style.borderColor = rr.color;
+    c.innerHTML = (owned && Darkys.count(d.id) > 1 ? '<span class="ct">x' + Darkys.count(d.id) + '</span>' : '') +
+      '<span class="em">' + d.em + '</span><span class="nm">' + (owned ? esc(d.name) : '???') + '</span>' +
+      '<span class="rr" style="color:' + rr.color + '">' + rr.name.toUpperCase() + '</span>';
+    if (owned) c.onclick = function () { Darkys.select(d.id); render(); };
+    grid.appendChild(c);
+  });
+  $('count').textContent = have + '/' + Darkys.LIST.length;
+}
+
+function toast(t) {
+  var el = $('toast');
+  el.textContent = t; el.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+
+function openBox(id) {
+  var res = Darkys.open(id);
+  if (res.error) { toast(res.error); render(); return; }
+  last = res.darky;
+  var r = R[res.darky.r];
+  $('shake').textContent = Darkys.BOXES[id].icon;
+  $('shake').style.display = '';
+  $('prize').className = 'prize';
+  $('rbtns').className = 'rbtns';
+  $('reveal').className = 'reveal on';
+  if (window.gtag) gtag('event', 'darkys_open', { box: id, rarity: res.darky.r });
+  setTimeout(function () {
+    $('shake').style.display = 'none';
+    $('prize').innerHTML = (res.isNew ? '<div class="new">NEW DARKY!</div>' : '') +
+      '<div class="em" style="border-color:' + r.color + ';box-shadow:0 0 50px ' + r.color + '">' + res.darky.em + '</div>' +
+      '<div class="nm">' + esc(res.darky.name) + '</div><div class="rr" style="color:' + r.color + '">' + r.name.toUpperCase() + '</div>' +
+      (res.isNew ? '' : '<div class="note">Already had it: +' + res.refund + ' 🎟️</div>');
+    $('prize').className = 'prize on';
+    $('rbtns').className = 'rbtns on';
+    render();
+  }, 1400);
+}
+
+$('freeBtn').onclick = function () { openBox('free'); };
+$('darkBtn').onclick = function () { openBox('dark'); };
+$('equipBtn').onclick = function () { if (last) Darkys.select(last.id); $('reveal').className = 'reveal'; render(); };
+$('closeBtn').onclick = function () { $('reveal').className = 'reveal'; render(); };
+
+render();
+setInterval(render, 60000);
+})();
+</script>
+</body>
+</html>
