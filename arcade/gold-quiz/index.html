@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gold Quiz - Answer, Open Chests, Win Gold | Darky Play Arcade</title>
+<meta name="description" content="Gold Quiz: answer quiz questions, open treasure chests and race four rivals for the most gold. Free quiz game for kids, no download, works on phone and PC.">
+<link rel="canonical" href="https://darkyplay.com/arcade/gold-quiz/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<style>
+:root{
+  --bg:#111; --panel:#1d1b2b; --panel2:#272440; --gold:#ffc83d; --text:#fff; --muted:#a9a6c4;
+  --a:#ff4f6d; --b:#2fa8ff; --c:#ffb020; --d:#28d17c;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:radial-gradient(ellipse at top,#2a1f4d 0%,#111 65%);
+  color:var(--text);font-family:'Nunito',system-ui,sans-serif;
+  min-height:100dvh;overflow-x:hidden;user-select:none;
+}
+.pixel{font-family:'Press Start 2P',monospace}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+.screen{display:none;min-height:100dvh;padding:16px;flex-direction:column;align-items:center}
+.screen.on{display:flex}
+
+/* top links */
+.toplink{position:fixed;top:12px;left:12px;font-family:'Press Start 2P',monospace;font-size:10px;
+  color:var(--muted);text-decoration:none;z-index:5}
+.toplink:hover{color:#fff}
+
+/* ---------- start ---------- */
+#start h1{font-family:'Press Start 2P',monospace;font-size:clamp(26px,7vw,48px);color:var(--gold);
+  text-shadow:0 0 18px rgba(255,200,61,.55),4px 4px 0 #7a4b00;margin:48px 0 8px;text-align:center}
+#start .tag{color:var(--muted);margin-bottom:22px;text-align:center}
+.box{background:var(--panel);border:3px solid #3a3660;border-radius:16px;padding:16px;width:100%;max-width:560px;margin-bottom:14px}
+.box h2{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--muted);margin-bottom:12px}
+.avatars{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.av{font-size:30px;aspect-ratio:1;border-radius:12px;background:var(--panel2);border:3px solid transparent;transition:transform .1s}
+.av:hover{transform:scale(1.08)}
+.av.sel{border-color:var(--gold);background:#3d3418}
+.sets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.set{padding:12px;border-radius:12px;background:var(--panel2);border:3px solid transparent;text-align:left;font-weight:900;font-size:15px}
+.set small{display:block;font-weight:700;color:var(--muted);font-size:12px;margin-top:2px}
+.set.sel{border-color:var(--gold);background:#3d3418}
+.big{font-family:'Press Start 2P',monospace;font-size:16px;padding:18px 34px;border-radius:14px;
+  background:var(--gold);color:#3b2400;box-shadow:0 6px 0 #a06a00;margin-top:6px}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #a06a00}
+.howto{color:var(--muted);font-size:13px;max-width:560px;text-align:center;margin-top:16px;line-height:1.5}
+
+/* ---------- game ---------- */
+#game{padding:12px 12px 72px;gap:12px}
+.hud{width:100%;max-width:1000px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pill{background:var(--panel);border:3px solid #3a3660;border-radius:999px;padding:8px 14px;
+  font-family:'Press Start 2P',monospace;font-size:12px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.pill.goldp{color:var(--gold)}
+.pill.low{color:#ff6b6b;border-color:#ff6b6b}
+.layout{width:100%;max-width:1000px;display:grid;grid-template-columns:1fr 250px;gap:12px;flex:1}
+.stage{display:flex;flex-direction:column;gap:12px;min-height:0}
+.qcard{background:#fff;color:#1b1830;border-radius:18px;padding:24px 18px;min-height:130px;display:flex;
+  align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:clamp(18px,3.4vw,28px);
+  box-shadow:0 6px 0 #c9c4e8}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1}
+.ans{border-radius:16px;font-weight:900;font-size:clamp(16px,2.8vw,22px);padding:18px 12px;min-height:84px;
+  box-shadow:0 6px 0 rgba(0,0,0,.35);transition:transform .08s,filter .15s;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.ans:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.ans:nth-child(1){background:var(--a)}.ans:nth-child(2){background:var(--b)}
+.ans:nth-child(3){background:var(--c)}.ans:nth-child(4){background:var(--d)}
+.ans.dim{filter:grayscale(.85) brightness(.55)}
+.ans.right{outline:5px solid #fff}
+.feedback{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+  z-index:20;font-family:'Press Start 2P',monospace;text-align:center;gap:18px;padding:20px}
+.feedback.on{display:flex}
+.feedback.good{background:rgba(25,140,80,.94)}
+.feedback.bad{background:rgba(190,40,60,.94)}
+.feedback .t{font-size:clamp(22px,6vw,40px)}
+.feedback .s{font-family:'Nunito',sans-serif;font-weight:900;font-size:18px}
+
+/* leaderboard */
+.board{background:var(--panel);border:3px solid #3a3660;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;align-self:start}
+.board h3{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);margin-bottom:4px}
+.row{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:var(--panel2);
+  font-weight:900;transition:background .3s}
+.row.me{background:#3d3418;outline:2px solid var(--gold)}
+.row .rk{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--muted);width:16px}
+.row .em{font-size:20px}
+.row .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .gd{color:var(--gold);font-family:'Press Start 2P',monospace;font-size:10px}
+.row.flash{background:#4b2a6b}
+.log{margin-top:6px;font-size:12px;color:var(--muted);min-height:34px;line-height:1.35}
+
+/* chests */
+.chests{position:fixed;inset:0;background:rgba(10,8,22,.93);z-index:15;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:24px;padding:20px}
+.chests.on{display:flex}
+.chests h2{font-family:'Press Start 2P',monospace;font-size:clamp(14px,3.5vw,22px);color:var(--gold);text-align:center}
+.crow{display:flex;gap:clamp(10px,3vw,28px);flex-wrap:wrap;justify-content:center}
+.chest{width:clamp(96px,26vw,170px);aspect-ratio:1;border-radius:18px;background:var(--panel2);border:4px solid #57509a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:clamp(46px,12vw,76px);
+  transition:transform .15s;position:relative}
+.chest:hover:not(.open){transform:translateY(-6px) rotate(-2deg)}
+.chest.wiggle{animation:wig .9s ease-in-out infinite}
+.chest:nth-child(2).wiggle{animation-delay:.15s}.chest:nth-child(3).wiggle{animation-delay:.3s}
+@keyframes wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+.chest .lbl{font-family:'Press Start 2P',monospace;font-size:clamp(8px,2vw,11px);text-align:center;line-height:1.4;padding:0 6px}
+.chest.open{animation:pop .35s ease-out}
+.chest.pick{border-color:var(--gold);box-shadow:0 0 30px rgba(255,200,61,.6)}
+.chest.other{opacity:.45}
+.chest.good .lbl{color:#7dffb2}.chest.bad .lbl{color:#ff7b8f}.chest.mid .lbl{color:#c9b6ff}
+@keyframes pop{0%{transform:scale(.7)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+.result{font-weight:900;font-size:20px;text-align:center;min-height:28px}
+.next{font-family:'Press Start 2P',monospace;font-size:13px;padding:14px 26px;border-radius:12px;background:var(--gold);
+  color:#3b2400;box-shadow:0 5px 0 #a06a00;visibility:hidden}
+.next.on{visibility:visible}
+
+/* pick a rival */
+.pickp{display:grid;grid-template-columns:repeat(2,minmax(130px,200px));gap:10px}
+.pickp button{background:var(--panel2);border:3px solid #57509a;border-radius:14px;padding:12px;font-weight:900;
+  font-size:16px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pickp button:hover{border-color:var(--gold)}
+.pickp .em{font-size:34px}.pickp .gd{color:var(--gold);font-family:'Press Start 2P',monospace;font-size:10px}
+
+/* end */
+#end h1{font-family:'Press Start 2P',monospace;color:var(--gold);font-size:clamp(20px,5vw,34px);margin:50px 0 26px;text-align:center}
+.podium{display:flex;align-items:flex-end;gap:10px;margin-bottom:24px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;width:clamp(90px,24vw,140px)}
+.pod .em{font-size:44px}
+.pod .nm{font-weight:900;text-align:center}
+.pod .gd{color:var(--gold);font-family:'Press Start 2P',monospace;font-size:10px}
+.pod .blk{width:100%;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;
+  font-family:'Press Start 2P',monospace;font-size:20px;color:#1b1830}
+.p1 .blk{height:140px;background:var(--gold)}.p2 .blk{height:100px;background:#d6d9e8}.p3 .blk{height:70px;background:#e09a5c}
+.pod.me .nm{color:var(--gold)}
+.endmsg{font-weight:900;font-size:18px;margin-bottom:6px;text-align:center}
+.endstats{color:var(--muted);margin-bottom:22px;text-align:center}
+.endbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.ghost{font-family:'Press Start 2P',monospace;font-size:12px;padding:16px 22px;border-radius:14px;background:var(--panel2);border:3px solid #57509a}
+
+.float{position:fixed;font-family:'Press Start 2P',monospace;font-size:18px;pointer-events:none;z-index:30;
+  animation:up 1.1s ease-out forwards;text-shadow:2px 2px 0 #000}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+
+@media (max-width:760px){
+  .layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+  .board{order:-1;padding:8px;align-self:stretch}
+  #rows{display:flex;gap:6px;overflow-x:auto}
+  .board h3,.log{display:none}
+  .row{flex-direction:column;gap:2px;min-width:74px;padding:6px}
+  .row .rk{display:none}
+  .row .nm{font-size:11px;max-width:70px;text-align:center}
+  .row .gd{font-size:8px}
+  .avatars{grid-template-columns:repeat(6,1fr);gap:6px}
+  .av{font-size:22px;border-radius:9px}
+  #start h1{margin-top:40px}
+  .ans{min-height:72px}
+  .hud .pill{font-size:10px;padding:7px 10px}
+}
+</style>
+</head>
+<body>
+
+<a class="toplink" href="../">&larr; ARCADE</a>
+
+<!-- ============ START ============ -->
+<section class="screen on" id="start">
+  <h1>GOLD QUIZ</h1>
+  <p class="tag">Answer right, open a chest, finish with the most gold.</p>
+
+  <div class="box">
+    <h2>1. PICK YOUR CRITTER</h2>
+    <div class="avatars" id="avatars"></div>
+  </div>
+
+  <div class="box">
+    <h2>2. PICK A QUESTION SET</h2>
+    <div class="sets" id="sets"></div>
+  </div>
+
+  <button class="big" id="playBtn">PLAY</button>
+  <p class="howto">You have 2 minutes. Every right answer lets you open one of three chests. Chests can give gold, multiply it, let you take gold from a rival... or cost you some. Four rivals are racing you the whole time.</p>
+</section>
+
+<!-- ============ GAME ============ -->
+<section class="screen" id="game">
+  <div class="hud">
+    <div class="pill" id="timerPill">&#9201; <span id="timer">2:00</span></div>
+    <div class="pill" id="streakPill">&#128293; <span id="streak">0</span></div>
+    <div class="pill goldp">&#129689; <span id="gold">0</span></div>
+  </div>
+  <div class="layout">
+    <div class="stage">
+      <div class="qcard" id="question">...</div>
+      <div class="answers" id="answers"></div>
+    </div>
+    <aside class="board">
+      <h3>LEADERBOARD</h3>
+      <div id="rows"></div>
+      <div class="log" id="log"></div>
+    </aside>
+  </div>
+</section>
+
+<div class="feedback" id="feedback"><div class="t"></div><div class="s"></div></div>
+
+<div class="chests" id="chests">
+  <h2 id="chestTitle">CHOOSE A CHEST!</h2>
+  <div class="crow" id="crow"></div>
+  <div class="pickp" id="pickp" style="display:none"></div>
+  <div class="result" id="result"></div>
+  <button class="next" id="nextBtn">NEXT &rarr;</button>
+</div>
+
+<!-- ============ END ============ -->
+<section class="screen" id="end">
+  <h1>TIME'S UP!</h1>
+  <div class="podium" id="podium"></div>
+  <div class="endmsg" id="endmsg"></div>
+  <div class="endstats" id="endstats"></div>
+  <div class="endbtns">
+    <button class="big" id="againBtn">PLAY AGAIN</button>
+    <button class="ghost" id="menuBtn">CHANGE SET</button>
+  </div>
+</section>
+
+<script>
+(function () {
+'use strict';
+
+var ROUND_SECONDS = 120;
+var AVATARS = ['🐸','🦊','🐼','🐙','🦄','🐲','🐧','🦉','🐯','🐢','🤖','👽'];
+var RIVALS = [
+  { name: 'Bolt',  em: '🐶' }, { name: 'Mochi', em: '🐱' }, { name: 'Ziggy', em: '🐵' },
+  { name: 'Nova',  em: '🦁' }, { name: 'Pixel', em: '🐰' }, { name: 'Taco',  em: '🐻' }
+];
+
+// ---------------------------------------------------------------
+// QUESTION SETS  (q, right answer, three wrong answers)
+// ---------------------------------------------------------------
+var SETS = {
+  mixed:   { name: 'Mix of Everything', note: 'A bit of every set', icon: '🎲' },
+  math:    { name: 'Quick Math',        note: 'New sums every game', icon: '➕' },
+  science: { name: 'Science',           note: 'Space, body, nature', icon: '🔬' },
+  world:   { name: 'Around the World',  note: 'Countries & places',  icon: '🌍' },
+  animals: { name: 'Animals',           note: 'Wild facts',          icon: '🐾' }
+};
+
+var BANK = {
+  science: [
+    ['What planet is known as the Red Planet?', 'Mars', 'Venus', 'Jupiter', 'Saturn'],
+    ['What gas do plants take in from the air?', 'Carbon dioxide', 'Oxygen', 'Helium', 'Nitrogen'],
+    ['How many legs does an insect have?', '6', '8', '4', '10'],
+    ['What is the closest star to Earth?', 'The Sun', 'Polaris', 'Sirius', 'The Moon'],
+    ['Water freezes at how many degrees Celsius?', '0', '10', '100', '-10'],
+    ['Which organ pumps blood around your body?', 'Heart', 'Lungs', 'Brain', 'Liver'],
+    ['What is the biggest planet in our solar system?', 'Jupiter', 'Saturn', 'Earth', 'Neptune'],
+    ['What do bees make?', 'Honey', 'Milk', 'Silk', 'Wax paper'],
+    ['How many bones are in an adult human body?', '206', '106', '306', '56'],
+    ['What force pulls things down to the ground?', 'Gravity', 'Magnetism', 'Friction', 'Wind'],
+    ['What is H2O better known as?', 'Water', 'Salt', 'Air', 'Sugar'],
+    ['Which planet has the most famous rings?', 'Saturn', 'Mars', 'Mercury', 'Earth'],
+    ['What part of the plant soaks up water?', 'Roots', 'Petals', 'Leaves', 'Seeds'],
+    ['What do we call frozen water falling from clouds in balls?', 'Hail', 'Fog', 'Dew', 'Steam'],
+    ['Which sense do you use your nose for?', 'Smell', 'Taste', 'Touch', 'Hearing'],
+    ['What is the hardest natural material?', 'Diamond', 'Gold', 'Iron', 'Glass'],
+    ['How long does Earth take to go around the Sun?', '1 year', '1 day', '1 month', '1 week'],
+    ['What do caterpillars turn into?', 'Butterflies', 'Bees', 'Beetles', 'Spiders'],
+    ['Which planet is closest to the Sun?', 'Mercury', 'Venus', 'Mars', 'Pluto'],
+    ['Light travels faster than...', 'Sound', 'Nothing', 'Thought', 'Shadows'],
+    ['What makes a rainbow?', 'Sunlight and rain', 'Wind and snow', 'Clouds and moon', 'Thunder'],
+    ['Which blood cells fight germs?', 'White', 'Red', 'Blue', 'Green']
+  ],
+  world: [
+    ['What is the capital of France?', 'Paris', 'Rome', 'Madrid', 'Berlin'],
+    ['Which is the largest ocean?', 'Pacific', 'Atlantic', 'Indian', 'Arctic'],
+    ['What is the capital of Japan?', 'Tokyo', 'Seoul', 'Beijing', 'Osaka'],
+    ['Which country has the pyramids of Giza?', 'Egypt', 'Mexico', 'Greece', 'India'],
+    ['How many continents are there?', '7', '5', '6', '9'],
+    ['What is the capital of Turkey?', 'Ankara', 'Istanbul', 'Izmir', 'Antalya'],
+    ['Which is the longest river in the world?', 'Nile', 'Thames', 'Danube', 'Seine'],
+    ['Kangaroos come from which country?', 'Australia', 'Brazil', 'Canada', 'Kenya'],
+    ['What is the capital of Italy?', 'Rome', 'Venice', 'Milan', 'Naples'],
+    ['Which is the tallest mountain on Earth?', 'Everest', 'Kilimanjaro', 'Alps', 'Fuji'],
+    ['Which country is shaped like a boot?', 'Italy', 'Spain', 'Chile', 'Norway'],
+    ['What is the biggest country by area?', 'Russia', 'China', 'USA', 'Brazil'],
+    ['The Great Wall is in which country?', 'China', 'Japan', 'India', 'Peru'],
+    ['What is the capital of the United Kingdom?', 'London', 'Dublin', 'Paris', 'Edinburgh'],
+    ['Which desert is the largest hot desert?', 'Sahara', 'Gobi', 'Atacama', 'Kalahari'],
+    ['What is the capital of Spain?', 'Madrid', 'Barcelona', 'Lisbon', 'Seville'],
+    ['Which country is famous for maple syrup?', 'Canada', 'Iceland', 'Egypt', 'Kenya'],
+    ['The Eiffel Tower is in which city?', 'Paris', 'London', 'Rome', 'New York'],
+    ['What is the capital of Germany?', 'Berlin', 'Munich', 'Vienna', 'Hamburg'],
+    ['Which continent is Brazil on?', 'South America', 'Africa', 'Asia', 'Europe'],
+    ['What is the capital of the USA?', 'Washington, D.C.', 'New York', 'Los Angeles', 'Chicago'],
+    ['Which is the coldest continent?', 'Antarctica', 'Europe', 'Asia', 'Africa']
+  ],
+  animals: [
+    ['What is the largest animal on Earth?', 'Blue whale', 'Elephant', 'Giraffe', 'Shark'],
+    ['Which animal is known as the King of the Jungle?', 'Lion', 'Tiger', 'Gorilla', 'Bear'],
+    ['How many legs does a spider have?', '8', '6', '10', '4'],
+    ['What is a baby kangaroo called?', 'Joey', 'Cub', 'Kit', 'Calf'],
+    ['Which bird can not fly?', 'Penguin', 'Eagle', 'Parrot', 'Owl'],
+    ['What is the fastest land animal?', 'Cheetah', 'Horse', 'Lion', 'Rabbit'],
+    ['Which animal has a long trunk?', 'Elephant', 'Rhino', 'Hippo', 'Camel'],
+    ['What do pandas mostly eat?', 'Bamboo', 'Fish', 'Grass', 'Berries'],
+    ['Which animal is the tallest?', 'Giraffe', 'Elephant', 'Camel', 'Horse'],
+    ['A group of wolves is called a...', 'Pack', 'Herd', 'Flock', 'School'],
+    ['What is a baby cat called?', 'Kitten', 'Puppy', 'Foal', 'Chick'],
+    ['Which animal can change its colour?', 'Chameleon', 'Dog', 'Cow', 'Duck'],
+    ['How many hearts does an octopus have?', '3', '1', '2', '8'],
+    ['Which mammal can truly fly?', 'Bat', 'Flying squirrel', 'Sugar glider', 'Penguin'],
+    ['Where do polar bears live?', 'The Arctic', 'The desert', 'The jungle', 'Antarctica'],
+    ['What do you call an animal that eats only plants?', 'Herbivore', 'Carnivore', 'Omnivore', 'Predator'],
+    ['Which sea animal has eight arms?', 'Octopus', 'Starfish', 'Crab', 'Jellyfish'],
+    ['What is the slowest-moving mammal?', 'Sloth', 'Turtle', 'Koala', 'Snail'],
+    ['Which animal is famous for its black and white stripes?', 'Zebra', 'Tiger', 'Skunk', 'Panda'],
+    ['A frog starts life as a...', 'Tadpole', 'Caterpillar', 'Chick', 'Larva'],
+    ['Which animal has the longest neck?', 'Giraffe', 'Ostrich', 'Swan', 'Llama'],
+    ['What do bees live in?', 'A hive', 'A den', 'A nest', 'A burrow']
+  ]
+};
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+function pick(a) { return a[rnd(a.length)]; }
+function shuffle(a) {
+  a = a.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = rnd(i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+function mathQuestion() {
+  var kind = rnd(4), a, b, ans, q;
+  if (kind === 0) { a = 5 + rnd(45); b = 5 + rnd(45); ans = a + b; q = a + ' + ' + b; }
+  else if (kind === 1) { a = 20 + rnd(60); b = 2 + rnd(a - 2); ans = a - b; q = a + ' − ' + b; }
+  else if (kind === 2) { a = 2 + rnd(11); b = 2 + rnd(11); ans = a * b; q = a + ' × ' + b; }
+  else { b = 2 + rnd(9); ans = 2 + rnd(11); a = b * ans; q = a + ' ÷ ' + b; }
+  var wrong = {};
+  var offs = shuffle([-10, -3, -2, -1, 1, 2, 3, 10, b, -b]);
+  for (var i = 0; i < offs.length && Object.keys(wrong).length < 3; i++) {
+    var w = ans + offs[i];
+    if (w >= 0 && w !== ans) wrong[w] = 1;
+  }
+  return { q: q + ' = ?', right: String(ans), wrong: Object.keys(wrong) };
+}
+
+var deck = [];
+function nextQuestion() {
+  var set = state.set;
+  if (set === 'math' || (set === 'mixed' && rnd(4) === 0)) return mathQuestion();
+  if (!deck.length) {
+    var src = set === 'mixed' ? BANK.science.concat(BANK.world, BANK.animals) : BANK[set];
+    deck = shuffle(src);
+  }
+  var r = deck.pop();
+  return { q: r[0], right: r[1], wrong: r.slice(2) };
+}
+
+// ---------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------
+var state = {
+  avatar: AVATARS[0], set: 'mixed',
+  players: [], me: null, timeLeft: ROUND_SECONDS, running: false,
+  streak: 0, right: 0, asked: 0, timer: null, botTimers: []
+};
+
+var $ = function (id) { return document.getElementById(id); };
+function show(id) {
+  ['start', 'game', 'end'].forEach(function (s) { $(s).classList.toggle('on', s === id); });
+  document.querySelector('.toplink').style.display = id === 'game' ? 'none' : '';
+  window.scrollTo(0, 0);
+}
+
+// ---------- start screen ----------
+function buildStart() {
+  var av = $('avatars');
+  AVATARS.forEach(function (e, i) {
+    var b = document.createElement('button');
+    b.className = 'av' + (i === 0 ? ' sel' : '');
+    b.textContent = e;
+    b.onclick = function () {
+      state.avatar = e;
+      [].forEach.call(av.children, function (c) { c.classList.remove('sel'); });
+      b.classList.add('sel');
+    };
+    av.appendChild(b);
+  });
+  var st = $('sets');
+  Object.keys(SETS).forEach(function (k, i) {
+    var b = document.createElement('button');
+    b.className = 'set' + (i === 0 ? ' sel' : '');
+    b.innerHTML = SETS[k].icon + ' ' + SETS[k].name + '<small>' + SETS[k].note + '</small>';
+    b.onclick = function () {
+      state.set = k;
+      [].forEach.call(st.children, function (c) { c.classList.remove('sel'); });
+      b.classList.add('sel');
+    };
+    st.appendChild(b);
+  });
+}
+
+function playerName() {
+  try { return (localStorage.getItem('darkyplayName') || 'You').slice(0, 12); } catch (e) { return 'You'; }
+}
+
+// ---------- round ----------
+function startRound() {
+  stopAll();
+  deck = [];
+  var rivals = shuffle(RIVALS).slice(0, 4);
+  state.me = { name: playerName(), em: state.avatar, gold: 0, me: true };
+  state.players = [state.me].concat(rivals.map(function (r) {
+    return { name: r.name, em: r.em, gold: 0, skill: 0.55 + Math.random() * 0.3 };
+  }));
+  state.timeLeft = ROUND_SECONDS; state.streak = 0; state.right = 0; state.asked = 0; state.running = true;
+  $('log').textContent = '';
+  show('game');
+  render(); askQuestion();
+  state.timer = setInterval(tick, 1000);
+  state.players.forEach(function (p) { if (!p.me) scheduleBot(p); });
+  if (window.gtag) gtag('event', 'gold_quiz_start', { set: state.set });
+}
+
+function stopAll() {
+  clearInterval(state.timer);
+  state.botTimers.forEach(clearTimeout);
+  state.botTimers = [];
+}
+
+function tick() {
+  state.timeLeft--;
+  var m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
+  $('timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  $('timerPill').classList.toggle('low', state.timeLeft <= 15);
+  if (state.timeLeft <= 0) endRound();
+}
+
+// ---------- questions ----------
+var current = null, locked = false;
+function askQuestion() {
+  current = nextQuestion();
+  locked = false;
+  state.asked++;
+  $('question').textContent = current.q;
+  var opts = shuffle([current.right].concat(current.wrong.slice(0, 3)));
+  var box = $('answers');
+  box.innerHTML = '';
+  opts.forEach(function (o) {
+    var b = document.createElement('button');
+    b.className = 'ans';
+    b.textContent = o;
+    b.onclick = function () { answer(b, o); };
+    box.appendChild(b);
+  });
+}
+
+function answer(btn, choice) {
+  if (locked || !state.running) return;
+  locked = true;
+  var ok = choice === current.right;
+  [].forEach.call($('answers').children, function (b) {
+    if (b.textContent === current.right) b.classList.add('right'); else b.classList.add('dim');
+  });
+  if (ok) {
+    state.streak++; state.right++;
+    flash('good', 'CORRECT!', state.streak >= 3 ? state.streak + ' in a row! 🔥' : 'Pick a chest...');
+    setTimeout(function () { hideFlash(); if (state.running) openChests(); }, 750);
+  } else {
+    state.streak = 0;
+    flash('bad', 'OOPS!', 'Answer: ' + current.right);
+    setTimeout(function () { hideFlash(); if (state.running) askQuestion(); }, 1500);
+  }
+  render();
+}
+
+function flash(kind, t, s) {
+  var f = $('feedback');
+  f.className = 'feedback on ' + kind;
+  f.querySelector('.t').textContent = t;
+  f.querySelector('.s').textContent = s;
+}
+function hideFlash() { $('feedback').className = 'feedback'; }
+
+// ---------------------------------------------------------------
+// CHESTS
+// ---------------------------------------------------------------
+function streakBonus() { return 1 + Math.min(state.streak - 1, 5) * 0.2; }
+
+function rollChest(forBot) {
+  var r = Math.random() * 100;
+  var bonus = forBot ? 1 : streakBonus();
+  if (r < 46) { var g = Math.round(pick([10, 15, 20, 25, 30, 40, 50, 75, 100]) * bonus); return { kind: 'gold', n: g, icon: '🪙', lbl: '+' + g + ' GOLD', tone: 'good' }; }
+  if (r < 57) return { kind: 'mult', n: 2, icon: '✨', lbl: 'DOUBLE GOLD', tone: 'good' };
+  if (r < 61) return { kind: 'mult', n: 3, icon: '🌟', lbl: 'TRIPLE GOLD', tone: 'good' };
+  if (r < 70) return { kind: 'take', n: 0.25, icon: '🫳', lbl: 'TAKE 25%', tone: 'mid' };
+  if (r < 74) return { kind: 'swap', icon: '🔄', lbl: 'SWAP GOLD', tone: 'mid' };
+  if (r < 84) return { kind: 'lose', n: 0.25, icon: '💨', lbl: 'LOSE 25%', tone: 'bad' };
+  if (r < 88) return { kind: 'lose', n: 0.5, icon: '🕳️', lbl: 'LOSE 50%', tone: 'bad' };
+  return { kind: 'none', icon: '🕸️', lbl: 'EMPTY', tone: 'bad' };
+}
+
+var chestRolls = null;
+function openChests() {
+  chestRolls = [rollChest(), rollChest(), rollChest()];
+  $('crow').dataset.done = '0';
+  var row = $('crow');
+  row.innerHTML = ''; row.style.display = '';
+  $('pickp').style.display = 'none';
+  $('result').textContent = '';
+  $('nextBtn').classList.remove('on');
+  $('chestTitle').textContent = 'CHOOSE A CHEST!';
+  chestRolls.forEach(function (c, i) {
+    var b = document.createElement('button');
+    b.className = 'chest wiggle';
+    b.innerHTML = '🧰';
+    b.onclick = function () { chooseChest(i); };
+    row.appendChild(b);
+  });
+  $('chests').classList.add('on');
+}
+
+function chooseChest(i) {
+  var row = $('crow');
+  if (row.dataset.done === '1') return;
+  row.dataset.done = '1';
+  [].forEach.call(row.children, function (b, k) {
+    var c = chestRolls[k];
+    b.classList.remove('wiggle');
+    b.classList.add('open', c.tone, k === i ? 'pick' : 'other');
+    b.innerHTML = '<span>' + c.icon + '</span><span class="lbl">' + c.lbl + '</span>';
+    b.onclick = null;
+  });
+  var c = chestRolls[i];
+  if (c.kind === 'take' || c.kind === 'swap') {
+    setTimeout(function () { chooseRival(c); }, 700);
+  } else {
+    var msg = applyChest(state.me, c);
+    $('result').textContent = msg;
+    $('nextBtn').classList.add('on');
+  }
+}
+
+function chooseRival(c) {
+  $('crow').style.display = 'none';
+  $('chestTitle').textContent = c.kind === 'take' ? 'TAKE 25% FROM...' : 'SWAP GOLD WITH...';
+  var box = $('pickp');
+  box.innerHTML = ''; box.style.display = 'grid';
+  state.players.filter(function (p) { return !p.me; }).forEach(function (p) {
+    var b = document.createElement('button');
+    b.innerHTML = '<span class="em">' + p.em + '</span>' + esc(p.name) + '<span class="gd">' + p.gold + '</span>';
+    b.onclick = function () {
+      box.style.display = 'none';
+      $('result').textContent = applyChest(state.me, c, p);
+      $('nextBtn').classList.add('on');
+    };
+    box.appendChild(b);
+  });
+}
+
+function applyChest(p, c, target) {
+  var before = p.gold, msg = '';
+  if (c.kind === 'gold') { p.gold += c.n; msg = '+' + c.n + ' gold!'; }
+  else if (c.kind === 'mult') {
+    if (p.gold === 0) { p.gold += 25; msg = 'Nothing to multiply yet, have 25 gold!'; }
+    else { p.gold *= c.n; msg = 'Your gold x' + c.n + '!'; }
+  }
+  else if (c.kind === 'take') {
+    var t = Math.round(target.gold * c.n); target.gold -= t; p.gold += t;
+    msg = (p.me ? 'You took ' : p.name + ' took ') + t + ' from ' + (target.me ? 'you' : target.name) + '!';
+  }
+  else if (c.kind === 'swap') {
+    var tmp = target.gold; target.gold = p.gold; p.gold = tmp;
+    msg = (p.me ? 'You swapped' : p.name + ' swapped') + ' gold with ' + (target.me ? 'you' : target.name) + '!';
+  }
+  else if (c.kind === 'lose') { var l = Math.round(p.gold * c.n); p.gold -= l; msg = l ? 'Lost ' + l + ' gold...' : 'Lucky, nothing to lose!'; }
+  else msg = 'Empty chest!';
+  if (p.me) floatText(p.gold - before);
+  render(target);
+  return msg;
+}
+
+$('nextBtn').onclick = function () {
+  $('chests').classList.remove('on');
+  $('crow').dataset.done = '0';
+  if (state.running) askQuestion();
+};
+
+function floatText(diff) {
+  if (!diff) return;
+  var el = document.createElement('div');
+  el.className = 'float';
+  el.style.color = diff > 0 ? '#ffc83d' : '#ff6b6b';
+  el.textContent = (diff > 0 ? '+' : '') + diff;
+  var r = $('gold').getBoundingClientRect();
+  el.style.left = (r.left - 10) + 'px'; el.style.top = (r.bottom + 8) + 'px';
+  document.body.appendChild(el);
+  setTimeout(function () { el.remove(); }, 1100);
+}
+
+// ---------------------------------------------------------------
+// RIVALS - they "answer" every few seconds and open chests too
+// ---------------------------------------------------------------
+function scheduleBot(p) {
+  var t = setTimeout(function () {
+    if (!state.running) return;
+    if (Math.random() < p.skill) {
+      var c = rollChest(true), target = null;
+      if (c.kind === 'take' || c.kind === 'swap') {
+        var others = state.players.filter(function (o) { return o !== p; });
+        // rivals go after the richest player, but rarely pick on you when you're far behind
+        others.sort(function (a, b) { return b.gold - a.gold; });
+        target = others[0];
+        if (c.kind === 'swap' && target.gold <= p.gold) c = { kind: 'gold', n: 30, icon: '🪙', lbl: '', tone: 'good' };
+        if (c.kind === 'take' && target.gold === 0) c = { kind: 'gold', n: 20, icon: '🪙', lbl: '', tone: 'good' };
+      }
+      var msg = applyChest(p, c, target);
+      if (target && (c.kind === 'take' || c.kind === 'swap')) log(p.em + ' ' + msg);
+    }
+    scheduleBot(p);
+  }, 4500 + Math.random() * 4500);
+  state.botTimers.push(t);
+}
+
+function log(t) { $('log').textContent = t; }
+
+// ---------------------------------------------------------------
+// RENDER
+// ---------------------------------------------------------------
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+function ranked() { return state.players.slice().sort(function (a, b) { return b.gold - a.gold; }); }
+
+function render(hit) {
+  $('gold').textContent = state.me ? state.me.gold : 0;
+  $('streak').textContent = state.streak;
+  var rows = $('rows');
+  rows.innerHTML = '';
+  ranked().forEach(function (p, i) {
+    var d = document.createElement('div');
+    d.className = 'row' + (p.me ? ' me' : '') + (hit === p ? ' flash' : '');
+    d.innerHTML = '<span class="rk">' + (i + 1) + '</span><span class="em">' + p.em + '</span><span class="nm">' +
+      esc(p.name) + '</span><span class="gd">' + p.gold + '</span>';
+    rows.appendChild(d);
+  });
+}
+
+// ---------------------------------------------------------------
+// END
+// ---------------------------------------------------------------
+function endRound() {
+  state.running = false;
+  stopAll();
+  hideFlash();
+  $('chests').classList.remove('on');
+  $('crow').dataset.done = '0';
+  var r = ranked();
+  var place = r.indexOf(state.me) + 1;
+  var pod = $('podium');
+  pod.innerHTML = '';
+  [1, 0, 2].forEach(function (i) {
+    var p = r[i];
+    var d = document.createElement('div');
+    d.className = 'pod p' + (i + 1) + (p.me ? ' me' : '');
+    d.innerHTML = '<span class="em">' + p.em + '</span><span class="nm">' + esc(p.name) + '</span><span class="gd">' +
+      p.gold + '</span><div class="blk">' + (i + 1) + '</div>';
+    pod.appendChild(d);
+  });
+  var msgs = ['YOU WIN! 👑', '2nd place, so close!', '3rd place, nice!', '4th place, try again!', '5th place, you got this next time!'];
+  $('endmsg').textContent = msgs[place - 1];
+  $('endstats').textContent = state.me.gold + ' gold · ' + state.right + ' right answers out of ' + state.asked;
+  show('end');
+  if (window.gtag) gtag('event', 'gold_quiz_end', { place: place, gold: state.me.gold });
+  if (window.DarkyScores) setTimeout(function () { DarkyScores.submit('gold-quiz', Math.min(state.me.gold, 1000000)); }, 1200);
+}
+
+$('playBtn').onclick = startRound;
+$('againBtn').onclick = startRound;
+$('menuBtn').onclick = function () { show('start'); };
+
+buildStart();
+})();
+</script>
+<script src="../../shared/scores.js?v=8" data-game="gold-quiz"></script>
+</body>
+</html>
