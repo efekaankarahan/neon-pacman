@@ -50,7 +50,8 @@
         'pikachu-breakout': 100000, 'spyro-taxi': 100000, 'holepringo': 100000,
         'iqur': 300, 'wordsearch': 50000,
         'prime-escape': 100000, 'happy-bird': 2000, 'long-towers': 2000,
-        'nba-stack': 2000, 'pic-pac-poe': 500, '4096': 1000000
+        'nba-stack': 2000, 'pic-pac-poe': 500, '4096': 1000000,
+        'gold-quiz': 1000000
     };
 
     var GAMES = {
@@ -67,7 +68,8 @@
         'long-towers': 'Long Towers',
         'nba-stack': 'NBA Stack',
         'pic-pac-poe': 'Pic Pac Poe',
-        '4096': '4096'
+        '4096': '4096',
+        'gold-quiz': 'Gold Quiz'
     };
 
     // What one point means, so the board does not just say "score" everywhere
@@ -78,6 +80,7 @@
         'pic-pac-poe': 'win streak',
         '4096': 'points',
         'prime-escape': 'coins',
+        'gold-quiz': 'gold',
         'snake': 'length',
         'wordsearch': 'points'
     };
