@@ -154,6 +154,25 @@
             if (s.owned[id]) { s.selected = id; save(); }
             return this.selected();
         },
+        // Epic and Legendary Darkys the player owns: the ones Gold Quiz makes
+        // you sell after too many wrong answers.
+        sellable: function () {
+            var s = load();
+            return LIST.filter(function (d) { return s.owned[d.id] && (d.r === 'epic' || d.r === 'legendary'); });
+        },
+        sell: function (id) {
+            var s = load(), d = BY_ID[id];
+            if (!d || !s.owned[id] || d.r === 'free') return 0;
+            s.owned[id]--;
+            if (!s.owned[id]) {
+                delete s.owned[id];
+                if (s.selected === id) s.selected = 'darky';
+            }
+            var refund = RARITY[d.r].refund;
+            s.tokens += refund;
+            save();
+            return refund;
+        },
         freeReadyIn: freeReadyIn,
         open: open
     };
