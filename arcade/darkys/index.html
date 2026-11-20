@@ -290,7 +290,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <div class="seas" id="seas"></div>
     </div>
 
-    <a class="play" href="../gold-quiz/">PLAY GOLD QUIZ TO EARN 🎟️</a>
+    <a class="play" href="../">PLAY ARCADE GAMES TO EARN 🎟️</a>
 
     <div class="box">
       <h2><span>COLLECTION</span><span id="count"></span></h2>
@@ -331,7 +331,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=19"></script>
+<script src="../darkys.js?v=20"></script>
 <script>
 (function () {
 'use strict';
@@ -661,7 +661,7 @@ function renderDaily() {
       (q.claimed ? '<span class="pixel" style="font-size:9px;color:#7dffb2">✓ DONE</span>'
         : q.ready ? '<button class="buy">CLAIM 🎟️ ' + q.reward + '</button>'
         : '<a class="buy" style="text-decoration:none;text-align:center;background:#3a3660;color:#fff;box-shadow:none" href="' +
-          (/faith/i.test(q.text) ? '#holyBtn' : /box|pack/i.test(q.text) ? '#packs' : '../gold-quiz/') + '">' + (/box|pack/i.test(q.text) ? 'OPEN' : 'PLAY') + '</a>');
+          (/faith/i.test(q.text) ? '#holyBtn' : /box|pack/i.test(q.text) ? '#packs' : /gold/i.test(q.text) ? '../gold-quiz/' : '../') + '">' + (/box|pack/i.test(q.text) ? 'OPEN' : 'PLAY') + '</a>');
     var b = d.querySelector('button');
     if (b) b.onclick = function () { var n = Darkys.claimQuest(q.id); if (n) reward(n, '✅ QUEST DONE!'); };
     host.appendChild(d);
