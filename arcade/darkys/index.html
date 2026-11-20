@@ -170,6 +170,19 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .badge.ready{border-color:var(--gold);box-shadow:0 0 16px rgba(255,200,61,.45)}
 .badge.ready .bi,.badge.done .bi{filter:none;opacity:1}
 .badge.done{border-color:#7dffb2}
+/* trading */
+.tradebox{border-color:#7ee8ff!important}
+.trade{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.trade .side{background:var(--panel2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.trade .side h3{font-family:'Press Start 2P',monospace;font-size:10px;color:#7ee8ff}
+.trade select,.trade input{width:100%;padding:11px;border-radius:10px;border:2px solid #57509a;background:var(--panel);color:#fff;font-weight:900;font-size:15px}
+.trade .code{font-family:'Press Start 2P',monospace;font-size:10px;line-height:1.7;word-break:break-all;background:var(--panel);border:2px dashed #7ee8ff;border-radius:10px;padding:10px;color:#7ee8ff}
+.trade .row{display:flex;gap:8px;flex-wrap:wrap}
+.trade .row .buy{flex:1;width:auto;font-size:9px;padding:11px 8px}
+.trade .hint{font-size:12px;color:var(--muted);line-height:1.45}
+.trade .sent{font-size:12px;color:var(--muted)}
+.trade .sent div{margin-top:4px;word-break:break-all}
+@media (max-width:720px){ .trade{grid-template-columns:1fr} }
 /* religious holidays */
 .holybox{border-color:#ffe9a8!important;box-shadow:0 0 22px rgba(255,233,168,.18);background:linear-gradient(120deg,#2b2614,#1d1b2b 55%,#1c2340)!important}
 .holy{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
@@ -218,6 +231,26 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <h2><span>📅 DAILY</span><span id="dailyLeft"></span></h2>
       <div class="streak" id="streak"></div>
       <div id="quests"></div>
+    </div>
+
+    <div class="box tradebox">
+      <h2><span>🤝 TRADE</span><span>GIFT CODES</span></h2>
+      <div class="trade">
+        <div class="side">
+          <h3>SEND A DARKY</h3>
+          <select id="giftPick"></select>
+          <button class="buy" id="giftBtn">CREATE GIFT CODE</button>
+          <div id="giftOut"></div>
+          <div class="hint">The Darky leaves your collection and goes to whoever uses the code. Send the code or link to a friend.</div>
+          <div class="sent" id="giftSent"></div>
+        </div>
+        <div class="side">
+          <h3>GET A DARKY</h3>
+          <input id="giftIn" placeholder="Paste a gift code or link" autocomplete="off">
+          <button class="buy" id="redeemBtn">REDEEM</button>
+          <div class="hint">To trade, both players make a code and swap them. Each code works once on each device.</div>
+        </div>
+      </div>
     </div>
 
     <div class="box badgebox">
@@ -298,7 +331,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=18"></script>
+<script src="../darkys.js?v=19"></script>
 <script>
 (function () {
 'use strict';
@@ -449,6 +482,7 @@ function render() {
   renderHoly();
   renderDaily();
   renderBadges();
+  renderTrade();
 }
 
 function toast(t) {
@@ -636,6 +670,68 @@ function renderDaily() {
   $('dailyLeft').textContent = 'NEW QUESTS IN ' + timeLeft(mid - now);
 }
 
+// ---------- trading ----------
+var giftArmed = 0;
+function giftLink(code) { return location.origin + location.pathname + '?gift=' + encodeURIComponent(code); }
+function renderTrade() {
+  var sel = $('giftPick'), keep = sel.value, list = Darkys.giftable();
+  list.sort(function (a, b) { return a.name.localeCompare(b.name); });
+  sel.innerHTML = list.length ? list.map(function (d) {
+    return '<option value="' + d.id + '">' + esc(d.name) + ' · ' + R[d.r].name + (Darkys.count(d.id) > 1 ? ' (x' + Darkys.count(d.id) + ')' : '') + '</option>';
+  }).join('') : '<option value="">No Darkys to send yet</option>';
+  if (keep && list.some(function (d) { return d.id === keep; })) sel.value = keep;
+  $('giftBtn').disabled = !list.length;
+  if (!giftArmed) $('giftBtn').textContent = 'CREATE GIFT CODE';
+  var sent = Darkys.giftsSent();
+  $('giftSent').innerHTML = sent.length ? '<b>Your codes:</b>' + sent.slice(0, 5).map(function (g) {
+    var d = Darkys.get(g.id); return '<div>' + (d ? esc(d.name) : g.id) + ': ' + esc(g.code) + '</div>';
+  }).join('') : '';
+}
+$('giftBtn').onclick = function () {
+  var id = $('giftPick').value;
+  if (!id) return;
+  if (Date.now() - giftArmed > 3000) {
+    giftArmed = Date.now();
+    $('giftBtn').textContent = 'SURE? IT LEAVES YOUR COLLECTION';
+    setTimeout(function () { giftArmed = 0; render(); }, 3000);
+    return;
+  }
+  giftArmed = 0;
+  var res = Darkys.giftCreate(id);
+  if (res.error) { toast(res.error); render(); return; }
+  var link = giftLink(res.code);
+  $('giftOut').innerHTML = '<div class="code" id="giftCode">' + esc(res.code) + '</div>' +
+    '<div class="row" style="margin-top:8px"><button class="buy" id="cpCode">COPY CODE</button><button class="buy" id="cpLink">COPY LINK</button></div>';
+  function copy(t) {
+    try { navigator.clipboard.writeText(t).then(function () { toast('Copied!'); }, function () { toast('Copy it by hand'); }); }
+    catch (e) { toast('Copy it by hand'); }
+  }
+  $('cpCode').onclick = function () { copy(res.code); };
+  $('cpLink').onclick = function () { copy(link); };
+  if (window.gtag) gtag('event', 'darkys_gift_create', { rarity: res.darky.r });
+  render();
+};
+function redeem(code) {
+  var res = Darkys.giftRedeem(code);
+  if (res.error) { toast(res.error); return; }
+  last = res.darky;
+  hideSummary();
+  var r = R[res.darky.r];
+  $('shake').style.display = 'none';
+  $('equipBtn').style.display = '';
+  $('prize').innerHTML = '<div class="new">🎁 GIFT RECEIVED!</div>' +
+    '<div class="em' + (isMys(res.darky) ? ' mys' : '') + '" style="border-color:' + r.color + ';box-shadow:0 0 60px ' + r.color + '">' + res.darky.em + '</div>' +
+    '<div class="nm">' + esc(res.darky.name) + '</div><div class="' + rrClass(res.darky) + '" style="color:' + r.color + '">' + r.name.toUpperCase() + '</div>';
+  $('prize').className = 'prize on';
+  $('rbtns').className = 'rbtns on';
+  $('reveal').className = 'reveal on';
+  $('giftIn').value = '';
+  if (window.gtag) gtag('event', 'darkys_gift_redeem', { rarity: res.darky.r });
+  render();
+}
+$('redeemBtn').onclick = function () { redeem($('giftIn').value); };
+$('giftIn').onkeydown = function (e) { if (e.key === 'Enter') redeem($('giftIn').value); };
+
 // ---------- badges ----------
 function renderBadges() {
   var list = Darkys.badges(), host = $('badges'), got = 0;
@@ -791,6 +887,13 @@ $('closeBtn').onclick = function () { $('reveal').className = 'reveal'; hideSumm
 
 render();
 setInterval(render, 60000);
+// Opened from a gift link: redeem it once and clean the address.
+(function () {
+  var m = location.search.match(/[?&]gift=([^&]+)/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname);
+  setTimeout(function () { redeem(decodeURIComponent(m[1])); }, 300);
+})();
 })();
 </script>
 </body>
