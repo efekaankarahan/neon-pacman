@@ -156,6 +156,20 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .quest .qn{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--muted);margin-top:6px}
 .quest .buy{width:auto;font-size:9px;padding:10px 12px}
 .quest.claimed{opacity:.5}
+/* badges */
+.badgebox{border-color:#ffc83d!important}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badge{background:var(--panel2);border:3px solid #3a3660;border-radius:14px;padding:12px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px}
+.badge .bi{font-size:36px;filter:grayscale(1);opacity:.45}
+.badge .bn{font-weight:900;font-size:14px}
+.badge .bt{font-size:12px;color:var(--muted);line-height:1.35;min-height:32px}
+.badge .bar{width:100%;height:7px;border-radius:99px;background:#3a3660;overflow:hidden}
+.badge .bar i{display:block;height:100%;background:var(--gold)}
+.badge .bq{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--muted)}
+.badge .buy{font-size:9px;padding:9px 8px}
+.badge.ready{border-color:var(--gold);box-shadow:0 0 16px rgba(255,200,61,.45)}
+.badge.ready .bi,.badge.done .bi{filter:none;opacity:1}
+.badge.done{border-color:#7dffb2}
 /* religious holidays */
 .holybox{border-color:#ffe9a8!important;box-shadow:0 0 22px rgba(255,233,168,.18);background:linear-gradient(120deg,#2b2614,#1d1b2b 55%,#1c2340)!important}
 .holy{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
@@ -204,6 +218,11 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <h2><span>📅 DAILY</span><span id="dailyLeft"></span></h2>
       <div class="streak" id="streak"></div>
       <div id="quests"></div>
+    </div>
+
+    <div class="box badgebox">
+      <h2><span>🏅 BADGES</span><span id="badgeCount"></span></h2>
+      <div class="badges" id="badges"></div>
     </div>
 
     <div class="box">
@@ -279,7 +298,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=17"></script>
+<script src="../darkys.js?v=18"></script>
 <script>
 (function () {
 'use strict';
@@ -429,6 +448,7 @@ function render() {
   renderEvent();
   renderHoly();
   renderDaily();
+  renderBadges();
 }
 
 function toast(t) {
@@ -614,6 +634,27 @@ function renderDaily() {
   });
   var now = new Date(), mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   $('dailyLeft').textContent = 'NEW QUESTS IN ' + timeLeft(mid - now);
+}
+
+// ---------- badges ----------
+function renderBadges() {
+  var list = Darkys.badges(), host = $('badges'), got = 0;
+  host.innerHTML = '';
+  list.sort(function (a, b) { return (b.ready && !b.claimed) - (a.ready && !a.claimed); });
+  list.forEach(function (b) {
+    if (b.claimed) got++;
+    var d = document.createElement('div');
+    d.className = 'badge' + (b.claimed ? ' done' : b.ready ? ' ready' : '');
+    d.innerHTML = '<div class="bi">' + b.icon + '</div><div class="bn">' + esc(b.name) + '</div><div class="bt">' + esc(b.text) + '</div>' +
+      (b.claimed ? '<div class="bq" style="color:#7dffb2">✓ EARNED</div>'
+        : b.ready ? '<button class="buy">CLAIM 🎟️ ' + b.reward + '</button>'
+        : '<div class="bar"><i style="width:' + Math.floor(b.have / b.goal * 100) + '%"></i></div>' +
+          '<div class="bq">' + b.have.toLocaleString('en-US') + ' / ' + b.goal.toLocaleString('en-US') + ' · 🎟️ ' + b.reward + '</div>');
+    var btn = d.querySelector('button');
+    if (btn) btn.onclick = function () { var n = Darkys.claimBadge(b.id); if (n) reward(n, b.icon + ' ' + b.name.toUpperCase() + '!'); };
+    host.appendChild(d);
+  });
+  $('badgeCount').textContent = got + '/' + list.length;
 }
 
 // ---------- religious holidays ----------
