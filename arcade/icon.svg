@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Darky Play Arcade">
+  <rect width="64" height="64" rx="14" fill="#1a1033" />
+  <!-- neon frame -->
+  <rect x="6" y="6" width="52" height="52" rx="11" fill="none" stroke="#7ee8ff" stroke-width="2.5" opacity="0.8" />
+  <!-- gold coin with a star: the Arcade's tokens -->
+  <circle cx="32" cy="32" r="17" fill="#ffc83d" />
+  <circle cx="32" cy="32" r="13.5" fill="none" stroke="#a06a00" stroke-width="2" />
+  <path d="M32 21.5l3.1 6.4 7 1-5.1 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7-5.1-4.9 7-1z" fill="#a06a00" />
+</svg>
