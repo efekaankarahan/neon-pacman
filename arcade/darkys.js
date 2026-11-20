@@ -259,6 +259,28 @@
         return { darky: d, isNew: isNew, refund: refund };
     }
 
+    // Open the same box n times in one go (Dark Box packs of 10, 50, 100, 1000).
+    // Pays for the whole pack up front, so it opens all n or none.
+    var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'mystical'];
+    function openMany(boxId, n) {
+        var s = load(), box = BOXES[boxId];
+        n = Math.max(1, Math.floor(n) || 1);
+        if (!box || boxId === 'free') return { error: 'Packs are only for the Dark Box' };
+        if (s.tokens < box.cost * n) return { error: 'Not enough tokens' };
+        var got = {}, refund = 0, fresh = 0;
+        for (var i = 0; i < n; i++) {
+            var res = open(boxId);
+            if (res.error) break;
+            var g = got[res.darky.id] || (got[res.darky.id] = { darky: res.darky, count: 0, isNew: false });
+            g.count++;
+            if (res.isNew) { g.isNew = true; fresh++; }
+            refund += res.refund;
+        }
+        var list = Object.keys(got).map(function (k) { return got[k]; });
+        list.sort(function (a, b) { return (RANK.indexOf(b.darky.r) - RANK.indexOf(a.darky.r)) || (b.count - a.count); });
+        return { count: n, list: list, refund: refund, fresh: fresh };
+    }
+
     window.Darkys = {
         LIST: LIST,
         RARITY: RARITY,
@@ -317,6 +339,7 @@
         marketUnlocked: marketUnlocked,
         claimMarket: claimMarket,
         claimPrize: claimPrize,
-        open: open
+        open: open,
+        openMany: openMany
     };
 })();
