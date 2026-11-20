@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Darky Market - Boxes, Seasonal and Theme Packs | Darky Play Arcade</title>
+<meta name="description" content="Open a free Darky box every day, buy Dark Boxes, Seasonal Packs, Theme Packs, the Faith Pack and holiday Darkys with tokens from Arcade games.">
+<link rel="canonical" href="https://darkyplay.com/arcade/market/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<link rel="stylesheet" href="../darkys/darkys.css?v=1">
+</head>
+<body>
+  <div class="top">
+    <a href="../">&larr; ARCADE</a>
+    <span class="pill">🎟️ <span id="tokens">0</span></span>
+  </div>
+
+  <h1>MARKET</h1>
+  <p class="tag">Boxes, packs and special Darkys. Spend your 🎟️ tokens here.</p>
+  <nav class="tabs"><a href="../darkys/">🌚 DARKYS</a><a href="../market/" class="on">🛒 MARKET</a><a href="../quests/" id="tabQuests">📅 QUESTS</a><a href="../trade/">🤝 TRADE</a><a href="../badges/" id="tabBadges">🏅 BADGES</a></nav>
+
+  <div class="wrap">
+    <div class="box">
+      <h2><span>MARKET</span></h2>
+      <div class="mkt" id="market"></div>
+    </div>
+
+    <div class="box" id="boxes">
+      <h2><span>OPEN A BOX</span></h2>
+      <div class="shop">
+        <div class="crate free">
+          <div class="ic">🎁</div>
+          <div class="nm">FREE BOX</div>
+          <div class="odds">Free once a day<br>Common · Uncommon · Rare</div>
+          <button class="buy" id="freeBtn">OPEN FREE</button>
+        </div>
+        <div class="crate">
+          <div class="ic">📦</div>
+          <div class="nm">DARK BOX</div>
+          <div class="odds" id="darkOdds">Every rarity, even<br>Epic &amp; Legendary</div>
+          <button class="buy" id="darkBtn">OPEN 1 · 🎟️ 25</button>
+          <div class="packs" id="packs"></div>
+          <button class="buy allbtn" id="allBtn">SPEND ALL 🎟️</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2><span>🧭 THEME PACKS</span><span>ALWAYS OPEN</span></h2>
+      <div class="seasinfo">Six packs, each full of Darkys you can't get anywhere else. Collect a whole pack for the 🧭 Explorer badge.</div>
+      <div class="themes" id="themes"></div>
+    </div>
+
+    <div class="box">
+      <h2><span>SEASONAL PACKS</span><span>🎟️ 100 EACH</span></h2>
+      <div class="owner" id="ownerRow" style="display:none"></div>
+      <div class="seasinfo" id="seasInfo"></div>
+      <div class="seas" id="seas"></div>
+    </div>
+
+    <div class="box evbox">
+      <h2><span>🌍 HOLIDAY DARKYS · 195 COUNTRIES</span><span>🎟️ 200</span></h2>
+      <div class="evown" id="evOwner" style="display:none"></div>
+      <div id="ev"></div>
+    </div>
+
+    <div class="box holybox" id="faith">
+      <h2><span>🕊️ RELIGIOUS HOLIDAYS</span><span>🎟️ 50</span></h2>
+      <div class="holy">
+        <div class="crate">
+          <div class="ic">🛐</div>
+          <div class="nm">FAITH PACK</div>
+          <div class="odds">Every religious holiday Darky<br>All Sacred, all equally likely</div>
+          <button class="buy" id="holyBtn">OPEN 1 · 🎟️ 50</button>
+          <div class="packs" id="holyPacks"></div>
+          <button class="buy allbtn" id="holyAll">SPEND ALL</button>
+        </div>
+        <div class="info" id="holyInfo"></div>
+      </div>
+    </div>
+
+    <a class="play" href="../">PLAY ARCADE GAMES TO EARN 🎟️</a>
+  </div>
+
+  <div class="reveal" id="reveal">
+    <div class="shake" id="shake">📦</div>
+    <div class="prize" id="prize"></div>
+    <div class="sumhead" id="sumHead"></div>
+    <div class="sum" id="sum"></div>
+    <div class="rbtns" id="rbtns">
+      <button class="buy" id="equipBtn" style="width:auto">PLAY AS IT</button>
+      <button class="ghost" id="closeBtn">CLOSE</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="../darkys.js?v=21"></script>
+<script src="../darkys/app.js?v=1"></script>
+</body>
+</html>
