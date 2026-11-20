@@ -247,7 +247,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   </div>
 </section>
 
-<script src="../darkys.js?v=5"></script>
+<script src="../darkys.js?v=6"></script>
 <script>
 (function () {
 'use strict';
@@ -779,7 +779,7 @@ buildStart();
 (function () {
   var T = Darkys.tournament, b = $('tourBanner');
   if (T.state() !== 'live') return;
-  b.textContent = '🏆 Etermaximus Tournament is on! Your best score counts. Top ' + T.PRIZE_RANK + ' on November 21 win the Mystical Darky 🔮  (you: #' + T.rank() + ')';
+  b.textContent = '🏆 Etermaximus Tournament is on! Your best score counts. Top ' + T.PRIZE_RANK + ' when it ends win the Mystical Darky 🔮  (you: #' + T.rank() + ')';
   b.classList.add('on');
 })();
 })();
