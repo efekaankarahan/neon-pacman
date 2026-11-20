@@ -1,0 +1,24 @@
+{
+  "name": "Darky Play Arcade",
+  "short_name": "DP Arcade",
+  "description": "Quiz games and collectables: Gold Quiz, Fishing Frenzy and Darkys.",
+  "id": "/arcade/",
+  "start_url": "/arcade/?source=app",
+  "scope": "/arcade/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1033",
+  "theme_color": "#1a1033",
+  "categories": ["games", "kids", "education"],
+  "icons": [
+    { "src": "/arcade/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/arcade/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/arcade/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/arcade/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Gold Quiz", "url": "/arcade/gold-quiz/", "icons": [{ "src": "/arcade/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Fishing Frenzy", "url": "/arcade/fishing-frenzy/", "icons": [{ "src": "/arcade/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Darkys", "url": "/arcade/darkys/", "icons": [{ "src": "/arcade/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
