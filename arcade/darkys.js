@@ -30,7 +30,7 @@
     // entrants are bots. Each bot has a final score it reaches by the end and
     // climbs toward it as the tournament goes on, so the top 5 gets harder to
     // hold the later it gets. The bot list is the same for every player.
-    var T_START = Date.parse('2026-11-20T06:00:00Z');
+    var T_START = Date.parse('2026-11-20T05:45:00Z');
     var T_END = Date.parse('2026-11-22T08:00:00Z');
     var T_PRIZE_RANK = 5;
     var T_BOTS = [
