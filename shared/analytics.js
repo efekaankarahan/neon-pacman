@@ -49,3 +49,89 @@
         }
     };
 })();
+
+/*
+ * Darky Play as an app
+ * --------------------
+ * Every page loads this file, so the app setup lives here too: the manifest
+ * and icons that let the site be installed, the service worker that makes it
+ * work offline, and an "Install app" button on the home page and the Arcade.
+ */
+(function () {
+    'use strict';
+    var head = document.head || document.documentElement;
+    function tag(name, attrs) {
+        var el = document.createElement(name);
+        for (var k in attrs) el.setAttribute(k, attrs[k]);
+        head.appendChild(el);
+    }
+    if (!document.querySelector('link[rel="manifest"]')) tag('link', { rel: 'manifest', href: '/manifest.webmanifest' });
+    if (!document.querySelector('meta[name="theme-color"]')) tag('meta', { name: 'theme-color', content: '#111111' });
+    tag('link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' });
+    tag('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+    tag('meta', { name: 'mobile-web-app-capable', content: 'yes' });
+    tag('meta', { name: 'apple-mobile-web-app-title', content: 'Darky Play' });
+    tag('meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' });
+
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js').catch(function () { });
+        });
+    }
+
+    // Install button: only on the home page and the Arcade, never over a game.
+    var path = location.pathname.replace(/index\.html$/, '');
+    if (path !== '/' && path !== '/arcade/') return;
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    if (standalone) return;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var prompt = null, btn = null;
+
+    function makeButton() {
+        if (btn) return;
+        var css = document.createElement('style');
+        css.textContent = '.dp-install{position:fixed;right:16px;bottom:16px;z-index:9999;font-family:"Press Start 2P",monospace;font-size:11px;' +
+            'padding:14px 16px;border-radius:14px;border:0;cursor:pointer;background:#ffee00;color:#111;box-shadow:0 0 18px rgba(255,238,0,.55),0 5px 0 #8a7f00}' +
+            '.dp-install:active{transform:translateY(3px)}' +
+            '.dp-ios{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:9999;width:min(340px,92vw);background:#1d1b2b;color:#fff;' +
+            'border:3px solid #ffee00;border-radius:14px;padding:14px;font:700 15px/1.45 Nunito,system-ui,sans-serif;text-align:center;display:none}' +
+            '.dp-ios.on{display:block}';
+        head.appendChild(css);
+        btn = document.createElement('button');
+        btn.className = 'dp-install';
+        btn.textContent = '📲 INSTALL APP';
+        document.body.appendChild(btn);
+        var tip = null;
+        btn.onclick = function () {
+            if (prompt) {
+                prompt.prompt();
+                prompt.userChoice.then(function (r) {
+                    if (r && r.outcome === 'accepted') btn.remove();
+                    try { gtag('event', 'app_install_prompt', { outcome: r && r.outcome }); } catch (e) { }
+                });
+                prompt = null;
+                return;
+            }
+            if (!tip) {
+                tip = document.createElement('div');
+                tip.className = 'dp-ios';
+                tip.innerHTML = 'To install Darky Play: tap the <b>Share</b> button (the square with an arrow ⬆️) at the bottom of Safari, ' +
+                    'then <b>Add to Home Screen</b> ➕.';
+                document.body.appendChild(tip);
+            }
+            tip.classList.toggle('on');
+        };
+    }
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        prompt = e;
+        if (document.body) makeButton(); else window.addEventListener('DOMContentLoaded', makeButton);
+    });
+    window.addEventListener('appinstalled', function () {
+        if (btn) btn.remove();
+        try { gtag('event', 'app_installed'); } catch (e) { }
+    });
+    if (ios) {
+        if (document.body) makeButton(); else window.addEventListener('DOMContentLoaded', makeButton);
+    }
+})();
