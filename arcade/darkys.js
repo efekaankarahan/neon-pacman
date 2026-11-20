@@ -411,6 +411,7 @@
 
     // Open the same box n times in one go (Dark Box packs of 10, 50, 100, 1000).
     // Pays for the whole pack up front, so it opens all n or none.
+    var MAX_OPEN = 20000000;
     var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'chroma', 'mystical', 'unique'];
     // Fast path: rolls n boxes in memory and saves once, so even millions of
     // boxes (Spend All) finish in a few seconds.
@@ -429,8 +430,9 @@
 
         // Open in rounds: pay for what the tokens cover, then spend the
         // duplicate refunds too when untilBroke is set.
+        // At most MAX_OPEN boxes per call, so a huge balance can't freeze the page.
         do {
-            var batch = untilBroke ? Math.floor(s.tokens / box.cost) : n;
+            var batch = Math.min(untilBroke ? Math.floor(s.tokens / box.cost) : n, MAX_OPEN - opened);
             if (batch < 1) break;
             s.tokens -= batch * box.cost;
             var gotBack = 0;
@@ -444,7 +446,7 @@
             s.tokens += gotBack;
             refund += gotBack;
             opened += batch;
-        } while (untilBroke);
+        } while (untilBroke && opened < MAX_OPEN);
 
         var list = [], fresh = 0;
         for (k in counts) {
@@ -455,7 +457,7 @@
         }
         save();
         list.sort(function (a, b) { return (RANK.indexOf(b.darky.r) - RANK.indexOf(a.darky.r)) || (b.count - a.count); });
-        return { count: opened, list: list, refund: refund, fresh: fresh };
+        return { count: opened, list: list, refund: refund, fresh: fresh, capped: opened >= MAX_OPEN && s.tokens >= box.cost };
     }
 
     window.Darkys = {
