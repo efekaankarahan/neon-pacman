@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trade Darkys with Gift Codes | Darky Play Arcade</title>
+<meta name="description" content="Trade Darkys with friends using gift codes and links. Free, no sign up.">
+<link rel="canonical" href="https://darkyplay.com/arcade/trade/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<link rel="stylesheet" href="../darkys/darkys.css?v=1">
+</head>
+<body>
+  <div class="top">
+    <a href="../">&larr; ARCADE</a>
+    <span class="pill">🎟️ <span id="tokens">0</span></span>
+  </div>
+
+  <h1>TRADE</h1>
+  <p class="tag">Send a Darky to a friend, or redeem one they sent you.</p>
+  <nav class="tabs"><a href="../darkys/">🌚 DARKYS</a><a href="../market/">🛒 MARKET</a><a href="../quests/" id="tabQuests">📅 QUESTS</a><a href="../trade/" class="on">🤝 TRADE</a><a href="../badges/" id="tabBadges">🏅 BADGES</a></nav>
+
+  <div class="wrap">
+    <div class="box tradebox">
+      <h2><span>🤝 TRADE</span><span>GIFT CODES</span></h2>
+      <div class="trade">
+        <div class="side">
+          <h3>SEND A DARKY</h3>
+          <select id="giftPick"></select>
+          <button class="buy" id="giftBtn">CREATE GIFT CODE</button>
+          <div id="giftOut"></div>
+          <div class="hint">The Darky leaves your collection and goes to whoever uses the code. Send the code or link to a friend.</div>
+          <div class="sent" id="giftSent"></div>
+        </div>
+        <div class="side">
+          <h3>GET A DARKY</h3>
+          <input id="giftIn" placeholder="Paste a gift code or link" autocomplete="off">
+          <button class="buy" id="redeemBtn">REDEEM</button>
+          <div class="hint">To trade, both players make a code and swap them. Each code works once on each device.</div>
+        </div>
+      </div>
+    </div>
+
+    <a class="play" href="../">PLAY ARCADE GAMES TO EARN 🎟️</a>
+  </div>
+
+  <div class="reveal" id="reveal">
+    <div class="shake" id="shake">📦</div>
+    <div class="prize" id="prize"></div>
+    <div class="sumhead" id="sumHead"></div>
+    <div class="sum" id="sum"></div>
+    <div class="rbtns" id="rbtns">
+      <button class="buy" id="equipBtn" style="width:auto">PLAY AS IT</button>
+      <button class="ghost" id="closeBtn">CLOSE</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="../darkys.js?v=21"></script>
+<script src="../darkys/app.js?v=1"></script>
+</body>
+</html>
