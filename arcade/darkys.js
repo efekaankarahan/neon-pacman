@@ -216,6 +216,21 @@
         return false;
     }
 
+    // Token prizes for the final standings: 1st 1,000,000,000, 2nd-3rd 10,000.
+    // Paid once per round, the first time the player opens a page after the end.
+    var T_PRIZES = { 1: 1000000000, 2: 10000, 3: 10000 };
+
+    function claimPrize() {
+        var s = load();
+        if (tState() !== 'over' || s.tPaid === T_ID) return 0;
+        var played = (s.tBest || 0) > 0 || isOwner();
+        var amount = played ? (T_PRIZES[myRank()] || 0) : 0;
+        s.tokens += amount;
+        s.tPaid = T_ID;
+        save();
+        return amount;
+    }
+
     function claimMarket(id) {
         var s = load(), d = BY_ID[id];
         if (!d || !d.market || !marketUnlocked() || s.owned[id]) return null;
@@ -301,6 +316,7 @@
         },
         marketUnlocked: marketUnlocked,
         claimMarket: claimMarket,
+        claimPrize: claimPrize,
         open: open
     };
 })();
