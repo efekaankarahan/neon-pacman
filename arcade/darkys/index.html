@@ -81,6 +81,35 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .ghost{font-family:'Press Start 2P',monospace;font-size:11px;padding:13px 18px;border-radius:12px;background:var(--panel2);border:3px solid #57509a}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#ff4f6d;padding:10px 16px;border-radius:10px;font-weight:900;display:none;z-index:30}
 
+.tour .head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.tour .orb{font-size:46px;animation:float 2.4s ease-in-out infinite}
+.tour .t1{font-family:'Press Start 2P',monospace;font-size:11px;color:#ff5cf0;margin-bottom:6px}
+.tour .t2{font-weight:900;font-size:15px;line-height:1.35}
+.tour .t3{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin-top:8px}
+.tour{border-color:#ff5cf0!important;box-shadow:0 0 24px rgba(255,92,240,.25);background:linear-gradient(120deg,#2a1240,#1d1b2b 55%,#14304a)!important}
+.trow{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.04);margin-top:5px;font-weight:900}
+.trow .rk{font-family:'Press Start 2P',monospace;font-size:10px;width:30px;color:var(--muted)}
+.trow .nm{flex:1}
+.trow .sc{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold)}
+.trow.win .rk{color:#ff5cf0}
+.trow.me{outline:2px solid var(--gold);background:#3d3418}
+.tline{border-top:2px dashed #ff5cf0;margin:8px 0 2px;position:relative}
+.tline span{position:absolute;right:0;top:-9px;background:#1d1b2b;padding:0 6px;font-family:'Press Start 2P',monospace;font-size:7px;color:#ff5cf0}
+.tdots{text-align:center;color:var(--muted);margin-top:4px}
+.mkt{display:flex;align-items:center;gap:16px}
+.mkt .big{width:110px;height:110px;flex:none;border-radius:20px;display:grid;place-items:center;font-size:60px;background:var(--panel2);border:4px solid #57509a}
+.mkt .big.locked{font-size:46px;filter:grayscale(1);opacity:.7}
+.mkt .nm{font-weight:900;font-size:20px}
+.mkt .why{color:var(--muted);font-size:14px;margin-top:6px;line-height:1.4}
+.mkt .buy{width:auto;margin-top:10px}
+@keyframes float{50%{transform:translateY(-6px) rotate(6deg)}}
+.mys{border-color:transparent!important;background:
+  linear-gradient(var(--panel2),var(--panel2)) padding-box,
+  linear-gradient(120deg,#ff5cf0,#7ee8ff,#ffc83d,#ff5cf0) border-box!important;
+  background-size:100% 100%,300% 300%!important;animation:mys 3s linear infinite}
+@keyframes mys{to{background-position:0 0,300% 0}}
+.rr.mysr{background:linear-gradient(90deg,#ff5cf0,#7ee8ff,#ffc83d);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+.card.gone{opacity:.2}
 .play{display:block;text-align:center;font-family:'Press Start 2P',monospace;font-size:12px;color:#3b2400;background:var(--gold);
   padding:15px;border-radius:12px;text-decoration:none;box-shadow:0 5px 0 #a06a00}
 @media (max-width:520px){ .shop{grid-template-columns:1fr} .me .big{width:76px;height:76px;font-size:42px} }
@@ -101,6 +130,23 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <div class="me" id="me"></div>
     </div>
 
+    <div class="box tour" id="tour">
+      <div class="head">
+        <div class="orb">🏆</div>
+        <div>
+          <div class="t1">ETERMAXIMUS TOURNAMENT</div>
+          <div class="t2" id="tourMsg"></div>
+          <div class="t3" id="tourLeft"></div>
+        </div>
+      </div>
+      <div id="tourRows"></div>
+    </div>
+
+    <div class="box">
+      <h2><span>MARKET</span></h2>
+      <div class="mkt" id="market"></div>
+    </div>
+
     <div class="box">
       <h2><span>OPEN A BOX</span></h2>
       <div class="shop">
@@ -113,7 +159,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
         <div class="crate">
           <div class="ic">📦</div>
           <div class="nm">DARK BOX</div>
-          <div class="odds">Every rarity, even<br>Epic &amp; Legendary</div>
+          <div class="odds" id="darkOdds">Every rarity, even<br>Epic &amp; Legendary</div>
           <button class="buy" id="darkBtn">OPEN · 🎟️ 25</button>
         </div>
       </div>
@@ -137,7 +183,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=2"></script>
+<script src="../darkys.js?v=4"></script>
 <script>
 (function () {
 'use strict';
@@ -147,18 +193,108 @@ var last = null;
 
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+function isMys(d) { return d.r === 'mystical'; }
+function rrClass(d) { return 'rr' + (isMys(d) ? ' mysr' : ''); }
+
 function timeLeft(ms) {
   var h = Math.floor(ms / 3600000), m = Math.ceil((ms % 3600000) / 60000);
   if (m === 60) { h++; m = 0; }
   return h ? h + 'h ' + m + 'm' : m + 'm';
 }
 
+var T = Darkys.tournament;
+var ETER = Darkys.get('etermaximus');
+
+function bigTime(ms) {
+  var d = Math.floor(ms / 86400000);
+  return (d ? d + 'd ' : '') + timeLeft(ms % 86400000 || 60000);
+}
+
+function renderTournament() {
+  var st = T.state(), rows = T.standings(), rank = T.rank(), best = T.best();
+  var msg, left = '';
+  if (st === 'soon') {
+    msg = 'Starts soon! Finish in the top ' + T.PRIZE_RANK + ' to win Etermaximus.';
+    left = 'STARTS IN ' + bigTime(T.START - Date.now());
+  } else if (st === 'live') {
+    msg = 'Your best Gold Quiz score counts. Be in the top ' + T.PRIZE_RANK + ' when it ends on November 21 to win Etermaximus! The others keep playing, so keep climbing.';
+    left = 'ENDS IN ' + bigTime(T.endsIn()) + '  ·  YOUR BEST ' + best + '  ·  RANK #' + rank;
+  } else {
+    msg = best && rank <= T.PRIZE_RANK
+      ? 'You finished #' + rank + '. Etermaximus is yours: claim it in the Market!'
+      : 'The tournament is over.' + (best ? ' You finished #' + rank + '.' : '');
+    left = 'FINAL RESULTS';
+  }
+  $('tourMsg').textContent = msg;
+  $('tourLeft').textContent = left;
+
+  var host = $('tourRows');
+  host.innerHTML = '';
+  function row(r) {
+    var d = document.createElement('div');
+    d.className = 'trow' + (r.rank <= T.PRIZE_RANK ? ' win' : '') + (r.me ? ' me' : '');
+    d.innerHTML = '<span class="rk">#' + r.rank + '</span><span class="nm">' + esc(r.name) + (r.me ? ' (you)' : '') +
+      (r.rank <= T.PRIZE_RANK ? ' 🔮' : '') + '</span><span class="sc">' + r.score + '</span>';
+    host.appendChild(d);
+  }
+  rows.slice(0, 8).forEach(function (r) {
+    row(r);
+    if (r.rank === T.PRIZE_RANK) {
+      var l = document.createElement('div');
+      l.className = 'tline';
+      l.innerHTML = '<span>TOP ' + T.PRIZE_RANK + ' WIN ETERMAXIMUS</span>';
+      host.appendChild(l);
+    }
+  });
+  if (rank > 8) {
+    var dots = document.createElement('div');
+    dots.className = 'tdots'; dots.textContent = '...';
+    host.appendChild(dots);
+    row(rows[rank - 1]);
+  }
+}
+
+function renderMarket() {
+  var m = $('market'), r = R[ETER.r];
+  var owned = Darkys.owns(ETER.id), unlocked = Darkys.marketUnlocked(), over = T.state() === 'over';
+  if (owned || unlocked) {
+    m.innerHTML = '<div class="big mys" style="box-shadow:0 0 30px ' + r.color + '">' + ETER.em + '</div>' +
+      '<div><div class="nm">' + esc(ETER.name) + '</div><div class="rr mysr" style="color:' + r.color + '">MYSTICAL · ONLY 1</div>' +
+      '<div class="why">' + (owned ? 'You own the rarest Darky on Darky Play.' : 'You won it in the tournament!') + '</div>' +
+      (owned ? '' : '<button class="buy" id="claimBtn">CLAIM ETERMAXIMUS</button>') + '</div>';
+    if (!owned) $('claimBtn').onclick = function () {
+      var d = Darkys.claimMarket(ETER.id);
+      if (!d) return;
+      last = d;
+      $('shake').style.display = 'none';
+      $('prize').innerHTML = '<div class="new" style="color:#ff5cf0">✨ MYSTICAL! ✨</div>' +
+        '<div class="em mys" style="box-shadow:0 0 90px ' + r.color + '">' + d.em + '</div>' +
+        '<div class="nm">' + esc(d.name) + '</div><div class="rr mysr" style="color:' + r.color + '">MYSTICAL</div>';
+      $('prize').className = 'prize on';
+      $('rbtns').className = 'rbtns on';
+      $('reveal').className = 'reveal on';
+      render();
+    };
+  } else {
+    m.innerHTML = '<div class="big locked">🔒</div>' +
+      '<div><div class="nm">???</div><div class="rr mysr" style="color:' + r.color + '">MYSTICAL · LOCKED</div>' +
+      '<div class="why">' + (over
+        ? 'Only the top ' + T.PRIZE_RANK + ' of the tournament could unlock this one.'
+        : 'Not for sale. Finish in the top ' + T.PRIZE_RANK + ' of the Etermaximus Tournament to unlock it.') +
+      '</div></div>';
+  }
+}
+
 function render() {
   $('tokens').textContent = Darkys.tokens();
 
+  renderTournament();
+  renderMarket();
+  var unlocked = Darkys.marketUnlocked(), over = T.state() === 'over';
+
   var me = Darkys.selected(), r = R[me.r];
-  $('me').innerHTML = '<div class="big" style="border-color:' + r.color + '">' + me.em + '</div>' +
-    '<div><div class="nm">' + esc(me.name) + '</div><div class="rr" style="color:' + r.color + '">' + r.name.toUpperCase() +
+  $('me').innerHTML = '<div class="big' + (isMys(me) ? ' mys' : '') + '" style="border-color:' + r.color + '">' + me.em + '</div>' +
+    '<div><div class="nm">' + esc(me.name) + '</div><div class="' + rrClass(me) + '" style="color:' + r.color + '">' + r.name.toUpperCase() +
     '</div><div class="hint">Tap a Darky below to play as it.</div></div>';
 
   var wait = Darkys.freeReadyIn();
@@ -171,13 +307,14 @@ function render() {
   var have = 0;
   Darkys.LIST.forEach(function (d) {
     var owned = Darkys.owns(d.id), rr = R[d.r];
+    var gone = !owned && d.market && over && !unlocked;
     if (owned) have++;
     var c = document.createElement(owned ? 'button' : 'div');
-    c.className = 'card' + (owned ? '' : ' lock') + (owned && me.id === d.id ? ' on' : '');
+    c.className = 'card' + (owned ? '' : ' lock') + (gone ? ' gone' : '') + (owned && me.id === d.id ? ' on' : '') + (isMys(d) ? ' mys' : '');
     c.style.borderColor = rr.color;
     c.innerHTML = (owned && Darkys.count(d.id) > 1 ? '<span class="ct">x' + Darkys.count(d.id) + '</span>' : '') +
       '<span class="em">' + d.em + '</span><span class="nm">' + (owned ? esc(d.name) : '???') + '</span>' +
-      '<span class="rr" style="color:' + rr.color + '">' + rr.name.toUpperCase() + '</span>';
+      '<span class="' + rrClass(d) + '" style="color:' + rr.color + '">' + (gone ? 'LOCKED' : rr.name.toUpperCase()) + '</span>';
     if (owned) c.onclick = function () { Darkys.select(d.id); render(); };
     grid.appendChild(c);
   });
@@ -203,9 +340,10 @@ function openBox(id) {
   if (window.gtag) gtag('event', 'darkys_open', { box: id, rarity: res.darky.r });
   setTimeout(function () {
     $('shake').style.display = 'none';
-    $('prize').innerHTML = (res.isNew ? '<div class="new">NEW DARKY!</div>' : '') +
-      '<div class="em" style="border-color:' + r.color + ';box-shadow:0 0 50px ' + r.color + '">' + res.darky.em + '</div>' +
-      '<div class="nm">' + esc(res.darky.name) + '</div><div class="rr" style="color:' + r.color + '">' + r.name.toUpperCase() + '</div>' +
+    var mys = isMys(res.darky);
+    $('prize').innerHTML = (mys ? '<div class="new" style="color:#ff5cf0">✨ MYSTICAL! ✨</div>' : res.isNew ? '<div class="new">NEW DARKY!</div>' : '') +
+      '<div class="em' + (mys ? ' mys' : '') + '" style="border-color:' + r.color + ';box-shadow:0 0 ' + (mys ? 90 : 50) + 'px ' + r.color + '">' + res.darky.em + '</div>' +
+      '<div class="nm">' + esc(res.darky.name) + '</div><div class="' + rrClass(res.darky) + '" style="color:' + r.color + '">' + r.name.toUpperCase() + '</div>' +
       (res.isNew ? '' : '<div class="note">Already had it: +' + res.refund + ' 🎟️</div>');
     $('prize').className = 'prize on';
     $('rbtns').className = 'rbtns on';
