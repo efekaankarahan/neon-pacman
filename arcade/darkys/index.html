@@ -140,6 +140,17 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .owner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
 .owner select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px}
 @media (max-width:720px){ .seas{grid-template-columns:1fr 1fr} }
+/* theme packs */
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.themes .crate{padding:14px 8px;gap:8px}
+.themes .crate .ic{font-size:46px}
+.themes .crate .nm{font-size:10px}
+.themes .ab{font-size:12px;color:var(--muted);line-height:1.4;min-height:50px}
+.themes .got{font-family:'Press Start 2P',monospace;font-size:9px;color:#7dffb2}
+.themes .packs{grid-template-columns:repeat(2,1fr)}
+.themes .buy{font-size:9px;padding:10px 4px}
+.themes .crate.done{border-color:#7dffb2;box-shadow:0 0 16px rgba(125,255,178,.3)}
+@media (max-width:720px){ .themes{grid-template-columns:1fr 1fr} }
 /* daily */
 .dailybox{border-color:#7dffb2!important}
 .streak{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
@@ -290,6 +301,12 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <div class="seas" id="seas"></div>
     </div>
 
+    <div class="box">
+      <h2><span>🧭 THEME PACKS</span><span>ALWAYS OPEN</span></h2>
+      <div class="seasinfo">Six packs, each full of Darkys you can't get anywhere else. Collect a whole pack for the 🧭 Explorer badge.</div>
+      <div class="themes" id="themes"></div>
+    </div>
+
     <a class="play" href="../">PLAY ARCADE GAMES TO EARN 🎟️</a>
 
     <div class="box">
@@ -331,7 +348,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=20"></script>
+<script src="../darkys.js?v=21"></script>
 <script>
 (function () {
 'use strict';
@@ -478,6 +495,7 @@ function render() {
   });
   $('count').textContent = have + '/' + shown;
   renderSeasons();
+  renderThemes();
   renderEvent();
   renderHoly();
   renderDaily();
@@ -622,6 +640,52 @@ function renderSeasons() {
   });
 }
 buildSeasons();
+
+// ---------- theme packs ----------
+function oddsText(o) {
+  return Object.keys(o).map(function (r) { return R[r].name; }).join(' · ');
+}
+function buildThemes() {
+  var host = $('themes');
+  Darkys.THEME_ORDER.forEach(function (id) {
+    var T = Darkys.THEMES[id], c = document.createElement('div');
+    c.className = 'crate';
+    c.id = 'tp-' + id;
+    c.innerHTML = '<div class="ic">' + T.icon + '</div><div class="nm">' + T.name.toUpperCase() + '</div>' +
+      '<div class="ab">' + esc(T.about) + '</div>' +
+      '<div class="odds">' + oddsText(T.odds) + '</div>' +
+      '<div class="got"></div>' +
+      '<button class="buy one">OPEN 1 · 🎟️ ' + T.cost + '</button>' +
+      '<div class="packs"></div>' +
+      '<button class="buy allbtn">SPEND ALL</button>';
+    c.querySelector('.one').onclick = function () { openBox(id); };
+    [10, 50, 100, 1000].forEach(function (n) {
+      var b = document.createElement('button');
+      b.className = 'buy'; b.dataset.n = n;
+      b.innerHTML = '<b>×' + n + '</b>🎟️ ' + (T.cost * n).toLocaleString('en-US');
+      b.onclick = function () { openPack(id, n); };
+      c.querySelector('.packs').appendChild(b);
+    });
+    var all = c.querySelector('.allbtn');
+    all.onclick = function () { spendAllTap(id, all); };
+    host.appendChild(c);
+  });
+}
+function renderThemes() {
+  var t = Darkys.tokens();
+  Darkys.THEME_ORDER.forEach(function (id) {
+    var T = Darkys.THEMES[id], c = $('tp-' + id), have = 0;
+    Darkys.LIST.forEach(function (d) { if (d.theme === id && Darkys.owns(d.id)) have++; });
+    c.className = 'crate' + (have === T.list.length ? ' done' : '');
+    c.querySelector('.got').textContent = (have === T.list.length ? '✓ ' : '') + have + ' / ' + T.list.length + ' COLLECTED';
+    c.querySelector('.one').disabled = t < T.cost;
+    [].forEach.call(c.querySelectorAll('.packs .buy'), function (b) { b.disabled = t < T.cost * +b.dataset.n; });
+    var all = c.querySelector('.allbtn');
+    all.disabled = t < T.cost;
+    if (armedBox !== id) all.textContent = 'SPEND ALL';
+  });
+}
+buildThemes();
 
 // ---------- daily quests and streak ----------
 function reward(n, what) {
