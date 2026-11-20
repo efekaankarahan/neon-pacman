@@ -177,7 +177,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   <div class="best" id="best"></div>
 </section>
 
-<script src="../darkys.js?v=20"></script>
+<script src="../darkys.js?v=21"></script>
 <script>
 (function () {
 'use strict';
@@ -194,10 +194,12 @@ var FISH = {
   uncommon:  { name: 'Uncommon',  color: '#4fe07a', list: [['🐠', 'Clownfish', 4, 10], ['🦀', 'Crab', 5, 12], ['🐡', 'Pufferfish', 6, 14]] },
   rare:      { name: 'Rare',      color: '#3fa8ff', list: [['🦑', 'Squid', 15, 35], ['🐢', 'Sea Turtle', 20, 45]] },
   epic:      { name: 'Epic',      color: '#c06bff', list: [['🐙', 'Octopus', 40, 80], ['🦈', 'Shark', 80, 160]] },
-  legendary: { name: 'Legendary', color: '#ffc83d', list: [['🐋', 'Whale', 250, 500], ['🐳', 'Blue Whale', 400, 800]] }
+  legendary: { name: 'Legendary', color: '#ffc83d', list: [['🐋', 'Whale', 250, 500], ['🐳', 'Blue Whale', 400, 800]] },
+  // very rare: each one you catch gives a free Ocean Pack at the end of the round
+  darky:     { name: 'Darky',     color: '#ff5cf0', list: [['🌚', 'Darky Fish', 30, 60]] }
 };
 function odds(lure) {
-  return { junk: 12 - 2 * lure, common: 50 - 7 * lure, uncommon: 25, rare: 8 + 3 * lure, epic: 3 + 2 * lure, legendary: 0.4 + 0.7 * lure };
+  return { junk: 12 - 2 * lure, common: 50 - 7 * lure, uncommon: 25, rare: 8 + 3 * lure, epic: 3 + 2 * lure, legendary: 0.4 + 0.7 * lure, darky: 0.8 };
 }
 
 // QUESTION SETS  (q, right answer, three wrong answers)
@@ -323,7 +325,7 @@ function nextQuestion() {
 
 // ---------------------------------------------------------------
 var state = { set: 'mixed', players: [], me: null, timeLeft: ROUND_SECONDS, running: false,
-  lure: 1, streak: 0, right: 0, wrong: 0, catches: 0, biggest: null, frenzyUntil: 0, timers: [] };
+  lure: 1, streak: 0, right: 0, wrong: 0, catches: 0, biggest: null, frenzyUntil: 0, darkyFish: 0, timers: [] };
 var $ = function (id) { return document.getElementById(id); };
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function show(id) {
@@ -379,7 +381,7 @@ function startRound() {
   state.me = { name: playerName(), em: Darkys.selected().em, lbs: 0, me: true };
   state.players = [state.me].concat(RIVALS.map(function (r) { return { name: r.name, em: r.em, lbs: 0, lure: 1 + rnd(2), skill: 0.6 + Math.random() * 0.25 }; }));
   state.timeLeft = ROUND_SECONDS; state.running = true;
-  state.lure = 1; state.streak = 0; state.right = 0; state.wrong = 0; state.catches = 0; state.biggest = null; state.frenzyUntil = 0;
+  state.lure = 1; state.streak = 0; state.right = 0; state.wrong = 0; state.catches = 0; state.biggest = null; state.frenzyUntil = 0; state.darkyFish = 0;
   $('boat').innerHTML = state.me.em;
   deck = [];
   show('game');
@@ -457,8 +459,10 @@ function answer(btn, choice) {
       state.catches++;
       if (!state.biggest || f.lbs > state.biggest.lbs) state.biggest = f;
       var T = FISH[f.tier];
+      if (f.tier === 'darky') state.darkyFish++;
       popup('good', f.em, f.name.toUpperCase(),
-        (f.lbs ? '+' + f.lbs.toLocaleString('en-US') + ' lbs' + (x2 ? ' (⚡x2)' : '') : 'Nothing but junk...') + (lureUp ? '<br>🪝 Lure up! Level ' + state.lure : ''),
+        (f.lbs ? '+' + f.lbs.toLocaleString('en-US') + ' lbs' + (x2 ? ' (⚡x2)' : '') : 'Nothing but junk...') +
+        (f.tier === 'darky' ? '<br>🌊 FREE OCEAN PACK at the end!' : '') + (lureUp ? '<br>🪝 Lure up! Level ' + state.lure : ''),
         '<span class="tier" style="color:' + T.color + '">' + T.name.toUpperCase() + '</span>');
     }
   } else {
@@ -498,6 +502,13 @@ function endRound() {
   var total = Darkys.addTokens(earned);
   if (Darkys.gameDone) Darkys.gameDone({ right: state.right, gold: 0, place: place });
   $('endtok').innerHTML = earned ? '+' + earned + ' 🎟️ tokens<br>(you have ' + total.toLocaleString('en-US') + ')' : 'Answer questions to earn 🎟️ tokens!';
+  // Darky Fish: one free Ocean Pack each (at most 3 a round)
+  var gifts = [];
+  for (var g = 0; g < Math.min(3, state.darkyFish) && Darkys.bonusOpen; g++) {
+    var got = Darkys.bonusOpen('ocean');
+    if (got && got.darky) gifts.push(got.darky.em + ' ' + esc(got.darky.name) + (got.isNew ? ' (NEW!)' : ''));
+  }
+  if (gifts.length) $('endtok').innerHTML += '<br>🌚 Darky Fish → 🌊 Ocean Pack: ' + gifts.join(', ');
   var top = rows.slice(0, 3), order = [top[1], top[0], top[2]];
   $('pod').innerHTML = order.map(function (p, i) {
     if (!p) return '';
