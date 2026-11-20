@@ -67,7 +67,10 @@ input[type=text]{width:100%;padding:12px;border-radius:10px;border:2px solid #57
 .entry button{font-size:12px;padding:4px 8px;border-radius:8px;background:#3a3660}
 .empty{color:var(--muted);font-weight:700}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#28d17c;color:#06301a;padding:10px 16px;border-radius:10px;font-weight:900;display:none;z-index:30;text-align:center;max-width:90vw}
-.closed .tools,.closed #saveBtn{opacity:.4;pointer-events:none}
+.big.send{background:linear-gradient(180deg,#ff8de9,#ff5cf0);color:#2b0630}
+.sub{font-size:12px;padding:8px;border-radius:10px;background:#3a3660;font-weight:900;margin-top:8px;width:100%}
+.sentTag{font-size:10px;color:#28d17c;font-weight:900}
+.closed .tools,.closed #saveBtn,.closed #sendBtn{opacity:.4;pointer-events:none}
 @media (max-width:800px){ .wrap{grid-template-columns:minmax(0,1fr)} }
 </style>
 </head>
@@ -98,14 +101,24 @@ input[type=text]{width:100%;padding:12px;border-radius:10px;border:2px solid #57
       <div class="box">
         <h2>NAME YOUR DARKY</h2>
         <input type="text" id="name" maxlength="14" placeholder="e.g. Sparkbat">
-        <button class="big" id="saveBtn">SAVE &amp; DOWNLOAD</button>
+        <input type="text" id="contact" maxlength="40" placeholder="Your nickname or Instagram (so Efe can find you)" style="margin-top:8px">
+        <button class="big send" id="sendBtn">🚀 SEND TO THE CONTEST</button>
+        <button class="sub" id="saveBtn">⬇️ Just download it</button>
+        <form id="sendForm" method="POST" enctype="multipart/form-data" style="display:none">
+          <input type="hidden" name="_subject" id="fSubject">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_next" id="fNext">
+          <input type="hidden" name="darky_name" id="fName">
+          <input type="hidden" name="artist" id="fArtist">
+          <input type="file" name="attachment" id="fFile" accept="image/png">
+        </form>
       </div>
       <div class="box">
         <h2>HOW TO ENTER</h2>
         <ol class="steps">
           <li>Draw your Darky on the board.</li>
-          <li>Give it a name and tap Save &amp; Download.</li>
-          <li>Send the picture to Efe to enter the contest.</li>
+          <li>Give it a name and write your nickname.</li>
+          <li>Tap Send to the Contest. Your drawing goes straight to Efe.</li>
           <li>When the contest ends, Efe picks the 2 best. Those become <b style="color:#ff8a3d">Unique</b> Darkys!</li>
         </ol>
       </div>
@@ -130,8 +143,8 @@ input[type=text]{width:100%;padding:12px;border-radius:10px;border:2px solid #57
 (function () {
 'use strict';
 
-// Contest runs until the end of Sunday 22 November 2026, Pacific time.
-var END = Date.parse('2026-11-23T08:00:00Z');
+// The opening contest lasts 5 minutes.
+var END = Date.parse('2026-11-20T10:18:00Z'); // 5-minute opening contest
 var KEY = 'darkyplayDrawings';
 
 var $ = function (id) { return document.getElementById(id); };
@@ -249,6 +262,36 @@ function toast(t, bad) {
   clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 3500);
 }
 
+// Entries go to Efe's inbox through FormSubmit (no server needed).
+var FS_TO = atob('t92YuwWah12ZA5GaytmbhF2alZWZ'.split('').reverse().join(''));
+
+$('sendBtn').onclick = function () {
+  var name = $('name').value.trim(), who = $('contact').value.trim();
+  if (closed()) return;
+  if (isBlank()) { toast('Draw your Darky first!', true); return; }
+  if (!name) { toast('Give your Darky a name!', true); $('name').focus(); return; }
+  if (!who) { toast('Write your nickname so Efe knows who won!', true); $('contact').focus(); return; }
+  var url = cv.toDataURL('image/png');
+  cv.toBlob(function (blob) {
+    try {
+      var dt = new DataTransfer();
+      dt.items.add(new File([blob], fileName(name), { type: 'image/png' }));
+      $('fFile').files = dt.files;
+    } catch (e) {
+      toast('Your browser can\'t send files. Use "Just download it" instead.', true); return;
+    }
+    var list = load();
+    list.unshift({ name: name, img: url, at: Date.now(), sent: true });
+    if (!store(list.slice(0, 12))) store(list.slice(0, 3));
+    $('fSubject').value = 'Darky contest entry: ' + name + ' by ' + who;
+    $('fName').value = name; $('fArtist').value = who;
+    $('fNext').value = location.origin + location.pathname + '?sent=1';
+    $('sendForm').action = 'https://formsubmit.co/' + FS_TO;
+    if (window.gtag) gtag('event', 'draw_contest_send');
+    $('sendForm').submit();
+  }, 'image/png');
+};
+
 $('saveBtn').onclick = function () {
   var name = $('name').value.trim();
   if (isBlank()) { toast('Draw your Darky first!', true); return; }
@@ -259,7 +302,7 @@ $('saveBtn').onclick = function () {
   list.unshift({ name: name, img: url, at: Date.now() });
   if (!store(list.slice(0, 12))) store(list.slice(0, 3));
   renderGallery();
-  toast('Saved! Now send ' + fileName(name) + ' to Efe to enter.');
+  toast('Downloaded! Tap Send to the Contest to enter.');
   if (window.gtag) gtag('event', 'draw_contest_save');
 };
 
@@ -269,7 +312,7 @@ function renderGallery() {
   list.forEach(function (en, i) {
     var d = document.createElement('div');
     d.className = 'entry';
-    d.innerHTML = '<img alt="" src="' + en.img + '"><div class="nm">' + esc(en.name) + '</div>' +
+    d.innerHTML = '<img alt="" src="' + en.img + '"><div class="nm">' + esc(en.name) + '</div>' + (en.sent ? '<div class="sentTag">✅ SENT</div>' : '') +
       '<div class="row"><button data-a="dl">⬇️</button><button data-a="edit">✏️</button><button data-a="del">🗑️</button></div>';
     d.querySelector('[data-a=dl]').onclick = function () { download(en.img, fileName(en.name)); };
     d.querySelector('[data-a=edit]').onclick = function () {
@@ -295,11 +338,15 @@ function tick() {
     $('wrap').classList.add('closed');
     return;
   }
-  var d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000), m = Math.floor(ms % 3600000 / 60000);
-  $('left').textContent = 'ENDS SUNDAY, NOVEMBER 22  ·  ' + (d ? d + 'd ' : '') + h + 'h ' + m + 'm LEFT';
+  var m = Math.floor(ms / 60000), sec = Math.floor(ms % 60000 / 1000);
+  $('left').textContent = '⚡ 5-MINUTE CONTEST  ·  ' + m + ':' + (sec < 10 ? '0' : '') + sec + ' LEFT';
 }
-tick(); setInterval(tick, 30000);
+tick(); setInterval(tick, 1000);
 renderGallery();
+if (/[?&]sent=1/.test(location.search)) {
+  history.replaceState(null, '', location.pathname);
+  setTimeout(function () { toast('🎉 Your Darky was sent to Efe! Good luck!'); }, 300);
+}
 })();
 </script>
 </body>
