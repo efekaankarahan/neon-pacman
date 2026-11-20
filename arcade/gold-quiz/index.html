@@ -247,7 +247,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   </div>
 </section>
 
-<script src="../darkys.js?v=16"></script>
+<script src="../darkys.js?v=17"></script>
 <script>
 (function () {
 'use strict';
@@ -757,6 +757,7 @@ function endRound() {
   $('endstats').textContent = state.me.gold + ' gold · ' + state.right + ' right answers out of ' + state.asked;
   var earned = state.right ? Math.min(80, state.right * 2 + Math.round(state.me.gold / 25) + [10, 6, 4, 2, 1][place - 1]) : 0;
   var total = Darkys.addTokens(earned);
+  if (Darkys.gameDone) Darkys.gameDone({ right: state.right, gold: state.me.gold, place: place });
   var T = Darkys.tournament, tl = $('endtour');
   if (T.state() === 'live') {
     var isBest = T.submit(state.me.gold);
