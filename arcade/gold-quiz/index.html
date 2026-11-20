@@ -73,6 +73,9 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 .ans:nth-child(3){background:var(--c)}.ans:nth-child(4){background:var(--d)}
 .ans.dim{filter:grayscale(.85) brightness(.55)}
 .ans.right{outline:5px solid #fff}
+.sellmsg{font-weight:900;font-size:17px;text-align:center;max-width:460px;line-height:1.4}
+.pickp button .rr{font-family:'Press Start 2P',monospace;font-size:8px}
+.pill.warn{color:#ff6b6b;border-color:#ff6b6b}
 .feedback{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
   z-index:20;font-family:'Press Start 2P',monospace;text-align:center;gap:18px;padding:20px}
 .feedback.on{display:flex}
@@ -182,7 +185,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   </div>
 
   <button class="big" id="playBtn">PLAY</button>
-  <p class="howto">You have 2 minutes. Every right answer lets you open one of three chests. Chests can give gold, multiply it, let you take gold from a rival... or cost you some. Four rivals are racing you the whole time.</p>
+  <p class="howto">You have 2 minutes. Every right answer lets you open one of three chests. Chests can give gold, multiply it, let you take gold from a rival... or cost you some. Four rivals are racing you the whole time.<br><b style="color:#ff7b8f">Careful: every 10 wrong answers, you have to sell one of your Epic or Legendary Darkys!</b></p>
 </section>
 
 <!-- ============ GAME ============ -->
@@ -190,6 +193,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   <div class="hud">
     <div class="pill" id="timerPill">&#9201; <span id="timer">2:00</span></div>
     <div class="pill" id="streakPill">&#128293; <span id="streak">0</span></div>
+    <div class="pill" id="wrongPill">&#10060; <span id="wrong">0</span>/10</div>
     <div class="pill goldp">&#129689; <span id="gold">0</span></div>
   </div>
   <div class="layout">
@@ -206,6 +210,13 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 </section>
 
 <div class="feedback" id="feedback"><div class="t"></div><div class="s"></div></div>
+
+<div class="chests" id="sell">
+  <h2 id="sellTitle" style="color:#ff7b8f">10 WRONG ANSWERS!</h2>
+  <p class="sellmsg" id="sellMsg"></p>
+  <div class="pickp" id="sellPick"></div>
+  <button class="next" id="sellBtn">KEEP PLAYING &rarr;</button>
+</div>
 
 <div class="chests" id="chests">
   <h2 id="chestTitle">CHOOSE A CHEST!</h2>
@@ -229,7 +240,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   </div>
 </section>
 
-<script src="../darkys.js?v=1"></script>
+<script src="../darkys.js?v=2"></script>
 <script>
 (function () {
 'use strict';
@@ -367,7 +378,7 @@ function nextQuestion() {
 var state = {
   avatar: Darkys.selected().em, set: 'mixed',
   players: [], me: null, timeLeft: ROUND_SECONDS, running: false,
-  streak: 0, right: 0, asked: 0, timer: null, botTimers: []
+  streak: 0, right: 0, wrong: 0, asked: 0, paused: false, timer: null, botTimers: []
 };
 
 var $ = function (id) { return document.getElementById(id); };
@@ -422,7 +433,8 @@ function startRound() {
   state.players = [state.me].concat(rivals.map(function (r) {
     return { name: r.name, em: r.em, gold: 0, skill: 0.55 + Math.random() * 0.3 };
   }));
-  state.timeLeft = ROUND_SECONDS; state.streak = 0; state.right = 0; state.asked = 0; state.running = true;
+  state.timeLeft = ROUND_SECONDS; state.streak = 0; state.right = 0; state.wrong = 0; state.asked = 0; state.paused = false; state.running = true;
+  $('sell').classList.remove('on');
   $('log').textContent = '';
   show('game');
   render(); askQuestion();
@@ -438,6 +450,7 @@ function stopAll() {
 }
 
 function tick() {
+  if (state.paused) return;
   state.timeLeft--;
   var m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
   $('timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
@@ -477,6 +490,13 @@ function answer(btn, choice) {
     setTimeout(function () { hideFlash(); if (state.running) openChests(); }, 750);
   } else {
     state.streak = 0;
+    state.wrong++;
+    if (state.wrong % 10 === 0) {
+      flash('bad', 'OOPS!', 'Answer: ' + current.right);
+      render();
+      setTimeout(function () { hideFlash(); if (state.running) sellPenalty(); }, 1500);
+      return;
+    }
     flash('bad', 'OOPS!', 'Answer: ' + current.right);
     setTimeout(function () { hideFlash(); if (state.running) askQuestion(); }, 1500);
   }
@@ -589,6 +609,51 @@ function applyChest(p, c, target) {
   return msg;
 }
 
+// ---------------------------------------------------------------
+// 10 WRONG ANSWERS: sell an Epic or Legendary Darky
+// ---------------------------------------------------------------
+function sellPenalty() {
+  state.paused = true;
+  var list = Darkys.sellable();
+  var box = $('sellPick');
+  box.innerHTML = '';
+  $('sellTitle').textContent = '10 WRONG ANSWERS!';
+  $('sellBtn').classList.remove('on');
+  if (!list.length) {
+    box.style.display = 'none';
+    $('sellMsg').textContent = "You'd have to sell an Epic or Legendary Darky... but you don't have one. Lucky this time!";
+    $('sellBtn').classList.add('on');
+  } else {
+    box.style.display = 'grid';
+    $('sellMsg').textContent = 'Pick one Epic or Legendary Darky to sell. You get some tokens back.';
+    list.forEach(function (d) {
+      var r = Darkys.RARITY[d.r];
+      var b = document.createElement('button');
+      b.style.borderColor = r.color;
+      b.innerHTML = '<span class="em">' + d.em + '</span>' + esc(d.name) +
+        (Darkys.count(d.id) > 1 ? ' x' + Darkys.count(d.id) : '') +
+        '<span class="rr" style="color:' + r.color + '">' + r.name.toUpperCase() + '</span>' +
+        '<span class="gd">+' + r.refund + ' 🎟️</span>';
+      b.onclick = function () {
+        var got = Darkys.sell(d.id);
+        box.style.display = 'none';
+        $('sellTitle').textContent = 'SOLD!';
+        $('sellMsg').textContent = 'You sold ' + d.name + ' for ' + got + ' tokens.';
+        $('sellBtn').classList.add('on');
+        if (window.gtag) gtag('event', 'gold_quiz_sell', { darky: d.id });
+      };
+      box.appendChild(b);
+    });
+  }
+  $('sell').classList.add('on');
+}
+
+$('sellBtn').onclick = function () {
+  $('sell').classList.remove('on');
+  state.paused = false;
+  if (state.running) askQuestion();
+};
+
 $('nextBtn').onclick = function () {
   $('chests').classList.remove('on');
   $('crow').dataset.done = '0';
@@ -613,6 +678,7 @@ function floatText(diff) {
 function scheduleBot(p) {
   var t = setTimeout(function () {
     if (!state.running) return;
+    if (state.paused) { scheduleBot(p); return; }
     if (Math.random() < p.skill) {
       var c = rollChest(true), target = null;
       if (c.kind === 'take' || c.kind === 'swap') {
@@ -643,6 +709,9 @@ function ranked() { return state.players.slice().sort(function (a, b) { return b
 function render(hit) {
   $('gold').textContent = state.me ? state.me.gold : 0;
   $('streak').textContent = state.streak;
+  var w = state.wrong % 10;
+  $('wrong').textContent = w;
+  $('wrongPill').classList.toggle('warn', w >= 7);
   var rows = $('rows');
   rows.innerHTML = '';
   ranked().forEach(function (p, i) {
@@ -662,6 +731,7 @@ function endRound() {
   stopAll();
   hideFlash();
   $('chests').classList.remove('on');
+  $('sell').classList.remove('on');
   $('crow').dataset.done = '0';
   var r = ranked();
   var place = r.indexOf(state.me) + 1;
