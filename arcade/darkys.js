@@ -58,7 +58,11 @@
     function img(src) { return '<img class="dkimg" alt="" src="' + src + '">'; }
     try {
         var st = document.createElement('style');
-        st.textContent = '.dkimg{width:1em;height:1em;object-fit:cover;vertical-align:middle;border-radius:.18em;display:inline-block}';
+        st.textContent = '.dkimg{width:1em;height:1em;object-fit:cover;vertical-align:middle;border-radius:.18em;display:inline-block}' +
+            '.chroma{display:inline-block;animation:dkchroma 2.6s linear infinite}' +
+            '@keyframes dkchroma{0%{filter:hue-rotate(0deg) saturate(1.6) drop-shadow(0 0 .1em #fff) drop-shadow(0 0 .22em #7dfcff)}' +
+            '50%{filter:hue-rotate(180deg) saturate(1.6) drop-shadow(0 0 .14em #fff) drop-shadow(0 0 .3em #ff5cf0)}' +
+            '100%{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 .1em #fff) drop-shadow(0 0 .22em #7dfcff)}}';
         document.head.appendChild(st);
     } catch (e) { /* no DOM */ }
 
@@ -73,6 +77,8 @@
         rare:      { name: 'Rare',      color: '#3fa8ff', refund: 15 },
         epic:      { name: 'Epic',      color: '#c06bff', refund: 40 },
         legendary: { name: 'Legendary', color: '#ffc83d', refund: 100 },
+        // a glowing version of an existing Darky; new ones every year, only in Seasonal Packs
+        chroma:    { name: 'Chroma',    color: '#7dfcff', refund: 1000 },
         mystical:  { name: 'Mystical',  color: '#ff5cf0', refund: 300 },
         // the 2 winners of the opening drawing contest; never in a box
         unique:    { name: 'Unique',    color: '#ff8a3d', refund: 500 }
@@ -110,8 +116,90 @@
         { id: 'etermaximus', name: 'Etermaximus', em: '🔮', r: 'mystical', market: true },
         // Unique: winners of the opening drawing contest, drawn by players.
         // Never in a box; given with a claim link (see UNIQUE_CLAIMS).
-        { id: 'xlojo', name: 'Xlojo', em: img(XLOJO), tx: '⚡', r: 'unique', unique: true }
+        { id: 'xlojo', name: 'Xlojo', em: img(XLOJO), tx: '⚡', r: 'unique', unique: true },
+
+        // Seasonal Darkys: only in their season's pack
+        { id: 'snowpaw',  name: 'Snowpaw',     em: '🐻‍❄️', r: 'common',    season: 'winter' },
+        { id: 'icicle',   name: 'Icicle',      em: '🧊', r: 'common',    season: 'winter' },
+        { id: 'reindy',   name: 'Reindy',      em: '🦌', r: 'uncommon',  season: 'winter' },
+        { id: 'mittens',  name: 'Mittens',     em: '🧤', r: 'uncommon',  season: 'winter' },
+        { id: 'jingle',   name: 'Jingle',      em: '🎅', r: 'rare',      season: 'winter' },
+        { id: 'blizzard', name: 'Blizzard',    em: '🌨️', r: 'epic',      season: 'winter' },
+        { id: 'aurora',   name: 'Aurora',      em: '🌌', r: 'legendary', season: 'winter' },
+
+        { id: 'bloom',    name: 'Bloom',       em: '🌸', r: 'common',    season: 'spring' },
+        { id: 'bunbun',   name: 'Bunbun',      em: '🐇', r: 'common',    season: 'spring' },
+        { id: 'dotty',    name: 'Dotty',       em: '🐞', r: 'uncommon',  season: 'spring' },
+        { id: 'sprout',   name: 'Sprout',      em: '🌱', r: 'uncommon',  season: 'spring' },
+        { id: 'rainbo',   name: 'Rainbo',      em: '🌈', r: 'rare',      season: 'spring' },
+        { id: 'flutter',  name: 'Flutter',     em: '🦋', r: 'epic',      season: 'spring' },
+        { id: 'sakura',   name: 'Sakura',      em: '🌺', r: 'legendary', season: 'spring' },
+
+        { id: 'crabby',   name: 'Crabby',      em: '🦀', r: 'common',    season: 'summer' },
+        { id: 'finny',    name: 'Finny',       em: '🐠', r: 'common',    season: 'summer' },
+        { id: 'palmy',    name: 'Palmy',       em: '🌴', r: 'uncommon',  season: 'summer' },
+        { id: 'coco',     name: 'Coco',        em: '🥥', r: 'uncommon',  season: 'summer' },
+        { id: 'sunburst', name: 'Sunburst',    em: '🌞', r: 'rare',      season: 'summer' },
+        { id: 'tsunami',  name: 'Tsunami',     em: '🌊', r: 'epic',      season: 'summer' },
+        { id: 'sharko',   name: 'Sharko',      em: '🦈', r: 'legendary', season: 'summer' },
+
+        { id: 'acorn',    name: 'Acorn',       em: '🌰', r: 'common',    season: 'autumn' },
+        { id: 'leafy',    name: 'Leafy',       em: '🍂', r: 'common',    season: 'autumn' },
+        { id: 'pumpkin',  name: 'Pumpkin',     em: '🎃', r: 'uncommon',  season: 'autumn' },
+        { id: 'nutty',    name: 'Nutty',       em: '🐿️', r: 'uncommon',  season: 'autumn' },
+        { id: 'batty',    name: 'Batty',       em: '🦇', r: 'rare',      season: 'autumn' },
+        { id: 'harvest',  name: 'Harvest Moon', em: '🌕', r: 'epic',     season: 'autumn' },
+        { id: 'witchy',   name: 'Witchy',      em: '🧙', r: 'legendary', season: 'autumn' }
     ];
+
+    // Chroma Darkys
+    // -------------
+    // Each year brings 1 to 3 new Chromas: glowing versions of existing
+    // Darkys. That year's Chromas can drop from any Seasonal Pack.
+    var CHROMA_YEARS = {
+        2026: ['drako'],
+        2027: ['blaze', 'sparkle'],
+        2028: ['rex'],
+        2029: ['kraken', 'hoot', 'foxy'],
+        2030: ['comet'],
+        2031: ['spook', 'gizmo'],
+        2032: ['frosty'],
+        2033: ['zorp', 'stripes'],
+        2034: ['shroom'],
+        2035: ['inky', 'waddle', 'bamboo'],
+        2036: ['froggo'],
+        2037: ['buzz', 'chick'],
+        2038: ['shelly'],
+        2039: ['darky'],
+        2040: ['xlojo', 'etermaximus']
+    };
+    var CHROMA_FIRST = 2026, CHROMA_LAST = 2040;
+    (function () {
+        var base = {};
+        LIST.forEach(function (d) { base[d.id] = d; });
+        Object.keys(CHROMA_YEARS).forEach(function (y) {
+            CHROMA_YEARS[y].forEach(function (id) {
+                var b = base[id];
+                LIST.push({
+                    id: 'chroma-' + y + '-' + id, name: 'Chroma ' + b.name,
+                    em: '<span class="chroma">' + b.em + '</span>', tx: b.tx || b.em,
+                    r: 'chroma', chroma: +y, base: id
+                });
+            });
+        });
+    })();
+
+    // Seasonal Packs
+    // --------------
+    // Each pack opens for one day a year, on the first day of its season
+    // (the player's local date). The site owner can open them any day.
+    var SEASONS = {
+        winter: { name: 'Winter Pack', icon: '❄️', month: 11, opens: 'DEC 1' },
+        spring: { name: 'Spring Pack', icon: '🌸', month: 2,  opens: 'MAR 1' },
+        summer: { name: 'Summer Pack', icon: '☀️', month: 5,  opens: 'JUN 1' },
+        autumn: { name: 'Autumn Pack', icon: '🍂', month: 8,  opens: 'SEP 1' }
+    };
+    var SEASON_ODDS = { common: 40, uncommon: 30, rare: 18, epic: 8, legendary: 3, chroma: 1 };
 
     var BOXES = {
         free: {
@@ -123,6 +211,9 @@
             odds: { common: 52, uncommon: 30, rare: 13, epic: 4, legendary: 1 }
         }
     };
+    Object.keys(SEASONS).forEach(function (k) {
+        BOXES[k] = { name: SEASONS[k].name, cost: 100, icon: SEASONS[k].icon, season: k, odds: SEASON_ODDS };
+    });
 
     var BY_ID = {};
     LIST.forEach(function (d) { BY_ID[d.id] = d; });
@@ -261,9 +352,46 @@
         return d;
     }
 
+    function seasonOpen(id) {
+        if (!SEASONS[id]) return false;
+        if (isOwner()) return true;
+        var d = new Date();
+        return d.getMonth() === SEASONS[id].month && d.getDate() === 1;
+    }
+    // The next day the pack opens (today if it is open today), as a Date.
+    function nextOpen(id) {
+        var now = new Date(), y = now.getFullYear(), m = SEASONS[id].month;
+        var d = new Date(y, m, 1);
+        if (d < new Date(y, now.getMonth(), now.getDate())) d = new Date(y + 1, m, 1);
+        return d;
+    }
+    function chromaYear() {
+        var y = new Date().getFullYear();
+        if (isOwner()) {
+            var o = load().ownerYear;
+            if (o >= CHROMA_FIRST && o <= CHROMA_LAST) return o;
+        }
+        return y;
+    }
+    function chromasOf(year) {
+        return LIST.filter(function (d) { return d.chroma === year; });
+    }
+
+    // The Darkys a box can drop at a rarity.
+    function poolFor(box, r) {
+        if (r === 'chroma') {
+            var c = chromasOf(chromaYear());
+            return c.length ? c : poolFor(box, 'legendary');
+        }
+        return LIST.filter(function (d) {
+            return d.r === r && !d.market && !d.unique && !d.chroma && (box.season ? d.season === box.season : !d.season);
+        });
+    }
+
     function open(boxId) {
         var s = load(), box = BOXES[boxId];
         if (!box) return { error: 'No such box' };
+        if (box.season && !seasonOpen(boxId)) return { error: 'This pack is locked today' };
         if (boxId === 'free' && freeReadyIn() > 0) return { error: 'The Free Box is not ready yet' };
         if (s.tokens < box.cost) return { error: 'Not enough tokens' };
 
@@ -271,7 +399,7 @@
         if (boxId === 'free') s.lastFree = Date.now();
 
         var r = rollRarity(box.odds);
-        var pool = LIST.filter(function (d) { return d.r === r && !d.market; });
+        var pool = poolFor(box, r);
         var d = pool[Math.floor(Math.random() * pool.length)];
         var isNew = !s.owned[d.id];
         var refund = 0;
@@ -283,19 +411,20 @@
 
     // Open the same box n times in one go (Dark Box packs of 10, 50, 100, 1000).
     // Pays for the whole pack up front, so it opens all n or none.
-    var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'mystical', 'unique'];
+    var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'chroma', 'mystical', 'unique'];
     // Fast path: rolls n boxes in memory and saves once, so even millions of
     // boxes (Spend All) finish in a few seconds.
     function openMany(boxId, n, untilBroke) {
         var s = load(), box = BOXES[boxId];
         n = Math.max(1, Math.floor(n) || 1);
         if (!box || boxId === 'free') return { error: 'Packs are only for the Dark Box' };
+        if (box.season && !seasonOpen(boxId)) return { error: 'This pack is locked today' };
         if (s.tokens < box.cost) return { error: 'Not enough tokens' };
         if (!untilBroke && s.tokens < box.cost * n) return { error: 'Not enough tokens' };
 
         var rar = [], cum = [], total = 0, k;
         for (k in box.odds) { total += box.odds[k]; rar.push(k); cum.push(total); }
-        var pools = rar.map(function (r) { return LIST.filter(function (d) { return d.r === r && !d.market; }); });
+        var pools = rar.map(function (r) { return poolFor(box, r); });
         var counts = {}, refund = 0, opened = 0;
 
         // Open in rounds: pay for what the tokens cover, then spend the
@@ -389,6 +518,18 @@
         claimPrize: claimPrize,
         open: open,
         openMany: openMany,
-        spendAll: function () { return openMany('dark', 1, true); }
+        spendAll: function (boxId) { return openMany(boxId || 'dark', 1, true); },
+        SEASONS: SEASONS,
+        seasonOpen: seasonOpen,
+        nextOpen: nextOpen,
+        isOwner: isOwner,
+        chromaYear: chromaYear,
+        chromasOf: chromasOf,
+        CHROMA_FIRST: CHROMA_FIRST,
+        CHROMA_LAST: CHROMA_LAST,
+        setChromaYear: function (y) {
+            if (!isOwner()) return;
+            load().ownerYear = +y; save();
+        }
     };
 })();
