@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Darky Drawing Contest - Draw a Darky, Win a Spot in the Game | Darky Play Arcade</title>
+<meta name="description" content="Darky Play's opening drawing contest: draw your own Darky. The 2 best drawings become Unique Darkys in the game.">
+<link rel="canonical" href="https://darkyplay.com/arcade/draw/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<style>
+:root{ --panel:#1d1b2b; --panel2:#272440; --line:#3a3660; --gold:#ffc83d; --muted:#a9a6c4; --pink:#ff5cf0; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{min-height:100dvh;color:#fff;font-family:'Nunito',system-ui,sans-serif;
+  background:radial-gradient(ellipse at top,#3a1450 0%,#111 65%);
+  display:flex;flex-direction:column;align-items:center;padding:16px 16px 60px}
+button,input{font-family:inherit;color:inherit}
+button{cursor:pointer;border:0}
+.top{width:100%;max-width:960px;display:flex;justify-content:space-between;align-items:center}
+.top a{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);text-decoration:none}
+.top a:hover{color:#fff}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(22px,6vw,44px);color:var(--pink);margin:30px 0 8px;text-align:center;line-height:1.3;
+  text-shadow:0 0 22px rgba(255,92,240,.5),4px 4px 0 #4a1250}
+.tag{color:var(--muted);text-align:center;margin-bottom:6px;max-width:620px;line-height:1.45}
+.left{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin:10px 0 22px;text-align:center;line-height:1.6}
+.wrap{width:100%;max-width:960px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+.box{background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:16px}
+.box h2{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--muted);margin-bottom:12px}
+
+/* canvas */
+.board{position:relative;width:100%;aspect-ratio:1;border-radius:14px;overflow:hidden;background-color:#fff;
+  background-image:linear-gradient(45deg,#eee 25%,transparent 25%,transparent 75%,#eee 75%),
+                   linear-gradient(45deg,#eee 25%,transparent 25%,transparent 75%,#eee 75%);
+  background-size:24px 24px;background-position:0 0,12px 12px}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 2px #0004 inset}
+.sw.on{border-color:#fff;transform:scale(1.12)}
+.pick{width:34px;height:34px;border:0;padding:0;background:none;cursor:pointer}
+.tb{font-family:'Press Start 2P',monospace;font-size:9px;padding:10px 11px;border-radius:10px;background:var(--panel2);border:2px solid #57509a}
+.tb.on{background:#57509a}
+.size{display:flex;gap:6px}
+.size button{width:34px;height:34px;border-radius:10px;background:var(--panel2);border:2px solid #57509a;display:grid;place-items:center}
+.size button.on{background:#57509a}
+.size i{display:block;border-radius:50%;background:#fff}
+
+/* side */
+label{display:block;font-weight:900;margin-bottom:6px}
+input[type=text]{width:100%;padding:12px;border-radius:10px;border:2px solid #57509a;background:var(--panel2);font-weight:900;font-size:16px}
+.big{display:block;width:100%;font-family:'Press Start 2P',monospace;font-size:12px;padding:16px;border-radius:12px;margin-top:12px;
+  background:var(--gold);color:#3b2400;box-shadow:0 5px 0 #a06a00;text-align:center;line-height:1.5}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #a06a00}
+.steps{counter-reset:s;list-style:none;display:flex;flex-direction:column;gap:10px;font-weight:700;line-height:1.4}
+.steps li{position:relative;padding-left:36px;min-height:26px}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:-2px;width:26px;height:26px;border-radius:50%;background:var(--pink);color:#2b0630;
+  display:grid;place-items:center;font-family:'Press Start 2P',monospace;font-size:10px}
+.prize{display:flex;gap:10px;margin-top:4px}
+.slot{flex:1;aspect-ratio:1;border-radius:14px;border:3px dashed var(--pink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  font-family:'Press Start 2P',monospace;font-size:8px;color:var(--pink);text-align:center;line-height:1.5}
+.slot b{font-size:28px;color:#fff}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.entry{background:var(--panel2);border:2px solid #57509a;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.entry img{width:100%;aspect-ratio:1;border-radius:8px;background:#fff}
+.entry .nm{font-weight:900;font-size:13px;text-align:center;word-break:break-word}
+.entry .row{display:flex;gap:6px}
+.entry button{font-size:12px;padding:4px 8px;border-radius:8px;background:#3a3660}
+.empty{color:var(--muted);font-weight:700}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#28d17c;color:#06301a;padding:10px 16px;border-radius:10px;font-weight:900;display:none;z-index:30;text-align:center;max-width:90vw}
+.closed .tools,.closed #saveBtn{opacity:.4;pointer-events:none}
+@media (max-width:800px){ .wrap{grid-template-columns:minmax(0,1fr)} }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a href="../">&larr; ARCADE</a>
+    <a href="../darkys/">DARKYS &rarr;</a>
+  </div>
+
+  <h1>DARKY DRAWING<br>CONTEST</h1>
+  <p class="tag">Darky Play just opened! Draw your own Darky. The <b style="color:#fff">2 best drawings</b> become <b style="color:#ff8a3d">Unique</b> Darkys, a brand new rarity, in the game for everyone to see.</p>
+  <div class="left" id="left"></div>
+
+  <div class="wrap" id="wrap">
+    <div class="box">
+      <div class="board"><canvas id="cv" width="512" height="512"></canvas></div>
+      <div class="tools" id="colors"></div>
+      <div class="tools">
+        <div class="size" id="sizes"></div>
+        <button class="tb" id="penBtn">PEN</button>
+        <button class="tb" id="eraseBtn">ERASER</button>
+        <button class="tb" id="undoBtn">UNDO</button>
+        <button class="tb" id="clearBtn">CLEAR</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="box">
+        <h2>NAME YOUR DARKY</h2>
+        <input type="text" id="name" maxlength="14" placeholder="e.g. Sparkbat">
+        <button class="big" id="saveBtn">SAVE &amp; DOWNLOAD</button>
+      </div>
+      <div class="box">
+        <h2>HOW TO ENTER</h2>
+        <ol class="steps">
+          <li>Draw your Darky on the board.</li>
+          <li>Give it a name and tap Save &amp; Download.</li>
+          <li>Send the picture to Efe to enter the contest.</li>
+          <li>When the contest ends, Efe picks the 2 best. Those become <b style="color:#ff8a3d">Unique</b> Darkys!</li>
+        </ol>
+      </div>
+      <div class="box">
+        <h2>THE PRIZE</h2>
+        <div class="prize">
+          <div class="slot"><b>?</b>WINNER #1<br>UNIQUE</div>
+          <div class="slot"><b>?</b>WINNER #2<br>UNIQUE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box" style="width:100%;max-width:960px;margin-top:16px">
+    <h2>MY ENTRIES</h2>
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function () {
+'use strict';
+
+// Contest runs until the end of Sunday 22 November 2026, Pacific time.
+var END = Date.parse('2026-11-23T08:00:00Z');
+var KEY = 'darkyplayDrawings';
+
+var $ = function (id) { return document.getElementById(id); };
+var cv = $('cv'), ctx = cv.getContext('2d');
+ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+var COLORS = ['#111111', '#ffffff', '#ff4f6d', '#ff9f1c', '#ffc83d', '#28d17c', '#2fa8ff', '#7ee8ff', '#c06bff', '#ff5cf0', '#8b5a2b', '#a9a6c4'];
+var SIZES = [4, 10, 20, 36];
+var color = COLORS[0], size = SIZES[1], erase = false;
+
+// ---------- tools ----------
+COLORS.forEach(function (c, i) {
+  var b = document.createElement('button');
+  b.className = 'sw' + (i === 0 ? ' on' : '');
+  b.style.background = c;
+  b.onclick = function () { setColor(c); };
+  $('colors').appendChild(b);
+});
+var pick = document.createElement('input');
+pick.type = 'color'; pick.className = 'pick'; pick.value = '#ff5cf0';
+pick.oninput = function () { setColor(pick.value); };
+$('colors').appendChild(pick);
+
+function setColor(c) {
+  color = c; setErase(false);
+  [].forEach.call($('colors').querySelectorAll('.sw'), function (b) { b.classList.toggle('on', b.style.background && sameColor(b.style.background, c)); });
+}
+function sameColor(css, hex) {
+  var t = document.createElement('div'); t.style.color = hex; return t.style.color === css;
+}
+
+SIZES.forEach(function (s, i) {
+  var b = document.createElement('button');
+  b.className = i === 1 ? 'on' : '';
+  var dot = document.createElement('i'); dot.style.width = dot.style.height = Math.max(4, s / 2) + 'px';
+  b.appendChild(dot);
+  b.onclick = function () {
+    size = s;
+    [].forEach.call($('sizes').children, function (x) { x.classList.remove('on'); });
+    b.classList.add('on');
+  };
+  $('sizes').appendChild(b);
+});
+
+function setErase(on) {
+  erase = on;
+  $('eraseBtn').classList.toggle('on', on);
+  $('penBtn').classList.toggle('on', !on);
+}
+setErase(false);
+$('penBtn').onclick = function () { setErase(false); };
+$('eraseBtn').onclick = function () { setErase(true); };
+
+// ---------- drawing ----------
+var undo = [], drawing = false, lastX = 0, lastY = 0;
+function snapshot() {
+  undo.push(ctx.getImageData(0, 0, cv.width, cv.height));
+  if (undo.length > 25) undo.shift();
+}
+function pos(e) {
+  var r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height];
+}
+function stroke(x, y) {
+  ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+  ctx.strokeStyle = color; ctx.lineWidth = size;
+  ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+  lastX = x; lastY = y;
+}
+cv.addEventListener('pointerdown', function (e) {
+  if (closed()) return;
+  e.preventDefault();
+  cv.setPointerCapture(e.pointerId);
+  snapshot();
+  drawing = true;
+  var p = pos(e); lastX = p[0] + 0.01; lastY = p[1];
+  stroke(p[0], p[1]);
+});
+cv.addEventListener('pointermove', function (e) {
+  if (!drawing) return;
+  var p = pos(e); stroke(p[0], p[1]);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+  cv.addEventListener(ev, function () { drawing = false; });
+});
+$('undoBtn').onclick = function () { if (undo.length) ctx.putImageData(undo.pop(), 0, 0); };
+$('clearBtn').onclick = function () { snapshot(); ctx.clearRect(0, 0, cv.width, cv.height); };
+
+function isBlank() {
+  var d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+  for (var i = 3; i < d.length; i += 4) if (d[i]) return false;
+  return true;
+}
+
+// ---------- entries ----------
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
+}
+function store(list) {
+  try { localStorage.setItem(KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function fileName(n) { return 'darky-' + (n.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'drawing') + '.png'; }
+
+function download(url, name) {
+  var a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function toast(t, bad) {
+  var el = $('toast');
+  el.textContent = t; el.style.background = bad ? '#ff4f6d' : '#28d17c'; el.style.color = bad ? '#fff' : '#06301a';
+  el.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 3500);
+}
+
+$('saveBtn').onclick = function () {
+  var name = $('name').value.trim();
+  if (isBlank()) { toast('Draw your Darky first!', true); return; }
+  if (!name) { toast('Give your Darky a name!', true); $('name').focus(); return; }
+  var url = cv.toDataURL('image/png');
+  download(url, fileName(name));
+  var list = load();
+  list.unshift({ name: name, img: url, at: Date.now() });
+  if (!store(list.slice(0, 12))) store(list.slice(0, 3));
+  renderGallery();
+  toast('Saved! Now send ' + fileName(name) + ' to Efe to enter.');
+  if (window.gtag) gtag('event', 'draw_contest_save');
+};
+
+function renderGallery() {
+  var g = $('gallery'), list = load();
+  g.innerHTML = list.length ? '' : '<p class="empty">Your saved drawings show up here.</p>';
+  list.forEach(function (en, i) {
+    var d = document.createElement('div');
+    d.className = 'entry';
+    d.innerHTML = '<img alt="" src="' + en.img + '"><div class="nm">' + esc(en.name) + '</div>' +
+      '<div class="row"><button data-a="dl">⬇️</button><button data-a="edit">✏️</button><button data-a="del">🗑️</button></div>';
+    d.querySelector('[data-a=dl]').onclick = function () { download(en.img, fileName(en.name)); };
+    d.querySelector('[data-a=edit]').onclick = function () {
+      if (closed()) return;
+      var im = new Image();
+      im.onload = function () { snapshot(); ctx.clearRect(0, 0, cv.width, cv.height); ctx.globalCompositeOperation = 'source-over'; ctx.drawImage(im, 0, 0); };
+      im.src = en.img; $('name').value = en.name;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    d.querySelector('[data-a=del]').onclick = function () {
+      var l = load(); l.splice(i, 1); store(l); renderGallery();
+    };
+    g.appendChild(d);
+  });
+}
+
+// ---------- countdown ----------
+function closed() { return Date.now() >= END; }
+function tick() {
+  var ms = END - Date.now();
+  if (ms <= 0) {
+    $('left').textContent = 'THE CONTEST IS OVER. WINNERS COMING SOON!';
+    $('wrap').classList.add('closed');
+    return;
+  }
+  var d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000), m = Math.floor(ms % 3600000 / 60000);
+  $('left').textContent = 'ENDS SUNDAY, NOVEMBER 22  ·  ' + (d ? d + 'd ' : '') + h + 'h ' + m + 'm LEFT';
+}
+tick(); setInterval(tick, 30000);
+renderGallery();
+})();
+</script>
+</body>
+</html>
