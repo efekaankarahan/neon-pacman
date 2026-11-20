@@ -43,6 +43,11 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 .av.sel{border-color:var(--gold);background:#3d3418}
 .box h2{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .more{color:#7ee8ff;text-decoration:none;font-size:9px}
+.tourline{display:none;color:#ff5cf0;font-weight:900;font-size:16px;margin:-8px 0 22px;text-align:center;text-decoration:none;max-width:460px;line-height:1.4}
+.tourline.on{display:block}
+.tourbanner{display:none;background:linear-gradient(120deg,#2a1240,#14304a);border:3px solid #ff5cf0;border-radius:14px;padding:12px 16px;
+  max-width:560px;width:100%;margin-bottom:14px;text-decoration:none;color:#fff;font-weight:900;text-align:center;line-height:1.4}
+.tourbanner.on{display:block}
 .tokens{font-family:'Press Start 2P',monospace;color:var(--gold);font-size:14px;margin-bottom:20px;text-align:center}
 .sets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .set{padding:12px;border-radius:12px;background:var(--panel2);border:3px solid transparent;text-align:left;font-weight:900;font-size:15px}
@@ -173,6 +178,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 <section class="screen on" id="start">
   <h1>GOLD QUIZ</h1>
   <p class="tag">Answer right, open a chest, finish with the most gold.</p>
+  <a class="tourbanner" id="tourBanner" href="../darkys/"></a>
 
   <div class="box">
     <h2>1. PICK YOUR DARKY <a class="more" href="../darkys/">GET MORE &rarr;</a></h2>
@@ -233,6 +239,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   <div class="endmsg" id="endmsg"></div>
   <div class="endstats" id="endstats"></div>
   <div class="tokens" id="endtokens"></div>
+  <a class="tourline" id="endtour" href="../darkys/"></a>
   <div class="endbtns">
     <button class="big" id="againBtn">PLAY AGAIN</button>
     <button class="ghost" id="menuBtn">CHANGE SET</button>
@@ -240,7 +247,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   </div>
 </section>
 
-<script src="../darkys.js?v=2"></script>
+<script src="../darkys.js?v=4"></script>
 <script>
 (function () {
 'use strict';
@@ -750,6 +757,14 @@ function endRound() {
   $('endstats').textContent = state.me.gold + ' gold · ' + state.right + ' right answers out of ' + state.asked;
   var earned = state.right ? Math.min(80, state.right * 2 + Math.round(state.me.gold / 25) + [10, 6, 4, 2, 1][place - 1]) : 0;
   var total = Darkys.addTokens(earned);
+  var T = Darkys.tournament, tl = $('endtour');
+  if (T.state() === 'live') {
+    var isBest = T.submit(state.me.gold);
+    var rk = T.rank();
+    tl.textContent = '🏆 Tournament: ' + (isBest ? 'new best ' + state.me.gold + '! ' : 'your best is ' + T.best() + '. ') +
+      'You are #' + rk + (rk <= T.PRIZE_RANK ? ', in the Etermaximus zone! 🔮' : ', top ' + T.PRIZE_RANK + ' win Etermaximus.');
+    tl.classList.add('on');
+  } else tl.classList.remove('on');
   $('endtokens').textContent = earned ? '+' + earned + ' 🎟️ tokens  (you have ' + total + ')' : 'Answer questions to earn 🎟️ tokens!';
   show('end');
   if (window.gtag) gtag('event', 'gold_quiz_end', { place: place, gold: state.me.gold });
@@ -761,6 +776,12 @@ $('againBtn').onclick = startRound;
 $('menuBtn').onclick = function () { show('start'); };
 
 buildStart();
+(function () {
+  var T = Darkys.tournament, b = $('tourBanner');
+  if (T.state() !== 'live') return;
+  b.textContent = '🏆 Etermaximus Tournament is on! Your best score counts. Top ' + T.PRIZE_RANK + ' on November 21 win the Mystical Darky 🔮  (you: #' + T.rank() + ')';
+  b.classList.add('on');
+})();
 })();
 </script>
 <script src="../../shared/scores.js?v=8" data-game="gold-quiz"></script>
