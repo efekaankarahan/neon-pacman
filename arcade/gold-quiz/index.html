@@ -247,7 +247,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   </div>
 </section>
 
-<script src="../darkys.js?v=10"></script>
+<script src="../darkys.js?v=11"></script>
 <script>
 (function () {
 'use strict';
@@ -402,7 +402,7 @@ function buildStart() {
   Darkys.ownedList().forEach(function (d) {
     var b = document.createElement('button');
     b.className = 'av' + (d.id === cur ? ' sel' : '');
-    b.textContent = d.em;
+    b.innerHTML = d.em;
     b.title = d.name;
     b.style.borderBottom = '4px solid ' + Darkys.RARITY[d.r].color;
     b.onclick = function () {
@@ -697,7 +697,7 @@ function scheduleBot(p) {
         if (c.kind === 'take' && target.gold === 0) c = { kind: 'gold', n: 20, icon: '🪙', lbl: '', tone: 'good' };
       }
       var msg = applyChest(p, c, target);
-      if (target && (c.kind === 'take' || c.kind === 'swap')) log(p.em + ' ' + msg);
+      if (target && (c.kind === 'take' || c.kind === 'swap')) log((p.em.charAt(0) === '<' ? '' : p.em + ' ') + msg);
     }
     scheduleBot(p);
   }, 4500 + Math.random() * 4500);
