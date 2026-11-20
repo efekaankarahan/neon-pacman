@@ -67,7 +67,17 @@
             '@keyframes dkspin{to{transform:rotate(-360deg)}}' +
             '.dkfire{display:inline-block;animation:dkfire 1.2s ease-in-out infinite alternate}' +
             '@keyframes dkfire{from{filter:drop-shadow(0 0 .12em #ffb000)}to{filter:drop-shadow(0 0 .35em #ff3d00) brightness(1.15)}}' +
-            '.dkgold{display:inline-block;filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.1) drop-shadow(0 0 .2em #ffc83d)}';
+            '.dkgold{display:inline-block;filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.1) drop-shadow(0 0 .2em #ffc83d)}' +
+            // the 10 looks of a Pack of the Day Darky, Mini to Legend
+            '.dv0,.dv1,.dv2,.dv3,.dv4,.dv5,.dv6,.dv7,.dv8,.dv9{display:inline-block}' +
+            '.dv0{transform:scale(.78)}.dv2{transform:scaleX(-1)}' +
+            '.dv3{filter:hue-rotate(95deg) saturate(1.3)}' +
+            '.dv4{filter:hue-rotate(215deg) saturate(1.3);transform:rotate(-10deg)}' +
+            '.dv5{filter:drop-shadow(0 0 .12em #fff) drop-shadow(0 0 .25em #7ee8ff)}' +
+            '.dv6{filter:hue-rotate(300deg) saturate(1.5) drop-shadow(0 0 .2em #3fa8ff)}' +
+            '.dv7{filter:drop-shadow(0 0 .25em #c06bff) brightness(1.1);transform:scale(1.08)}' +
+            '.dv8{filter:invert(1) hue-rotate(180deg) drop-shadow(0 0 .25em #c06bff)}' +
+            '.dv9{filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.1) drop-shadow(0 0 .25em #ffc83d)}';
         document.head.appendChild(st);
     } catch (e) { /* no DOM */ }
 
@@ -221,6 +231,30 @@
         });
     });
 
+    // Pack of the Day
+    // ---------------
+    // 365 packs, one for each day of the year (the player's local date):
+    // only today's pack can be opened, tomorrow it is a different one, and
+    // each pack comes back on the same day next year. Every pack has 10
+    // Darkys, the same emoji in 10 looks from Mini to Legend.
+    var DAILY = '🎆|New Year;🦒|Savanna;🐠|Coral Reef;🇮🇹|Italy;🗼|Paris;🏎️|Race Car;🌮|Taco;🎂|Birthday;🐲|Dragon Nest;🧪|Chem Lab;🎾|Tennis;🎻|Violin;👨‍🍳|Chef;🌸|Cherry Blossom;🥸|Disguise;🗡️|Dungeon;🔴|Red;🦓|Zebra;🐡|Pufferfish;🇫🇷|France;🗽|New York;🚂|Steam Train;🍜|Ramen;🧝|Elf Forest;⚗️|Alchemy;🏐|Volleyball;🎹|Piano;👩‍🚒|Firefighter;🌺|Tropical Flower;🏹|Forest Hunter;🟠|Orange;🐘|Elephant;🦈|Shark Hunt;🇪🇸|Spain;🎡|London;🚀|Launch Pad;🥟|Dumpling;🧌|Troll Bridge;🧲|Magnet;🏈|Football;🎺|Trumpet;👮|Police;🌹|Rose Garden;💩|Potty;💝|Valentine;🧟|Zombie Land;🟡|Yellow;🦛|Hippo;🐋|Whale Song;🇩🇪|Germany;🕌|Istanbul;🚁|Helicopter;🍝|Pasta;🧚|Fairy Garden;🔭|Observatory;⚾|Baseball;🥁|Marching Band;👩‍⚕️|Doctor;🌷|Tulip Field;🦷|Tooth Fairy;🏰|Tower Defense;🟢|Green;🐊|Crocodile;🐬|Dolphin Show;🇬🇧|Britain;🏯|Kyoto;⛵|Sailboat;🥐|Bakery;🐰|Spring Fest;🧞|Genie Lamp;🌌|Galaxy;🏒|Ice Hockey;🪕|Banjo;👨‍🏫|Teacher;🌻|Sunflower;☘️|Clover Day;🧦|Lost Sock;🚀|Space Invasion;🔵|Blue;🦎|Lizard;🦭|Seal Rock;🇬🇷|Greece;🌉|San Francisco;🚤|Speedboat;🧀|Cheese;🧧|Lunar New Year;🦄|Unicorn Valley;🌘|Moon Base;⛸️|Ice Skating;🪗|Accordion;🤡|Prankster;👩‍🔬|Scientist;🌵|Cactus Garden;🥄|Spoon;🏎️|Nitro Race;🟣|Purple;🐍|Snake Pit;🐙|Octopus Cave;🇳🇱|Netherlands;🏙️|Dubai;🛳️|Cruise Ship;🍫|Chocolate Factory;🐉|Sky Dragon;🔴|Mars;🎿|Ski;🎷|Jazz Night;👨‍🚀|Astronaut;🌴|Palm Tree;🧻|Toilet Paper;🧱|Block World;🩷|Pink;🐸|Frog Pond;🦑|Giant Squid;🇨🇭|Switzerland;🏝️|Maldives;🚲|Bicycle;🍪|Cookie;🎎|Doll Fest;🪄|Magic Wand;🧬|Gene Lab;🏂|Snowboard;🎼|Orchestra;👩‍✈️|Pilot;🌳|Old Tree;🪥|Toothbrush;🪓|Survival;💡|Neon;🦔|Hedgehog;🦀|Crab Beach;🇸🇪|Sweden;🏔️|Alps;🛵|Scooter;🧁|Cupcake;🎏|Kite Fest;🔮|Crystal Ball;🦠|Microbe;🏄|Surfing;🎬|Cinema;👨‍🌾|Farmer;🍁|Maple;🛁|Rubber Duck;🔫|Laser Tag;🪩|Metallic;🦦|Otter;🦞|Lobster Trap;🇳🇴|Norway;🌋|Hawaii;🚜|Tractor;🥞|Pancake;💃|Carnival;🧿|Evil Eye;🧠|Brain;🏊|Swimming;📸|Photo;👷|Builder;🍂|Fall Forest;🧼|Soap Bubble;🧩|Puzzle Tower;🥇|Gold Series;🦫|Beaver;🐚|Seashell;🇮🇸|Iceland;🏜️|Sahara;🚌|School Bus;🧇|Waffle;🎭|Masquerade;🏰|Magic Castle;💡|Inventor;🤿|Diving;🎙️|Radio;🧑‍🔧|Mechanic;🌾|Wheat Field;🛏️|Bedtime;🗺️|Treasure Hunt;🥈|Silver Series;🦘|Kangaroo;🪸|Coral Garden;🇷🇺|Russia;🌲|Amazon;🚑|Ambulance;🍿|Popcorn;🎓|Graduation;🌙|Moon Goddess;⚙️|Gears;🧗|Climbing;📚|Library;🧑‍🎨|Painter;🍃|Windy Leaves;😴|Sleepy;🐉|Boss Fight;🥉|Bronze Series;🐨|Koala;🌊|Surf Wave;🇨🇳|China;🧊|Antarctica;🎈|Hot Air Balloon;🍲|Soup;💍|Wedding;☀️|Sun God;🖥️|Computer;🚴|Cycling;✏️|Pencil Case;🧑‍🎤|Singer;💦|Waterfall;🤪|Silly Faces;👑|Tournament;💎|Diamond Series;🦥|Sloth;🏝️|Lonely Island;🇰🇷|Korea;🗻|Himalaya;🛶|Canoe;🥘|Paella;👶|Baby Shower;⚡|Storm God;📱|Phone;🏇|Horse Race;🖍️|Crayon;🕵️|Detective;🏞️|National Park;😎|Cool Darkys;💰|Gold Mine;🖤|Gothic;🦙|Llama;⚓|Shipwreck;🇮🇳|India;🌅|Santorini;🚠|Gondola;🍛|Curry;❄️|Ice Queen;🛜|Wi-Fi;🥋|Karate;🧶|Knitting;💂|Royal Guard;⛰️|Canyon;🥶|Frozen;⚔️|Arena;🍬|Pastel;🐑|Sheep;🔱|Poseidon;🇹🇭|Thailand;🚡|Cable Car;🏍️|Motocross;🍤|Tempura;🔥|Fire Lord;🕹️|Console;🤼|Wrestling;🏺|Pottery;🧑‍⚖️|Judge;🪨|Rock;🥵|Melted;🛡️|Paladin;📼|Eighties;🐎|Horse;🐢|Turtle Trek;🇮🇩|Indonesia;🏟️|Stadium;🍙|Onigiri;🌪️|Wind Spirit;👾|Pixel;🥊|Boxing Ring;🧩|Jigsaw;🧑‍💻|Coder;💧|Raindrop;🤖|Broken Robot;🧪|Potion Maker;💿|Two Thousands;🦄|Pony;🪼|Jelly Lights;🇦🇺|Australia;🎢|Theme Park;🥠|Fortune Cookie;🍀|Lucky Day;🌑|Shadow Realm;🤖|AI;🏹|Archery;🎲|Board Game;📮|Mail;🌫️|Fog;🦹|Villain;🐇|Bunny;🇳🇿|New Zealand;🏫|School;🍯|Honey;🌈|Rainbow Fest;🌟|Star Spirits;🔌|Electric;🎳|Bowling;🃏|Card Game;🌈|Rainbow;🦸|Hero Squad;🦇|Bat Cave;🇧🇷|Brazil;🚒|Fire Station;🍋|Lemonade;🎐|Wind Chime;👑|Lost Kingdom;⏰|Time Machine;⛳|Golf;🪁|Kite;🌙|Night Sky;🦉|Owl Night;🇦🇷|Argentina;🎃|Halloween Night;🚓|Police Station;🥤|Milkshake;🪔|Festival of Lights;🐺|Wolf Pack;🧮|Math;🏓|Ping Pong;🪆|Nesting Doll;🌇|Sunset;🦚|Peacock;🇲🇽|Mexico;🏚️|Haunted House;🧋|Bubble Tea;🎑|Moon Fest;🦅|Phoenix Nest;📐|Geometry;🤸|Gymnastics;🎠|Carousel;🌄|Sunrise;🦩|Flamingo Lake;🇺🇸|America;🕳️|Underground;🍵|Tea Garden;🐍|Medusa;🗺️|Map;🏃|Marathon;🦃|Thanksgiving;🛝|Playground;🌠|Shooting Star;🦢|Swan Lake;🇨🇦|Canada;🛤️|Train Station;🫖|Teapot;🕺|Disco Night;🧜|Siren Isle;🧭|Explorer;🥇|Olympics;🏕️|Scout Camp;🌌|Northern Lights;🦆|Duck Pond;🇲🇦|Morocco;✈️|Airport;🧉|Mate;🎤|Karaoke;🪽|Angel Wing;🔦|Flashlight;♟️|Chess;🌻|Gardener;☁️|Cloud City;🇰🇪|Kenya;🥥|Coconut;🇿🇦|South Africa;🍇|Vineyard;🇸🇦|Arabia;🏮|Lantern Fest;🎄|Christmas Tree;🥕|Veggie Patch;🇮🇷|Iran;🌶️|Hot Pepper;🇦🇿|Azerbaijan;🍄|Mushroom Forest;🎇|Fireworks'.split(';').map(function (x, i) {
+        var p = x.split('|');
+        return { i: i, icon: p[0], name: p[1] };
+    });
+    var DAILY_LOOKS = [['Mini', 'common'], ['Buddy', 'common'], ['Scout', 'common'], ['Runner', 'uncommon'], ['Knight', 'uncommon'],
+        ['Star', 'rare'], ['Guardian', 'rare'], ['Hero', 'epic'], ['Champion', 'epic'], ['Legend', 'legendary']];
+    DAILY.forEach(function (P) {
+        DAILY_LOOKS.forEach(function (t, j) {
+            LIST.push({ id: 'day' + P.i + '-' + j, name: P.name + ' ' + t[0], em: '<span class="dv' + j + '">' + P.icon + '</span>',
+                tx: P.icon, r: t[1], theme: 'day' + P.i, daily: P.i });
+        });
+    });
+    function dayOfYear(d) {
+        d = d || new Date();
+        var n = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 1)) / DAY);
+        return Math.min(n, DAILY.length - 1);          // Dec 31 of a leap year shares the last pack
+    }
+
     // Religious holiday Darkys: one for each big holiday of the world's
     // faiths. All Sacred, all equally likely, only from the Faith Pack.
     [
@@ -324,6 +358,9 @@
         var T = THEMES[k];
         BOXES[k] = { name: T.name, cost: T.cost, icon: T.icon, theme: k, odds: T.odds };
     });
+    var DAILY_COST = 75;
+    BOXES.daily = { name: 'Pack of the Day', cost: DAILY_COST, icon: '📅', theme: 'day0', daily: true,
+        odds: { common: 40, uncommon: 28, rare: 18, epic: 10, legendary: 4 } };
     Object.keys(SEASONS).forEach(function (k) {
         BOXES[k] = { name: SEASONS[k].name, cost: 100, icon: SEASONS[k].icon, season: k, odds: SEASON_ODDS };
     });
@@ -502,7 +539,20 @@
         });
     }
 
+    // Point the Pack of the Day box at today's pack (or the owner's pick).
+    function dailyToday() {
+        var o = isOwner() ? load().ownerDay : null;
+        return typeof o === 'number' && o >= 0 && o < DAILY.length ? o : dayOfYear();
+    }
+    function syncDaily() {
+        var P = DAILY[dailyToday()];
+        BOXES.daily.theme = 'day' + P.i;
+        BOXES.daily.name = P.name + ' Pack';
+        BOXES.daily.icon = P.icon;
+    }
+
     function open(boxId) {
+        if (boxId === 'daily') syncDaily();
         var s = load(), box = BOXES[boxId];
         if (!box) return { error: 'No such box' };
         if (box.season && !seasonOpen(boxId)) return { error: 'This pack is locked today' };
@@ -682,6 +732,7 @@
     // Fast path: rolls n boxes in memory and saves once, so even millions of
     // boxes (Spend All) finish in a few seconds.
     function openMany(boxId, n, untilBroke) {
+        if (boxId === 'daily') syncDaily();
         var s = load(), box = BOXES[boxId];
         n = Math.max(1, Math.floor(n) || 1);
         if (!box || boxId === 'free') return { error: 'Packs are only for the Dark Box' };
@@ -809,6 +860,10 @@
         ['holiday',  '🎉', 'Holiday Spirit', 'Get a Holiday Darky',                  100, function (s) { return [ownedWhere(s, function (d) { return d.event; }), 1]; }],
         ['travel',   '🌍', 'World Traveler', 'Get 10 Holiday Darkys',                300, function (s) { return [ownedWhere(s, function (d) { return d.event; }), 10]; }],
         ['faith',    '🕊️', 'Faithful',       'Collect every religious holiday Darky', 300, function (s) { return [ownedWhere(s, function (d) { return d.holy; }), LIST.filter(function (d) { return d.holy; }).length]; }],
+        ['daypack',  '📅', 'Daily Collector', 'Collect all 10 Darkys of a Pack of the Day', 150, function (s) {
+            var c = {}, best = 0;
+            LIST.forEach(function (d) { if (d.daily !== undefined && s.owned[d.id]) { c[d.daily] = (c[d.daily] || 0) + 1; if (c[d.daily] > best) best = c[d.daily]; } });
+            return [best, 10]; }],
         ['theme',    '🧭', 'Explorer',       'Collect every Darky of one Theme Pack', 200, function (s) {
             return [Math.max.apply(null, THEME_ORDER.map(function (k) {
                 return ownedWhere(s, function (d) { return d.theme === k; }) / THEMES[k].list.length;
@@ -962,6 +1017,15 @@
         setChromaYear: function (y) {
             if (!isOwner()) return;
             load().ownerYear = +y; save();
+        },
+        DAILY: DAILY,
+        DAILY_COST: DAILY_COST,
+        dayOfYear: dayOfYear,
+        dailyToday: dailyToday,
+        // the owner can open any day's pack
+        setOwnerDay: function (i) {
+            if (!isOwner()) return;
+            load().ownerDay = i === '' || i === null ? null : +i; save();
         },
         EVENTS: EVENTS,
         EVENT_COST: EVENT_COST,
