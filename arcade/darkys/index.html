@@ -183,7 +183,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=6"></script>
+<script src="../darkys.js?v=7"></script>
 <script>
 (function () {
 'use strict';
@@ -223,7 +223,7 @@ function renderTournament() {
     msg = Darkys.marketUnlocked()
       ? 'You finished #' + rank + '. Etermaximus is yours: claim it in the Market!'
       : 'The tournament is over.' + (best ? ' You finished #' + rank + '.' : '');
-    left = 'FINAL RESULTS';
+    left = 'FINAL RESULTS  ·  PRIZES: #1 1,000,000,000 🎟️  ·  #2-3 10,000 🎟️';
   }
   $('tourMsg').textContent = msg;
   $('tourLeft').textContent = left;
@@ -266,6 +266,7 @@ function renderMarket() {
       var d = Darkys.claimMarket(ETER.id);
       if (!d) return;
       last = d;
+      $('equipBtn').style.display = '';
       $('shake').style.display = 'none';
       $('prize').innerHTML = '<div class="new" style="color:#ff5cf0">✨ MYSTICAL! ✨</div>' +
         '<div class="em mys" style="box-shadow:0 0 90px ' + r.color + '">' + d.em + '</div>' +
@@ -286,7 +287,9 @@ function renderMarket() {
 }
 
 function render() {
-  $('tokens').textContent = Darkys.tokens();
+  var won = Darkys.claimPrize();
+  if (won) showPrize(won);
+  $('tokens').textContent = Darkys.tokens().toLocaleString('en-US');
 
   renderTournament();
   renderMarket();
@@ -331,6 +334,7 @@ function openBox(id) {
   var res = Darkys.open(id);
   if (res.error) { toast(res.error); render(); return; }
   last = res.darky;
+  $('equipBtn').style.display = '';
   var r = R[res.darky.r];
   $('shake').textContent = Darkys.BOXES[id].icon;
   $('shake').style.display = '';
@@ -349,6 +353,19 @@ function openBox(id) {
     $('rbtns').className = 'rbtns on';
     render();
   }, 1400);
+}
+
+function showPrize(n) {
+  last = null;
+  $('shake').style.display = 'none';
+  $('prize').innerHTML = '<div class="new" style="color:#ffc83d">🏆 TOURNAMENT PRIZE 🏆</div>' +
+    '<div class="em" style="border-color:#ffc83d;box-shadow:0 0 70px #ffc83d">🎟️</div>' +
+    '<div class="nm">+' + n.toLocaleString('en-US') + ' tokens</div>' +
+    '<div class="note">You finished #' + T.rank() + ' in the Etermaximus Tournament!</div>';
+  $('prize').className = 'prize on';
+  $('equipBtn').style.display = 'none';
+  $('rbtns').className = 'rbtns on';
+  $('reveal').className = 'reveal on';
 }
 
 $('freeBtn').onclick = function () { openBox('free'); };
