@@ -140,6 +140,14 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .owner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
 .owner select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px}
 @media (max-width:720px){ .seas{grid-template-columns:1fr 1fr} }
+/* religious holidays */
+.holybox{border-color:#ffe9a8!important;box-shadow:0 0 22px rgba(255,233,168,.18);background:linear-gradient(120deg,#2b2614,#1d1b2b 55%,#1c2340)!important}
+.holy{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.holy .crate{flex:none;width:min(300px,100%);border-color:#ffe9a8}
+.holy .info{flex:1;min-width:220px;color:var(--muted);font-size:14px;line-height:1.5}
+.holy .info b{color:#ffe9a8}
+.faiths{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.faiths span{background:var(--panel2);border:2px solid #57509a;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:900;color:#fff}
 /* holiday Darky */
 .rr.umcr{background:linear-gradient(90deg,#ff8a3d,#ff5cf0,#7dfcff,#ff8a3d);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:umc 3s linear infinite}
 @keyframes umc{to{background-position:200% 0}}
@@ -220,6 +228,21 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <div class="evown" id="evOwner" style="display:none"></div>
       <div id="ev"></div>
     </div>
+
+    <div class="box holybox">
+      <h2><span>🕊️ RELIGIOUS HOLIDAYS</span><span>🎟️ 50</span></h2>
+      <div class="holy">
+        <div class="crate">
+          <div class="ic">🛐</div>
+          <div class="nm">FAITH PACK</div>
+          <div class="odds">Every religious holiday Darky<br>All Sacred, all equally likely</div>
+          <button class="buy" id="holyBtn">OPEN 1 · 🎟️ 50</button>
+          <div class="packs" id="holyPacks"></div>
+          <button class="buy allbtn" id="holyAll">SPEND ALL</button>
+        </div>
+        <div class="info" id="holyInfo"></div>
+      </div>
+    </div>
   </div>
 
   <div class="reveal" id="reveal">
@@ -234,7 +257,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=15"></script>
+<script src="../darkys.js?v=16"></script>
 <script>
 (function () {
 'use strict';
@@ -382,6 +405,7 @@ function render() {
   $('count').textContent = have + '/' + shown;
   renderSeasons();
   renderEvent();
+  renderHoly();
 }
 
 function toast(t) {
@@ -521,6 +545,33 @@ function renderSeasons() {
   });
 }
 buildSeasons();
+
+// ---------- religious holidays ----------
+[10, 50, 100, 1000].forEach(function (n) {
+  var b = document.createElement('button');
+  b.className = 'buy'; b.dataset.n = n;
+  b.innerHTML = '<b>×' + n + '</b>🎟️ ' + (50 * n).toLocaleString('en-US');
+  b.onclick = function () { openPack('holy', n); };
+  $('holyPacks').appendChild(b);
+});
+$('holyBtn').onclick = function () { openBox('holy'); };
+$('holyAll').onclick = function () { spendAllTap('holy', $('holyAll')); };
+function renderHoly() {
+  var list = Darkys.LIST.filter(function (d) { return d.holy; }), have = 0, faiths = [];
+  list.forEach(function (d) {
+    if (Darkys.owns(d.id)) have++;
+    var f = d.where.split(' · ')[0];
+    if (faiths.indexOf(f) < 0) faiths.push(f);
+  });
+  $('holyInfo').innerHTML = 'A Darky for the big holidays of every faith: Ramazan and Kurban Bayramı, Christmas, Hanukkah, Diwali, Vesak and more. ' +
+    'No dates, the pack is always open.<br><b>' + have + ' / ' + list.length + '</b> collected' +
+    '<div class="faiths">' + faiths.map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('') + '</div>';
+  var t = Darkys.tokens();
+  $('holyBtn').disabled = t < 50;
+  [].forEach.call($('holyPacks').children, function (b) { b.disabled = t < 50 * +b.dataset.n; });
+  $('holyAll').disabled = t < 50;
+  if (armedBox !== 'holy') $('holyAll').textContent = 'SPEND ALL';
+}
 
 // ---------- holiday Darky ----------
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
