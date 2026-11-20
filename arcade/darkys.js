@@ -682,9 +682,9 @@
         return s.daily;
     }
     function bump(s, what, n) {
-        var dl = daily(s);
-        if (what === 'bestGold') dl.prog[what] = Math.max(dl.prog[what] || 0, n);
-        else dl.prog[what] = (dl.prog[what] || 0) + n;
+        var dl = daily(s), st = s.stats = s.stats || {};
+        if (what === 'bestGold') { dl.prog[what] = Math.max(dl.prog[what] || 0, n); st[what] = Math.max(st[what] || 0, n); }
+        else { dl.prog[what] = (dl.prog[what] || 0) + n; st[what] = (st[what] || 0) + n; }
     }
     function hash(str) { var h = 7; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
     function todaysQuests() {
@@ -698,6 +698,8 @@
         var s = load(), dl = daily(s), q = todaysQuests().filter(function (x) { return x.id === id; })[0];
         if (!q || !q.ready || q.claimed) return 0;
         dl.done[id] = true;
+        s.stats = s.stats || {};
+        s.stats.quests = (s.stats.quests || 0) + 1;
         s.tokens += q.reward;
         save();
         return q.reward;
@@ -712,9 +714,61 @@
         var s = load(), info = streakInfo();
         if (info.claimedToday) return 0;
         s.streak = { last: dayKey(), n: info.day };
+        s.stats = s.stats || {};
+        s.stats.bestStreak = Math.max(s.stats.bestStreak || 0, info.day);
         s.tokens += info.reward;
         save();
         return info.reward;
+    }
+
+    // Badges
+    // ------
+    // Goals across the whole game. Each one pays tokens once, when claimed.
+    // [id, icon, name, what to do, reward, function returning [have, goal]]
+    function ownedWhere(s, f) { return LIST.filter(function (d) { return s.owned[d.id] && f(d); }).length; }
+    function stat(s, k) { return (s.stats && s.stats[k]) || 0; }
+    var BADGES = [
+        ['own5',     '🧸', 'Collector',      'Own 5 Darkys',                         25,  function (s) { return [Object.keys(s.owned).length, 5]; }],
+        ['own25',    '🗃️', 'Hoarder',        'Own 25 Darkys',                        75,  function (s) { return [Object.keys(s.owned).length, 25]; }],
+        ['own100',   '🏛️', 'Museum',         'Own 100 Darkys',                       250, function (s) { return [Object.keys(s.owned).length, 100]; }],
+        ['rare',     '💎', 'Rare Find',      'Get a Rare Darky',                     30,  function (s) { return [ownedWhere(s, function (d) { return d.r === 'rare'; }), 1]; }],
+        ['epic',     '🔮', 'Epic Moment',    'Get an Epic Darky',                    60,  function (s) { return [ownedWhere(s, function (d) { return d.r === 'epic'; }), 1]; }],
+        ['legend',   '👑', 'Legend',         'Get a Legendary Darky',                100, function (s) { return [ownedWhere(s, function (d) { return d.r === 'legendary'; }), 1]; }],
+        ['chroma',   '🌈', 'Glowing',        'Get a Chroma Darky',                   200, function (s) { return [ownedWhere(s, function (d) { return d.chroma; }), 1]; }],
+        ['season',   '❄️', 'Season Pass',    'Own all 7 Darkys of one season',       150, function (s) {
+            return [Math.max.apply(null, ['winter', 'spring', 'summer', 'autumn'].map(function (k) { return ownedWhere(s, function (d) { return d.season === k; }); })), 7]; }],
+        ['holiday',  '🎉', 'Holiday Spirit', 'Get a Holiday Darky',                  100, function (s) { return [ownedWhere(s, function (d) { return d.event; }), 1]; }],
+        ['travel',   '🌍', 'World Traveler', 'Get 10 Holiday Darkys',                300, function (s) { return [ownedWhere(s, function (d) { return d.event; }), 10]; }],
+        ['faith',    '🕊️', 'Faithful',       'Collect every religious holiday Darky', 300, function (s) { return [ownedWhere(s, function (d) { return d.holy; }), LIST.filter(function (d) { return d.holy; }).length]; }],
+        ['mystic',   '✨', 'Mystic',         'Own Etermaximus',                      300, function (s) { return [s.owned.etermaximus ? 1 : 0, 1]; }],
+        ['unique',   '🎨', 'One of a Kind',  'Own a Unique Darky',                   300, function (s) { return [ownedWhere(s, function (d) { return d.unique; }), 1]; }],
+        ['game1',    '🎮', 'First Game',     'Play a Gold Quiz game',                20,  function (s) { return [stat(s, 'games'), 1]; }],
+        ['game25',   '🕹️', 'Regular',        'Play 25 Gold Quiz games',              100, function (s) { return [stat(s, 'games'), 25]; }],
+        ['win1',     '🥇', 'Champion',       'Win a Gold Quiz game',                 50,  function (s) { return [stat(s, 'wins'), 1]; }],
+        ['win10',    '🏆', 'Unstoppable',    'Win 10 Gold Quiz games',               200, function (s) { return [stat(s, 'wins'), 10]; }],
+        ['right100', '🧠', 'Brainiac',       'Answer 100 questions right',           100, function (s) { return [stat(s, 'correct'), 100]; }],
+        ['gold1k',   '💰', 'Gold Rush',      'Get 1,000 gold in one game',           150, function (s) { return [stat(s, 'bestGold'), 1000]; }],
+        ['box100',   '📦', 'Unboxer',        'Open 100 boxes or packs',              50,  function (s) { return [stat(s, 'boxes'), 100]; }],
+        ['box1m',    '🏭', 'Box Tycoon',     'Open 1,000,000 boxes or packs',        500, function (s) { return [stat(s, 'boxes'), 1000000]; }],
+        ['streak7',  '🔥', 'Loyal',          'Reach a 7-day streak',                 150, function (s) { return [stat(s, 'bestStreak'), 7]; }],
+        ['quest10',  '📜', 'Quest Master',   'Finish 10 daily quests',               150, function (s) { return [stat(s, 'quests'), 10]; }]
+    ];
+    function badges() {
+        var s = load();
+        s.badges = s.badges || {};
+        return BADGES.map(function (b) {
+            var hg = b[5](s), have = Math.min(hg[0], hg[1]);
+            return { id: b[0], icon: b[1], name: b[2], text: b[3], reward: b[4], have: have, goal: hg[1],
+                ready: have >= hg[1], claimed: !!s.badges[b[0]] };
+        });
+    }
+    function claimBadge(id) {
+        var s = load(), b = badges().filter(function (x) { return x.id === id; })[0];
+        if (!b || !b.ready || b.claimed) return 0;
+        s.badges[id] = true;
+        s.tokens += b.reward;
+        save();
+        return b.reward;
     }
 
     window.Darkys = {
@@ -795,6 +849,8 @@
         eventNow: eventNow,
         buyEvent: buyEvent,
         quests: todaysQuests,
+        badges: badges,
+        claimBadge: claimBadge,
         claimQuest: claimQuest,
         streak: streakInfo,
         claimStreak: claimStreak,
