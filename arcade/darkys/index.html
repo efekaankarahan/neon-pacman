@@ -134,24 +134,11 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 
   <h1>DARKYS</h1>
   <p class="tag">Collect them all. Your first Darky is free!</p>
-  <a href="../draw/" style="display:block;margin:-12px 0 22px;color:#ff5cf0;font-weight:900;text-align:center;text-decoration:none">🎨 Drawing contest: the 2 best drawings become Unique Darkys! &rarr;</a>
 
   <div class="wrap">
     <div class="box">
       <h2><span>YOU PLAY AS</span></h2>
       <div class="me" id="me"></div>
-    </div>
-
-    <div class="box tour" id="tour">
-      <div class="head">
-        <div class="orb">🏆</div>
-        <div>
-          <div class="t1">ETERMAXIMUS TOURNAMENT</div>
-          <div class="t2" id="tourMsg"></div>
-          <div class="t3" id="tourLeft"></div>
-        </div>
-      </div>
-      <div id="tourRows"></div>
     </div>
 
     <div class="box">
@@ -307,7 +294,6 @@ function render() {
   if (won) showPrize(won);
   $('tokens').textContent = Darkys.tokens().toLocaleString('en-US');
 
-  renderTournament();
   renderMarket();
   var unlocked = Darkys.marketUnlocked(), over = T.state() === 'over';
 
