@@ -47,6 +47,15 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .crate.free{border-color:#7ee8ff}
 .buy{font-family:'Press Start 2P',monospace;font-size:11px;padding:13px 16px;border-radius:12px;background:var(--gold);color:#3b2400;box-shadow:0 5px 0 #a06a00;width:100%}
 .buy:active{transform:translateY(3px);box-shadow:0 2px 0 #a06a00}
+.packs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+.packs .buy{font-size:8px;padding:9px 2px;line-height:1.6;box-shadow:0 4px 0 #a06a00}
+.packs .buy b{display:block;font-size:12px}
+.sum{display:none;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;width:min(680px,100%);max-height:52vh;overflow:auto;padding:4px}
+.sum.on{display:grid}
+.sum .card{cursor:default}
+.sum .tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#7dffb2;color:#073;font-family:'Press Start 2P',monospace;font-size:7px;padding:3px 5px;border-radius:5px}
+.sumhead{display:none;font-family:'Press Start 2P',monospace;font-size:13px;color:var(--gold);text-align:center;line-height:1.7}
+.sumhead.on{display:block}
 .free .buy{background:#7ee8ff;color:#0b3442;box-shadow:0 5px 0 #2a8aa6}
 .buy:disabled{background:#3a3660;color:#8d8aa8;box-shadow:none;cursor:default}
 
@@ -160,7 +169,8 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
           <div class="ic">📦</div>
           <div class="nm">DARK BOX</div>
           <div class="odds" id="darkOdds">Every rarity, even<br>Epic &amp; Legendary</div>
-          <button class="buy" id="darkBtn">OPEN · 🎟️ 25</button>
+          <button class="buy" id="darkBtn">OPEN 1 · 🎟️ 25</button>
+          <div class="packs" id="packs"></div>
         </div>
       </div>
     </div>
@@ -176,6 +186,8 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   <div class="reveal" id="reveal">
     <div class="shake" id="shake">📦</div>
     <div class="prize" id="prize"></div>
+    <div class="sumhead" id="sumHead"></div>
+    <div class="sum" id="sum"></div>
     <div class="rbtns" id="rbtns">
       <button class="buy" id="equipBtn" style="width:auto">PLAY AS IT</button>
       <button class="ghost" id="closeBtn">CLOSE</button>
@@ -183,7 +195,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=7"></script>
+<script src="../darkys.js?v=8"></script>
 <script>
 (function () {
 'use strict';
@@ -304,6 +316,9 @@ function render() {
   $('freeBtn').disabled = wait > 0;
   $('freeBtn').textContent = wait > 0 ? 'IN ' + timeLeft(wait) : 'OPEN FREE';
   $('darkBtn').disabled = Darkys.tokens() < Darkys.BOXES.dark.cost;
+  [].forEach.call($('packs').children, function (b) {
+    b.disabled = Darkys.tokens() < Darkys.BOXES.dark.cost * +b.dataset.n;
+  });
 
   var grid = $('grid');
   grid.innerHTML = '';
@@ -330,7 +345,59 @@ function toast(t) {
   clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 2200);
 }
 
+var PACKS = [10, 50, 100, 1000];
+PACKS.forEach(function (n) {
+  var b = document.createElement('button');
+  b.className = 'buy';
+  b.dataset.n = n;
+  b.innerHTML = '<b>×' + n + '</b>🎟️ ' + (Darkys.BOXES.dark.cost * n).toLocaleString('en-US');
+  b.onclick = function () { openPack(n); };
+  $('packs').appendChild(b);
+});
+
+function hideSummary() {
+  $('sum').className = 'sum';
+  $('sumHead').className = 'sumhead';
+}
+
+function openPack(n) {
+  var res = Darkys.openMany('dark', n);
+  if (res.error) { toast(res.error); render(); return; }
+  last = null;
+  hideSummary();
+  $('equipBtn').style.display = 'none';
+  $('shake').textContent = '📦';
+  $('shake').style.display = '';
+  $('prize').className = 'prize';
+  $('rbtns').className = 'rbtns';
+  $('reveal').className = 'reveal on';
+  if (window.gtag) gtag('event', 'darkys_pack', { size: n });
+  setTimeout(function () {
+    $('shake').style.display = 'none';
+    var best = res.list[0].darky, br = R[best.r];
+    $('sumHead').innerHTML = 'OPENED ' + n.toLocaleString('en-US') + ' DARK BOXES<br>' +
+      '<span style="color:#7dffb2">' + res.fresh + ' NEW</span> · BEST: <span style="color:' + br.color + '">' + br.name.toUpperCase() + '</span>' +
+      (res.refund ? '<br><span style="color:var(--muted)">DUPLICATES: +' + res.refund.toLocaleString('en-US') + ' 🎟️</span>' : '');
+    var sum = $('sum');
+    sum.innerHTML = '';
+    res.list.forEach(function (g) {
+      var rr = R[g.darky.r], c = document.createElement('div');
+      c.className = 'card' + (isMys(g.darky) ? ' mys' : '');
+      c.style.borderColor = rr.color;
+      c.innerHTML = (g.isNew ? '<span class="tag">NEW</span>' : '') +
+        '<span class="ct">x' + g.count.toLocaleString('en-US') + '</span><span class="em">' + g.darky.em + '</span>' +
+        '<span class="nm">' + esc(g.darky.name) + '</span><span class="' + rrClass(g.darky) + '" style="color:' + rr.color + '">' + rr.name.toUpperCase() + '</span>';
+      sum.appendChild(c);
+    });
+    $('sumHead').className = 'sumhead on';
+    sum.className = 'sum on';
+    $('rbtns').className = 'rbtns on';
+    render();
+  }, 1400);
+}
+
 function openBox(id) {
+  hideSummary();
   var res = Darkys.open(id);
   if (res.error) { toast(res.error); render(); return; }
   last = res.darky;
@@ -357,6 +424,7 @@ function openBox(id) {
 
 function showPrize(n) {
   last = null;
+  hideSummary();
   $('shake').style.display = 'none';
   $('prize').innerHTML = '<div class="new" style="color:#ffc83d">🏆 TOURNAMENT PRIZE 🏆</div>' +
     '<div class="em" style="border-color:#ffc83d;box-shadow:0 0 70px #ffc83d">🎟️</div>' +
@@ -371,7 +439,7 @@ function showPrize(n) {
 $('freeBtn').onclick = function () { openBox('free'); };
 $('darkBtn').onclick = function () { openBox('dark'); };
 $('equipBtn').onclick = function () { if (last) Darkys.select(last.id); $('reveal').className = 'reveal'; render(); };
-$('closeBtn').onclick = function () { $('reveal').className = 'reveal'; render(); };
+$('closeBtn').onclick = function () { $('reveal').className = 'reveal'; hideSummary(); render(); };
 
 render();
 setInterval(render, 60000);
