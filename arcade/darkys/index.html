@@ -123,6 +123,23 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .card.gone{opacity:.2}
 .play{display:block;text-align:center;font-family:'Press Start 2P',monospace;font-size:12px;color:#3b2400;background:var(--gold);
   padding:15px;border-radius:12px;text-decoration:none;box-shadow:0 5px 0 #a06a00}
+/* seasonal packs */
+.seas{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.seas .crate{padding:14px 8px;gap:8px}
+.seas .crate .ic{font-size:46px}
+.seas .crate .nm{font-size:10px}
+.seas .crate.open{border-color:#7dfcff;box-shadow:0 0 18px rgba(125,252,255,.35)}
+.seas .crate.shut{opacity:.55}
+.seas .crate.shut .ic{filter:grayscale(1)}
+.seas .lockt{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--muted);line-height:1.6}
+.seas .opent{font-family:'Press Start 2P',monospace;font-size:9px;color:#7dfcff}
+.seas .packs{grid-template-columns:repeat(2,1fr)}
+.seas .buy{font-size:9px;padding:10px 4px}
+.seasinfo{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.seasinfo b{color:#7dfcff}
+.owner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
+.owner select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px}
+@media (max-width:720px){ .seas{grid-template-columns:1fr 1fr} }
 @media (max-width:520px){ .shop{grid-template-columns:1fr} .me .big{width:76px;height:76px;font-size:42px} }
 </style>
 </head>
@@ -166,6 +183,13 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       </div>
     </div>
 
+    <div class="box">
+      <h2><span>SEASONAL PACKS</span><span>🎟️ 100 EACH</span></h2>
+      <div class="owner" id="ownerRow" style="display:none"></div>
+      <div class="seasinfo" id="seasInfo"></div>
+      <div class="seas" id="seas"></div>
+    </div>
+
     <a class="play" href="../gold-quiz/">PLAY GOLD QUIZ TO EARN 🎟️</a>
 
     <div class="box">
@@ -186,7 +210,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=11"></script>
+<script src="../darkys.js?v=12"></script>
 <script>
 (function () {
 'use strict';
@@ -196,7 +220,7 @@ var last = null;
 
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-function isMys(d) { return d.r === 'mystical'; }
+function isMys(d) { return d.r === 'mystical' || d.r === 'chroma'; }
 function rrClass(d) { return 'rr' + (isMys(d) ? ' mysr' : ''); }
 
 function timeLeft(ms) {
@@ -307,7 +331,7 @@ function render() {
   $('freeBtn').textContent = wait > 0 ? 'IN ' + timeLeft(wait) : 'OPEN FREE';
   $('darkBtn').disabled = Darkys.tokens() < Darkys.BOXES.dark.cost;
   $('allBtn').disabled = Darkys.tokens() < Darkys.BOXES.dark.cost;
-  if (!allArmed) $('allBtn').textContent = 'SPEND ALL 🎟️ ' + Darkys.tokens().toLocaleString('en-US');
+  if (armedBox !== 'dark') $('allBtn').textContent = 'SPEND ALL 🎟️ ' + Darkys.tokens().toLocaleString('en-US');
   [].forEach.call($('packs').children, function (b) {
     b.disabled = Darkys.tokens() < Darkys.BOXES.dark.cost * +b.dataset.n;
   });
@@ -315,8 +339,11 @@ function render() {
   var grid = $('grid');
   grid.innerHTML = '';
   var have = 0;
+  var shown = 0;
   Darkys.LIST.forEach(function (d) {
     var owned = Darkys.owns(d.id), rr = R[d.r];
+    if (d.chroma && !owned) return;      // Chromas stay secret until you get one
+    shown++;
     var gone = !owned && d.market && over && !unlocked;
     if (owned) have++;
     var c = document.createElement(owned ? 'button' : 'div');
@@ -328,7 +355,8 @@ function render() {
     if (owned) c.onclick = function () { Darkys.select(d.id); render(); };
     grid.appendChild(c);
   });
-  $('count').textContent = have + '/' + Darkys.LIST.length;
+  $('count').textContent = have + '/' + shown;
+  renderSeasons();
 }
 
 function toast(t) {
@@ -343,7 +371,7 @@ PACKS.forEach(function (n) {
   b.className = 'buy';
   b.dataset.n = n;
   b.innerHTML = '<b>×' + n + '</b>🎟️ ' + (Darkys.BOXES.dark.cost * n).toLocaleString('en-US');
-  b.onclick = function () { openPack(n); };
+  b.onclick = function () { openPack('dark', n); };
   $('packs').appendChild(b);
 });
 
@@ -352,28 +380,29 @@ function hideSummary() {
   $('sumHead').className = 'sumhead';
 }
 
-function openPack(n, all) {
-  if (Darkys.tokens() < Darkys.BOXES.dark.cost * (all ? 1 : n)) { toast('Not enough tokens'); render(); return; }
+function openPack(boxId, n, all) {
+  var box = Darkys.BOXES[boxId];
+  if (Darkys.tokens() < box.cost * (all ? 1 : n)) { toast('Not enough tokens'); render(); return; }
   last = null;
   hideSummary();
   $('equipBtn').style.display = 'none';
-  $('shake').textContent = '📦';
+  $('shake').textContent = box.icon;
   $('shake').style.display = '';
   $('prize').className = 'prize';
   $('rbtns').className = 'rbtns';
   $('reveal').className = 'reveal on';
-  if (window.gtag) gtag('event', 'darkys_pack', { size: all ? 'all' : n });
+  if (window.gtag) gtag('event', 'darkys_pack', { box: boxId, size: all ? 'all' : n });
   var t0 = Date.now(), res;
   // let the box start shaking before the (possibly long) roll
   setTimeout(function () {
-    res = all ? Darkys.spendAll() : Darkys.openMany('dark', n);
+    res = all ? Darkys.spendAll(boxId) : Darkys.openMany(boxId, n);
     setTimeout(showPack, Math.max(0, 1400 - (Date.now() - t0)));
   }, 60);
   function showPack() {
     if (res.error) { $('reveal').className = 'reveal'; toast(res.error); render(); return; }
     $('shake').style.display = 'none';
     var best = res.list[0].darky, br = R[best.r];
-    $('sumHead').innerHTML = (all ? 'SPENT IT ALL!<br>' : '') + 'OPENED ' + res.count.toLocaleString('en-US') + ' DARK BOXES<br>' +
+    $('sumHead').innerHTML = (all ? 'SPENT IT ALL!<br>' : '') + 'OPENED ' + res.count.toLocaleString('en-US') + ' × ' + box.name.toUpperCase() + '<br>' +
       '<span style="color:#7dffb2">' + res.fresh + ' NEW</span> · BEST: <span style="color:' + br.color + '">' + br.name.toUpperCase() + '</span>' +
       (res.refund ? '<br><span style="color:var(--muted)">DUPLICATES: +' + res.refund.toLocaleString('en-US') + ' 🎟️</span>' : '');
     var sum = $('sum');
@@ -395,17 +424,78 @@ function openPack(n, all) {
 }
 
 // Spend All: two taps, so nobody spends everything by accident.
-var allArmed = 0;
-$('allBtn').onclick = function () {
-  if (Date.now() - allArmed > 3000) {
-    allArmed = Date.now();
-    $('allBtn').textContent = 'SURE? TAP AGAIN';
-    setTimeout(function () { allArmed = 0; render(); }, 3000);
+var allArmed = 0, armedBox = '';
+function spendAllTap(boxId, btn) {
+  if (armedBox !== boxId || Date.now() - allArmed > 3000) {
+    allArmed = Date.now(); armedBox = boxId;
+    btn.textContent = 'SURE? TAP AGAIN';
+    setTimeout(function () { allArmed = 0; armedBox = ''; render(); }, 3000);
     return;
   }
-  allArmed = 0;
-  openPack(0, true);
-};
+  allArmed = 0; armedBox = '';
+  openPack(boxId, 0, true);
+}
+$('allBtn').onclick = function () { spendAllTap('dark', $('allBtn')); };
+
+// ---------- seasonal packs ----------
+var SEAS_ORDER = ['winter', 'spring', 'summer', 'autumn'];
+var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+function buildSeasons() {
+  var host = $('seas');
+  SEAS_ORDER.forEach(function (id) {
+    var S = Darkys.SEASONS[id], c = document.createElement('div');
+    c.className = 'crate';
+    c.id = 'sp-' + id;
+    c.innerHTML = '<div class="ic">' + S.icon + '</div><div class="nm">' + S.name.toUpperCase() + '</div>' +
+      '<div class="st"></div>' +
+      '<button class="buy one">OPEN 1 · 🎟️ 100</button>' +
+      '<div class="packs"></div>' +
+      '<button class="buy allbtn">SPEND ALL</button>';
+    c.querySelector('.one').onclick = function () { openBox(id); };
+    [10, 50, 100, 1000].forEach(function (n) {
+      var b = document.createElement('button');
+      b.className = 'buy'; b.dataset.n = n;
+      b.innerHTML = '<b>×' + n + '</b>';
+      b.onclick = function () { openPack(id, n); };
+      c.querySelector('.packs').appendChild(b);
+    });
+    var all = c.querySelector('.allbtn');
+    all.onclick = function () { spendAllTap(id, all); };
+    host.appendChild(c);
+  });
+  if (Darkys.isOwner()) {
+    var row = $('ownerRow'), sel = document.createElement('select');
+    for (var y = Darkys.CHROMA_FIRST; y <= Darkys.CHROMA_LAST; y++) {
+      var o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o);
+    }
+    sel.value = Darkys.chromaYear();
+    sel.onchange = function () { Darkys.setChromaYear(sel.value); render(); };
+    row.innerHTML = '<span>👑 OWNER · ALL PACKS OPEN · CHROMA YEAR</span>';
+    row.appendChild(sel);
+    row.style.display = '';
+  }
+}
+function renderSeasons() {
+  var y = Darkys.chromaYear(), ch = Darkys.chromasOf(y), t = Darkys.tokens();
+  $('seasInfo').innerHTML = 'Each pack opens for <b>one day</b>: the first day of its season. Inside: Darkys you can only get from that season, ' +
+    'and a tiny chance of a <b>Chroma</b>, a glowing Darky.' +
+    (ch.length ? '<br>' + y + ' Chromas: <b>' + ch.length + '</b> to find' : '');
+  SEAS_ORDER.forEach(function (id) {
+    var c = $('sp-' + id), open = Darkys.seasonOpen(id);
+    c.className = 'crate ' + (open ? 'open' : 'shut');
+    var d = Darkys.nextOpen(id);
+    c.querySelector('.st').innerHTML = open
+      ? '<span class="opent">' + (Darkys.isOwner() ? 'OPEN (OWNER)' : 'OPEN TODAY ONLY!') + '</span>'
+      : '<span class="lockt">🔒 LOCKED<br>OPENS ' + MONTHS[d.getMonth()] + ' 1, ' + d.getFullYear() + '</span>';
+    [].forEach.call(c.querySelectorAll('.buy'), function (b) { b.style.display = open ? '' : 'none'; });
+    c.querySelector('.one').disabled = t < 100;
+    [].forEach.call(c.querySelectorAll('.packs .buy'), function (b) { b.disabled = t < 100 * +b.dataset.n; });
+    var all = c.querySelector('.allbtn');
+    all.disabled = t < 100;
+    if (armedBox !== id) all.textContent = 'SPEND ALL';
+  });
+}
+buildSeasons();
 
 function openBox(id) {
   hideSummary();
@@ -423,7 +513,7 @@ function openBox(id) {
   setTimeout(function () {
     $('shake').style.display = 'none';
     var mys = isMys(res.darky);
-    $('prize').innerHTML = (mys ? '<div class="new" style="color:#ff5cf0">✨ MYSTICAL! ✨</div>' : res.isNew ? '<div class="new">NEW DARKY!</div>' : '') +
+    $('prize').innerHTML = (mys ? '<div class="new" style="color:' + r.color + '">✨ ' + r.name.toUpperCase() + '! ✨</div>' : res.isNew ? '<div class="new">NEW DARKY!</div>' : '') +
       '<div class="em' + (mys ? ' mys' : '') + '" style="border-color:' + r.color + ';box-shadow:0 0 ' + (mys ? 90 : 50) + 'px ' + r.color + '">' + res.darky.em + '</div>' +
       '<div class="nm">' + esc(res.darky.name) + '</div><div class="' + rrClass(res.darky) + '" style="color:' + r.color + '">' + r.name.toUpperCase() + '</div>' +
       (res.isNew ? '' : '<div class="note">Already had it: +' + res.refund + ' 🎟️</div>');
