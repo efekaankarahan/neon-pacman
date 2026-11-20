@@ -140,6 +140,22 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .owner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
 .owner select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px}
 @media (max-width:720px){ .seas{grid-template-columns:1fr 1fr} }
+/* daily */
+.dailybox{border-color:#7dffb2!important}
+.streak{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.streak .days{display:flex;gap:6px;flex-wrap:wrap}
+.streak .d{width:46px;padding:6px 0;border-radius:10px;background:var(--panel2);border:2px solid #57509a;text-align:center;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--muted);line-height:1.8}
+.streak .d b{display:block;font-size:9px;color:var(--gold)}
+.streak .d.got{border-color:#7dffb2;color:#7dffb2}
+.streak .d.now{border-color:var(--gold);box-shadow:0 0 12px rgba(255,200,61,.5)}
+.streak .buy{width:auto}
+.quest{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--panel2);margin-top:8px;flex-wrap:wrap}
+.quest .qt{flex:1;min-width:160px;font-weight:900}
+.quest .bar{height:8px;border-radius:99px;background:#3a3660;margin-top:6px;overflow:hidden}
+.quest .bar i{display:block;height:100%;background:#7dffb2}
+.quest .qn{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--muted);margin-top:6px}
+.quest .buy{width:auto;font-size:9px;padding:10px 12px}
+.quest.claimed{opacity:.5}
 /* religious holidays */
 .holybox{border-color:#ffe9a8!important;box-shadow:0 0 22px rgba(255,233,168,.18);background:linear-gradient(120deg,#2b2614,#1d1b2b 55%,#1c2340)!important}
 .holy{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
@@ -182,6 +198,12 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
     <div class="box">
       <h2><span>YOU PLAY AS</span></h2>
       <div class="me" id="me"></div>
+    </div>
+
+    <div class="box dailybox">
+      <h2><span>📅 DAILY</span><span id="dailyLeft"></span></h2>
+      <div class="streak" id="streak"></div>
+      <div id="quests"></div>
     </div>
 
     <div class="box">
@@ -257,7 +279,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=16"></script>
+<script src="../darkys.js?v=17"></script>
 <script>
 (function () {
 'use strict';
@@ -406,6 +428,7 @@ function render() {
   renderSeasons();
   renderEvent();
   renderHoly();
+  renderDaily();
 }
 
 function toast(t) {
@@ -545,6 +568,53 @@ function renderSeasons() {
   });
 }
 buildSeasons();
+
+// ---------- daily quests and streak ----------
+function reward(n, what) {
+  last = null;
+  hideSummary();
+  $('shake').style.display = 'none';
+  $('equipBtn').style.display = 'none';
+  $('prize').innerHTML = '<div class="new">' + what + '</div>' +
+    '<div class="em" style="border-color:#7dffb2;box-shadow:0 0 60px #7dffb2">🎟️</div>' +
+    '<div class="nm">+' + n.toLocaleString('en-US') + ' tokens</div>';
+  $('prize').className = 'prize on';
+  $('rbtns').className = 'rbtns on';
+  $('reveal').className = 'reveal on';
+  render();
+}
+function renderDaily() {
+  var st = Darkys.streak(), cur = (st.day - 1) % st.table.length;
+  var h = '<div class="days">' + st.table.map(function (t, i) {
+    var cls = i < cur || (i === cur && st.claimedToday) ? ' got' : i === cur ? ' now' : '';
+    return '<div class="d' + cls + '">DAY ' + (i + 1) + '<b>' + t + '</b></div>';
+  }).join('') + '</div>';
+  h += st.claimedToday
+    ? '<span class="pixel" style="font-size:9px;color:#7dffb2">✓ DAY ' + st.day + ' CLAIMED · COME BACK TOMORROW</span>'
+    : '<button class="buy" id="streakBtn">CLAIM DAY ' + st.day + ' · 🎟️ ' + st.reward + '</button>';
+  $('streak').innerHTML = h;
+  if (!st.claimedToday) $('streakBtn').onclick = function () {
+    var n = Darkys.claimStreak();
+    if (n) reward(n, '📅 DAY ' + st.day + ' STREAK!');
+  };
+  var qs = Darkys.quests(), host = $('quests');
+  host.innerHTML = '';
+  qs.forEach(function (q) {
+    var d = document.createElement('div');
+    d.className = 'quest' + (q.claimed ? ' claimed' : '');
+    d.innerHTML = '<div class="qt">' + esc(q.text) + '<div class="bar"><i style="width:' + Math.round(q.have / q.goal * 100) + '%"></i></div>' +
+      '<div class="qn">' + q.have + ' / ' + q.goal + '  ·  🎟️ ' + q.reward + '</div></div>' +
+      (q.claimed ? '<span class="pixel" style="font-size:9px;color:#7dffb2">✓ DONE</span>'
+        : q.ready ? '<button class="buy">CLAIM 🎟️ ' + q.reward + '</button>'
+        : '<a class="buy" style="text-decoration:none;text-align:center;background:#3a3660;color:#fff;box-shadow:none" href="' +
+          (/faith/i.test(q.text) ? '#holyBtn' : /box|pack/i.test(q.text) ? '#packs' : '../gold-quiz/') + '">' + (/box|pack/i.test(q.text) ? 'OPEN' : 'PLAY') + '</a>');
+    var b = d.querySelector('button');
+    if (b) b.onclick = function () { var n = Darkys.claimQuest(q.id); if (n) reward(n, '✅ QUEST DONE!'); };
+    host.appendChild(d);
+  });
+  var now = new Date(), mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  $('dailyLeft').textContent = 'NEW QUESTS IN ' + timeLeft(mid - now);
+}
 
 // ---------- religious holidays ----------
 [10, 50, 100, 1000].forEach(function (n) {
