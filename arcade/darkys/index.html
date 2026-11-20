@@ -140,6 +140,23 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .owner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
 .owner select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px}
 @media (max-width:720px){ .seas{grid-template-columns:1fr 1fr} }
+/* holiday Darky */
+.rr.umcr{background:linear-gradient(90deg,#ff8a3d,#ff5cf0,#7dfcff,#ff8a3d);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:umc 3s linear infinite}
+@keyframes umc{to{background-position:200% 0}}
+.umc{border-color:transparent!important;background:
+  linear-gradient(var(--panel2),var(--panel2)) padding-box,
+  linear-gradient(120deg,#ff8a3d,#ff5cf0,#7dfcff,#ff8a3d) border-box!important;
+  background-size:100% 100%,300% 300%!important;animation:mys 2s linear infinite}
+.evbox{border-color:#ffb36b!important;box-shadow:0 0 26px rgba(255,140,90,.25);background:linear-gradient(120deg,#3a1d14,#1d1b2b 50%,#123446)!important}
+.ev{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.ev .big{width:130px;height:130px;flex:none;border-radius:24px;display:grid;place-items:center;font-size:72px;border:5px solid}
+.ev .big.locked{filter:grayscale(1) brightness(.5)}
+.ev .nm{font-weight:900;font-size:24px}
+.ev .where{font-weight:900;color:#ffb36b;margin-top:4px}
+.ev .why{color:var(--muted);font-size:14px;margin-top:6px;line-height:1.4}
+.ev .buy{width:auto;margin-top:12px;padding:13px 22px}
+.evown{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
+.evown select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px;max-width:100%}
 @media (max-width:520px){ .shop{grid-template-columns:1fr} .me .big{width:76px;height:76px;font-size:42px} }
 </style>
 </head>
@@ -196,6 +213,12 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
       <h2><span>COLLECTION</span><span id="count"></span></h2>
       <div class="grid" id="grid"></div>
     </div>
+
+    <div class="box evbox">
+      <h2><span>🌍 HOLIDAY DARKY</span><span>🎟️ 200</span></h2>
+      <div class="evown" id="evOwner" style="display:none"></div>
+      <div class="ev" id="ev"></div>
+    </div>
   </div>
 
   <div class="reveal" id="reveal">
@@ -210,7 +233,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=13"></script>
+<script src="../darkys.js?v=14"></script>
 <script>
 (function () {
 'use strict';
@@ -220,8 +243,8 @@ var last = null;
 
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-function isMys(d) { return d.r === 'mystical' || d.r === 'chroma'; }
-function rrClass(d) { return 'rr' + (isMys(d) ? ' mysr' : ''); }
+function isMys(d) { return d.r === 'mystical' || d.r === 'chroma' || d.r === 'mystichroma'; }
+function rrClass(d) { return 'rr' + (d.r === 'mystichroma' ? ' umcr' : isMys(d) ? ' mysr' : ''); }
 
 function timeLeft(ms) {
   var h = Math.floor(ms / 3600000), m = Math.ceil((ms % 3600000) / 60000);
@@ -342,7 +365,7 @@ function render() {
   var shown = 0;
   Darkys.LIST.forEach(function (d) {
     var owned = Darkys.owns(d.id), rr = R[d.r];
-    if (d.chroma && !owned) return;      // Chromas stay secret until you get one
+    if ((d.chroma || d.event) && !owned) return;      // Chromas and holiday Darkys stay secret until you get one
     shown++;
     var gone = !owned && d.market && over && !unlocked;
     if (owned) have++;
@@ -357,6 +380,7 @@ function render() {
   });
   $('count').textContent = have + '/' + shown;
   renderSeasons();
+  renderEvent();
 }
 
 function toast(t) {
@@ -496,6 +520,59 @@ function renderSeasons() {
   });
 }
 buildSeasons();
+
+// ---------- holiday Darky ----------
+var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtDay(d) { return MON[d.getMonth()] + ' ' + d.getDate(); }
+var evPick = '';
+if (Darkys.isOwner()) {
+  var esel = document.createElement('select');
+  esel.innerHTML = '<option value="">Today\'s holiday</option>' + Darkys.EVENTS.map(function (d) {
+    return '<option value="' + d.id + '">' + esc(d.name) + ' · ' + esc(d.where) + '</option>';
+  }).join('');
+  esel.onchange = function () { evPick = esel.value; render(); };
+  $('evOwner').innerHTML = '<span>👑 OWNER · BUY ANY</span>';
+  $('evOwner').appendChild(esel);
+  $('evOwner').style.display = '';
+}
+function renderEvent() {
+  var st = Darkys.eventNow(), host = $('ev'), r = R.mystichroma;
+  var d = evPick ? Darkys.get(evPick) : st.live && st.live.darky;
+  if (!d) {
+    var nx = st.next;
+    host.innerHTML = '<div class="big locked umc">🔒</div><div><div class="nm">No holiday today</div>' +
+      '<div class="rr umcr">MYSTICHROMA</div>' +
+      (nx ? '<div class="why">Next: <b style="color:#fff">' + esc(nx.darky.where.split(' · ')[1]) + '</b> on ' + fmtDay(nx.start) +
+        ' (' + esc(nx.darky.where.split(' · ')[0]) + '). A new glowing Darky will be on sale.</div>' : '') + '</div>';
+    return;
+  }
+  var owned = Darkys.owns(d.id), until = !evPick && st.live ? st.live.end : null;
+  if (until) until = new Date(until.getTime() - 1);
+  host.innerHTML = '<div class="big umc" style="box-shadow:0 0 40px ' + r.color + '">' + d.em + '</div>' +
+    '<div><div class="nm">' + esc(d.name) + '</div><div class="rr umcr">MYSTICHROMA · ONLY 1</div>' +
+    '<div class="where">' + esc(d.where) + '</div>' +
+    '<div class="why">' + (owned ? 'You have it! It never comes back to the shop.' :
+      (until ? 'On sale until ' + fmtDay(until) + '. After that it is gone until next year.' : 'Owner pick.')) + '</div>' +
+    (owned ? '' : '<button class="buy" id="evBuy">BUY · 🎟️ ' + Darkys.EVENT_COST + '</button>') + '</div>';
+  if (!owned) {
+    $('evBuy').disabled = Darkys.tokens() < Darkys.EVENT_COST;
+    $('evBuy').onclick = function () {
+      var res = Darkys.buyEvent(d.id);
+      if (res.error) { toast(res.error); render(); return; }
+      last = res.darky;
+      hideSummary();
+      $('shake').style.display = 'none';
+      $('equipBtn').style.display = '';
+      $('prize').innerHTML = '<div class="new" style="color:' + r.color + '">✨ MYSTICHROMA! ✨</div>' +
+        '<div class="em umc" style="box-shadow:0 0 90px ' + r.color + '">' + res.darky.em + '</div>' +
+        '<div class="nm">' + esc(res.darky.name) + '</div><div class="rr umcr">' + esc(res.darky.where) + '</div>';
+      $('prize').className = 'prize on';
+      $('rbtns').className = 'rbtns on';
+      $('reveal').className = 'reveal on';
+      render();
+    };
+  }
+}
 
 function openBox(id) {
   hideSummary();
