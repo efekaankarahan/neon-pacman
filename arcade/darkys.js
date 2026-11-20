@@ -262,23 +262,49 @@
     // Open the same box n times in one go (Dark Box packs of 10, 50, 100, 1000).
     // Pays for the whole pack up front, so it opens all n or none.
     var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'mystical'];
-    function openMany(boxId, n) {
+    // Fast path: rolls n boxes in memory and saves once, so even millions of
+    // boxes (Spend All) finish in a few seconds.
+    function openMany(boxId, n, untilBroke) {
         var s = load(), box = BOXES[boxId];
         n = Math.max(1, Math.floor(n) || 1);
         if (!box || boxId === 'free') return { error: 'Packs are only for the Dark Box' };
-        if (s.tokens < box.cost * n) return { error: 'Not enough tokens' };
-        var got = {}, refund = 0, fresh = 0;
-        for (var i = 0; i < n; i++) {
-            var res = open(boxId);
-            if (res.error) break;
-            var g = got[res.darky.id] || (got[res.darky.id] = { darky: res.darky, count: 0, isNew: false });
-            g.count++;
-            if (res.isNew) { g.isNew = true; fresh++; }
-            refund += res.refund;
+        if (s.tokens < box.cost) return { error: 'Not enough tokens' };
+        if (!untilBroke && s.tokens < box.cost * n) return { error: 'Not enough tokens' };
+
+        var rar = [], cum = [], total = 0, k;
+        for (k in box.odds) { total += box.odds[k]; rar.push(k); cum.push(total); }
+        var pools = rar.map(function (r) { return LIST.filter(function (d) { return d.r === r && !d.market; }); });
+        var counts = {}, refund = 0, opened = 0;
+
+        // Open in rounds: pay for what the tokens cover, then spend the
+        // duplicate refunds too when untilBroke is set.
+        do {
+            var batch = untilBroke ? Math.floor(s.tokens / box.cost) : n;
+            if (batch < 1) break;
+            s.tokens -= batch * box.cost;
+            var gotBack = 0;
+            for (var i = 0; i < batch; i++) {
+                var x = Math.random() * total, ri = 0;
+                while (x >= cum[ri]) ri++;
+                var pool = pools[ri], d = pool[(Math.random() * pool.length) | 0];
+                if (s.owned[d.id] || counts[d.id]) gotBack += RARITY[d.r].refund;
+                counts[d.id] = (counts[d.id] || 0) + 1;
+            }
+            s.tokens += gotBack;
+            refund += gotBack;
+            opened += batch;
+        } while (untilBroke);
+
+        var list = [], fresh = 0;
+        for (k in counts) {
+            var isNew = !s.owned[k];
+            if (isNew) fresh++;
+            s.owned[k] = (s.owned[k] || 0) + counts[k];
+            list.push({ darky: BY_ID[k], count: counts[k], isNew: isNew });
         }
-        var list = Object.keys(got).map(function (k) { return got[k]; });
+        save();
         list.sort(function (a, b) { return (RANK.indexOf(b.darky.r) - RANK.indexOf(a.darky.r)) || (b.count - a.count); });
-        return { count: n, list: list, refund: refund, fresh: fresh };
+        return { count: opened, list: list, refund: refund, fresh: fresh };
     }
 
     window.Darkys = {
@@ -340,6 +366,7 @@
         claimMarket: claimMarket,
         claimPrize: claimPrize,
         open: open,
-        openMany: openMany
+        openMany: openMany,
+        spendAll: function () { return openMany('dark', 1, true); }
     };
 })();
