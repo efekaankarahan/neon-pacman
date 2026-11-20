@@ -62,7 +62,12 @@
             '.chroma{display:inline-block;animation:dkchroma 2.6s linear infinite}' +
             '@keyframes dkchroma{0%{filter:hue-rotate(0deg) saturate(1.6) drop-shadow(0 0 .1em #fff) drop-shadow(0 0 .22em #7dfcff)}' +
             '50%{filter:hue-rotate(180deg) saturate(1.6) drop-shadow(0 0 .14em #fff) drop-shadow(0 0 .3em #ff5cf0)}' +
-            '100%{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 .1em #fff) drop-shadow(0 0 .22em #7dfcff)}}';
+            '100%{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 .1em #fff) drop-shadow(0 0 .22em #7dfcff)}}' +
+            '.dkspin{display:inline-block;animation:dkspin 3s linear infinite;filter:drop-shadow(0 0 .2em #9b6bff)}' +
+            '@keyframes dkspin{to{transform:rotate(-360deg)}}' +
+            '.dkfire{display:inline-block;animation:dkfire 1.2s ease-in-out infinite alternate}' +
+            '@keyframes dkfire{from{filter:drop-shadow(0 0 .12em #ffb000)}to{filter:drop-shadow(0 0 .35em #ff3d00) brightness(1.15)}}' +
+            '.dkgold{display:inline-block;filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.1) drop-shadow(0 0 .2em #ffc83d)}';
         document.head.appendChild(st);
     } catch (e) { /* no DOM */ }
 
@@ -156,6 +161,65 @@
         { id: 'harvest',  name: 'Harvest Moon', em: '🌕', r: 'epic',     season: 'autumn' },
         { id: 'witchy',   name: 'Witchy',      em: '🧙', r: 'legendary', season: 'autumn' }
     ];
+
+    // Theme Packs
+    // -----------
+    // Always open. Each pack has its own Darkys that no other box gives.
+    // [id, name, emoji (may be HTML), rarity, plain-text stand-in]
+    function spin(e) { return '<span class="dkspin">' + e + '</span>'; }
+    function fire(e) { return '<span class="dkfire">' + e + '</span>'; }
+    function gold(e) { return '<span class="dkgold">' + e + '</span>'; }
+    var THEMES = {
+        space: { name: 'Space Pack', icon: '🚀', cost: 60, about: 'Rockets, planets and a Black Hole that never stops spinning.',
+            odds: { common: 45, uncommon: 30, rare: 16, epic: 7, legendary: 2 }, list: [
+            ['astro', 'Astro', '🧑‍🚀', 'common'], ['rocky', 'Rocky', '🚀', 'common'], ['moony', 'Moony', '🌒', 'common'],
+            ['starry', 'Starry', '🌟', 'uncommon'], ['satty', 'Satty', '🛰️', 'uncommon'],
+            ['ringo', 'Ringo', '🪐', 'rare'], ['ufo', 'UFO', '🛸', 'rare'],
+            ['supernova', 'Supernova', '💥', 'epic'],
+            ['blackhole', 'Black Hole', spin('🌀'), 'legendary', '🌀']] },
+        ocean: { name: 'Ocean Pack', icon: '🌊', cost: 60, about: 'Deep-sea Darkys. Catch the rare Darky Fish in Fishing Frenzy for a free Ocean Pack!',
+            odds: { common: 45, uncommon: 30, rare: 16, epic: 7, legendary: 2 }, list: [
+            ['puffy', 'Puffy', '🐡', 'common'], ['clammy', 'Clammy', '🦪', 'common'], ['shrimpy', 'Shrimpy', '🦐', 'common'],
+            ['jelly', 'Jelly', '🪼', 'uncommon'], ['sealy', 'Sealy', '🦭', 'uncommon'],
+            ['dolphy', 'Dolphy', '🐬', 'rare'], ['lobby', 'Lobby', '🦞', 'rare'],
+            ['bigblue', 'Big Blue', '🐋', 'epic'],
+            ['coralqueen', 'Coral Queen', gold('🪸'), 'legendary', '🪸']] },
+        myth: { name: 'Myth Pack', icon: '🐉', cost: 150, about: 'Legendary creatures only: no Commons, and the only box with a Mystical Darky.',
+            odds: { rare: 50, epic: 32, legendary: 15, mystical: 3 }, list: [
+            ['griffin', 'Griffin', '🦅', 'rare'], ['mermaid', 'Mermaid', '🧜‍♀️', 'rare'], ['fairy', 'Fairy', '🧚', 'rare'],
+            ['pegasus', 'Pegasus', '🪽', 'epic'], ['genie', 'Genie', '🧞', 'epic'],
+            ['cerberus', 'Cerberus', '🐺', 'legendary'], ['cyclops', 'Cyclops', '👁️', 'legendary'],
+            ['phoenix', 'Phoenix', fire('🐦'), 'mystical', '🐦']] },
+        food: { name: 'Food Pack', icon: '🍕', cost: 20, about: 'Cheap and tasty. Simit, döner and a golden ice cream.',
+            odds: { common: 52, uncommon: 30, rare: 13, epic: 4, legendary: 1 }, list: [
+            ['pizza', 'Pizza', '🍕', 'common'], ['burger', 'Burger', '🍔', 'common'], ['fries', 'Fries', '🍟', 'common'],
+            ['simit', 'Simit', '🥯', 'uncommon'], ['donut', 'Donut', '🍩', 'uncommon'],
+            ['sushi', 'Sushi', '🍣', 'rare'], ['doner', 'Döner', '🥙', 'rare'],
+            ['cakey', 'Cakey', '🎂', 'epic'],
+            ['goldcone', 'Golden Cone', gold('🍦'), 'legendary', '🍦']] },
+        retro: { name: 'Retro Arcade Pack', icon: '🕹️', cost: 60, about: 'Darkys from the games on Darky Play: Neon Pacman, Pro Snake, Happy Bird and more.',
+            odds: { common: 45, uncommon: 30, rare: 16, epic: 7, legendary: 2 }, list: [
+            ['neonghost', 'Neon Ghost', '👾', 'common'], ['prosnek', 'Pro Snek', '🐍', 'common'], ['flappy', 'Happy Flap', '🐤', 'common'],
+            ['bricky', 'Bricky', '🧱', 'uncommon'], ['tictac', 'Tic Tac', '⭕', 'uncommon'],
+            ['starfighter', 'Starfighter', '🛩️', 'rare'], ['brawler', 'Brawler', '🥊', 'rare'],
+            ['bluewarrior', 'Blue Warrior', '🛡️', 'epic'],
+            ['joyking', 'Joystick King', gold('🕹️'), 'legendary', '🕹️']] },
+        dino: { name: 'Dino Pack', icon: '🦖', cost: 50, about: 'Back from 66 million years ago.',
+            odds: { common: 45, uncommon: 30, rare: 16, epic: 7, legendary: 2 }, list: [
+            ['eggy', 'Eggy', '🥚', 'common'], ['longneck', 'Longneck', '🦕', 'common'], ['ferny', 'Ferny', '🌿', 'common'],
+            ['raptor', 'Raptor', '🦎', 'uncommon'], ['ptero', 'Ptero', '🦤', 'uncommon'],
+            ['trike', 'Trike', '🦏', 'rare'], ['volcano', 'Volcano', '🌋', 'rare'],
+            ['mammoth', 'Mammoth', '🦣', 'epic'],
+            ['fossil', 'Fossil Rex', gold('🦴'), 'legendary', '🦴']] }
+    };
+    var THEME_ORDER = ['space', 'ocean', 'myth', 'food', 'retro', 'dino'];
+    THEME_ORDER.forEach(function (k) {
+        THEMES[k].list.forEach(function (t) {
+            var d = { id: k + '-' + t[0], name: t[1], em: t[2], r: t[3], theme: k };
+            if (t[4]) d.tx = t[4];
+            LIST.push(d);
+        });
+    });
 
     // Religious holiday Darkys: one for each big holiday of the world's
     // faiths. All Sacred, all equally likely, only from the Faith Pack.
@@ -256,6 +320,10 @@
         }
     };
     BOXES.holy = { name: 'Faith Pack', cost: 50, icon: '🛐', odds: { sacred: 1 } };
+    THEME_ORDER.forEach(function (k) {
+        var T = THEMES[k];
+        BOXES[k] = { name: T.name, cost: T.cost, icon: T.icon, theme: k, odds: T.odds };
+    });
     Object.keys(SEASONS).forEach(function (k) {
         BOXES[k] = { name: SEASONS[k].name, cost: 100, icon: SEASONS[k].icon, season: k, odds: SEASON_ODDS };
     });
@@ -280,7 +348,7 @@
         if (!BY_ID[s.selected] || !s.owned[s.selected]) s.selected = 'darky';
         var claim = (location.search.match(/[?&]claim=([\w-]+)/) || [])[1];
         if (claim && UNIQUE_CLAIMS[claim]) s.owned[UNIQUE_CLAIMS[claim]] = s.owned[UNIQUE_CLAIMS[claim]] || 1;
-        if (isOwner()) LIST.forEach(function (d) { if (d.unique && !s.owned[d.id]) s.owned[d.id] = 1; });
+        if (isOwner()) LIST.forEach(function (d) { if ((d.unique || d.theme) && !s.owned[d.id]) s.owned[d.id] = 1; });
         if (s.tId !== T_ID) { s.tId = T_ID; s.tBest = 0; s.etermaxUnlocked = false; }   // new round: everyone from 0
         mem = s;
         return s;
@@ -429,7 +497,8 @@
             return c.length ? c : poolFor(box, 'legendary');
         }
         return LIST.filter(function (d) {
-            return d.r === r && !d.market && !d.unique && !d.chroma && (box.season ? d.season === box.season : !d.season);
+            return d.r === r && !d.market && !d.unique && !d.chroma && (box.season ? d.season === box.season : !d.season) &&
+                (box.theme ? d.theme === box.theme : !d.theme);
         });
     }
 
@@ -740,6 +809,10 @@
         ['holiday',  '🎉', 'Holiday Spirit', 'Get a Holiday Darky',                  100, function (s) { return [ownedWhere(s, function (d) { return d.event; }), 1]; }],
         ['travel',   '🌍', 'World Traveler', 'Get 10 Holiday Darkys',                300, function (s) { return [ownedWhere(s, function (d) { return d.event; }), 10]; }],
         ['faith',    '🕊️', 'Faithful',       'Collect every religious holiday Darky', 300, function (s) { return [ownedWhere(s, function (d) { return d.holy; }), LIST.filter(function (d) { return d.holy; }).length]; }],
+        ['theme',    '🧭', 'Explorer',       'Collect every Darky of one Theme Pack', 200, function (s) {
+            return [Math.max.apply(null, THEME_ORDER.map(function (k) {
+                return ownedWhere(s, function (d) { return d.theme === k; }) / THEMES[k].list.length;
+            })) === 1 ? 1 : 0, 1]; }],
         ['mystic',   '✨', 'Mystic',         'Own Etermaximus',                      300, function (s) { return [s.owned.etermaximus ? 1 : 0, 1]; }],
         ['unique',   '🎨', 'One of a Kind',  'Own a Unique Darky',                   300, function (s) { return [ownedWhere(s, function (d) { return d.unique; }), 1]; }],
         ['game1',    '🎮', 'First Game',     'Play an Arcade game',                20,  function (s) { return [stat(s, 'games'), 1]; }],
@@ -870,6 +943,15 @@
         openMany: openMany,
         spendAll: function (boxId) { return openMany(boxId || 'dark', 1, true); },
         SEASONS: SEASONS,
+        THEMES: THEMES,
+        THEME_ORDER: THEME_ORDER,
+        // A box opened for free, as a game prize (the Darky Fish in Fishing Frenzy).
+        bonusOpen: function (boxId) {
+            var box = BOXES[boxId];
+            if (!box || box.season) return null;
+            load().tokens += box.cost;
+            return open(boxId);
+        },
         seasonOpen: seasonOpen,
         nextOpen: nextOpen,
         isOwner: isOwner,
