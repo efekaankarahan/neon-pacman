@@ -19,13 +19,39 @@
     var KEY = 'darkyplayDarkys';
     var DAY = 24 * 60 * 60 * 1000;
 
+    // Launch tournament
+    // -----------------
+    // Etermaximus, the only Mystical Darky, never drops from a box. It sits
+    // locked in the Market, and the only way to get it is to finish in the
+    // top 5 of the Etermaximus Tournament: the best single Gold Quiz score
+    // played between START and END (end of 21 November 2026, Pacific time).
+    //
+    // There is no shared online leaderboard on the site, so the other
+    // entrants are bots. Each bot has a final score it reaches by the end and
+    // climbs toward it as the tournament goes on, so the top 5 gets harder to
+    // hold the later it gets. The bot list is the same for every player.
+    var T_START = Date.parse('2026-11-20T06:00:00Z');
+    var T_END = Date.parse('2026-11-22T08:00:00Z');
+    var T_PRIZE_RANK = 5;
+    var T_BOTS = [
+        ['NovaKid', 25000], ['ZapZap', 18000], ['Pixelina', 13500], ['MrQuizz', 10500], ['Glimmer', 8000],
+        ['TurboTom', 7200], ['Luma', 6500], ['BeanBoss', 5900], ['Kiko', 5300], ['RocketRay', 4800],
+        ['Mimi99', 4300], ['Sparky', 3900], ['Dash', 3500], ['Yuki', 3200], ['Orbit', 2900],
+        ['FoxFire', 2600], ['Bubbles', 2350], ['Ace', 2100], ['Nugget', 1900], ['Moxie', 1700],
+        ['Zed', 1500], ['Pepper', 1350], ['Ziggy7', 1200], ['Coco', 1050], ['Bolt2', 950],
+        ['Waffles', 850], ['Juno', 750], ['Taco', 650], ['Pip', 560], ['Rex10', 480],
+        ['Sunny', 400], ['Milo', 340], ['Ivy', 280], ['Jax', 230], ['Lulu', 180],
+        ['Nemo', 140], ['Pogo', 110], ['Kiwi', 85], ['Bo', 60], ['Tiny', 40]
+    ];
+
     var RARITY = {
         free:      { name: 'Free',      color: '#7ee8ff', refund: 1 },
         common:    { name: 'Common',    color: '#b9b6cf', refund: 2 },
         uncommon:  { name: 'Uncommon',  color: '#4fe07a', refund: 5 },
         rare:      { name: 'Rare',      color: '#3fa8ff', refund: 15 },
         epic:      { name: 'Epic',      color: '#c06bff', refund: 40 },
-        legendary: { name: 'Legendary', color: '#ffc83d', refund: 100 }
+        legendary: { name: 'Legendary', color: '#ffc83d', refund: 100 },
+        mystical:  { name: 'Mystical',  color: '#ff5cf0', refund: 300 }
     };
 
     var LIST = [
@@ -55,7 +81,9 @@
         { id: 'comet',   name: 'Comet',   em: '☄️', r: 'epic' },
 
         { id: 'rex',     name: 'King Rex', em: '🦖', r: 'legendary' },
-        { id: 'drako',   name: 'Drako',   em: '🐉', r: 'legendary' }
+        { id: 'drako',   name: 'Drako',   em: '🐉', r: 'legendary' },
+
+        { id: 'etermaximus', name: 'Etermaximus', em: '🔮', r: 'mystical', market: true }
     ];
 
     var BOXES = {
@@ -110,6 +138,70 @@
         return Math.max(0, s.lastFree + DAY - Date.now());
     }
 
+    // ---------------------------------------------------------------
+    // tournament
+    // ---------------------------------------------------------------
+    function tState() {
+        var now = Date.now();
+        return now < T_START ? 'soon' : now < T_END ? 'live' : 'over';
+    }
+
+    function botScore(final, now) {
+        if (now >= T_END) return final;
+        if (now <= T_START) return Math.round(final * 0.2);
+        var p = (now - T_START) / (T_END - T_START);
+        return Math.round(final * (0.2 + 0.8 * Math.pow(p, 0.8)));
+    }
+
+    function playerName() {
+        try { return (localStorage.getItem('darkyplayName') || 'You').slice(0, 12); } catch (e) { return 'You'; }
+    }
+
+    // Everyone in the tournament, best first, with the player marked me:true.
+    function standings() {
+        var s = load(), now = Math.min(Date.now(), T_END);
+        var rows = T_BOTS.map(function (b) { return { name: b[0], score: botScore(b[1], now) }; });
+        rows.push({ name: playerName(), score: s.tBest || 0, me: true });
+        // a tie goes to the player
+        rows.sort(function (a, b) { return (b.score - a.score) || ((b.me ? 1 : 0) - (a.me ? 1 : 0)); });
+        rows.forEach(function (r, i) { r.rank = i + 1; });
+        return rows;
+    }
+
+    function myRank() {
+        var rows = standings();
+        for (var i = 0; i < rows.length; i++) if (rows[i].me) return rows[i].rank;
+        return rows.length;
+    }
+
+    // Called by Gold Quiz when a game ends. Returns true if it's a new best.
+    function tSubmit(gold) {
+        if (tState() !== 'live') return false;
+        var s = load();
+        if (gold > (s.tBest || 0)) { s.tBest = gold; save(); return true; }
+        return false;
+    }
+
+    // After the tournament ends, a top-5 finish unlocks Etermaximus in the Market.
+    function marketUnlocked() {
+        var s = load();
+        if (s.etermaxUnlocked) return true;
+        if (tState() === 'over' && (s.tBest || 0) > 0 && myRank() <= T_PRIZE_RANK) {
+            s.etermaxUnlocked = true;
+            save();
+            return true;
+        }
+        return false;
+    }
+
+    function claimMarket(id) {
+        var s = load(), d = BY_ID[id];
+        if (!d || !d.market || !marketUnlocked() || s.owned[id]) return null;
+        s.owned[id] = 1;
+        save();
+        return d;
+    }
+
     function open(boxId) {
         var s = load(), box = BOXES[boxId];
         if (!box) return { error: 'No such box' };
@@ -120,7 +212,7 @@
         if (boxId === 'free') s.lastFree = Date.now();
 
         var r = rollRarity(box.odds);
-        var pool = LIST.filter(function (d) { return d.r === r; });
+        var pool = LIST.filter(function (d) { return d.r === r && !d.market; });
         var d = pool[Math.floor(Math.random() * pool.length)];
         var isNew = !s.owned[d.id];
         var refund = 0;
@@ -174,6 +266,19 @@
             return refund;
         },
         freeReadyIn: freeReadyIn,
+        tournament: {
+            START: T_START,
+            END: T_END,
+            PRIZE_RANK: T_PRIZE_RANK,
+            state: tState,
+            endsIn: function () { return Math.max(0, T_END - Date.now()); },
+            best: function () { return load().tBest || 0; },
+            standings: standings,
+            rank: myRank,
+            submit: tSubmit
+        },
+        marketUnlocked: marketUnlocked,
+        claimMarket: claimMarket,
         open: open
     };
 })();
