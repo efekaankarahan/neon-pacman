@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fishing Frenzy - Answer, Cast, Catch the Biggest Fish | Darky Play Arcade</title>
+<meta name="description" content="Fishing Frenzy: answer quiz questions to cast your line, catch fish from minnows to whales and beat five rivals for the heaviest catch. Free quiz game for kids, works on phone and PC.">
+<link rel="canonical" href="https://darkyplay.com/arcade/fishing-frenzy/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<style>
+:root{
+  --panel:#122238; --panel2:#1a3150; --line:#2c4d74; --sea:#3fd0ff; --gold:#ffc83d; --text:#fff; --muted:#9fb7d4;
+  --a:#ff4f6d; --b:#2fa8ff; --c:#ffb020; --d:#28d17c;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:radial-gradient(ellipse at top,#173b63 0%,#08121f 70%);color:var(--text);font-family:'Nunito',system-ui,sans-serif;
+  min-height:100dvh;overflow-x:hidden;user-select:none}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+.pixel{font-family:'Press Start 2P',monospace}
+.screen{display:none;min-height:100dvh;padding:16px;flex-direction:column;align-items:center}
+.screen.on{display:flex}
+.toplink{position:fixed;top:12px;left:12px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);text-decoration:none;z-index:5}
+.toplink:hover{color:#fff}
+
+/* start */
+#start h1{font-family:'Press Start 2P',monospace;font-size:clamp(24px,6.5vw,46px);color:var(--sea);
+  text-shadow:0 0 18px rgba(63,208,255,.55),4px 4px 0 #0b4a66;margin:48px 0 8px;text-align:center}
+#start .tag{color:var(--muted);margin-bottom:22px;text-align:center}
+.box{background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:560px;margin-bottom:14px}
+.box h2{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between;gap:8px}
+.box h2 a{color:#7ee8ff;text-decoration:none;font-size:9px}
+.me{display:flex;align-items:center;gap:14px;font-weight:900;font-size:18px}
+.me .av{width:64px;height:64px;border-radius:16px;background:var(--panel2);display:grid;place-items:center;font-size:38px;border:3px solid var(--sea)}
+.sets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.set{padding:12px;border-radius:12px;background:var(--panel2);border:3px solid transparent;text-align:left;font-weight:900;font-size:15px}
+.set small{display:block;font-weight:700;color:var(--muted);font-size:12px;margin-top:2px}
+.set.sel{border-color:var(--sea);background:#163f5c}
+.big{font-family:'Press Start 2P',monospace;font-size:16px;padding:18px 34px;border-radius:14px;background:var(--sea);color:#04263a;box-shadow:0 6px 0 #0b6d91;margin-top:6px}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #0b6d91}
+.howto{color:var(--muted);font-size:13px;max-width:560px;text-align:center;margin-top:16px;line-height:1.5}
+.fishlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px}
+.fishlist div{background:var(--panel2);border-radius:10px;padding:6px;text-align:center;font-size:12px;font-weight:900;color:var(--muted)}
+.fishlist b{display:block;font-size:24px}
+
+/* game */
+#game{padding:12px 12px 40px;gap:12px}
+.hud{width:100%;max-width:1000px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{background:var(--panel);border:3px solid var(--line);border-radius:999px;padding:8px 14px;font-family:'Press Start 2P',monospace;font-size:12px;white-space:nowrap}
+.pill.lbs{color:var(--sea)}
+.pill.low{color:#ff6b6b;border-color:#ff6b6b}
+.pill.frenzy{color:#ffe14d;border-color:#ffe14d;box-shadow:0 0 14px #ffe14d;display:none}
+.pill.frenzy.on{display:block;animation:pulse .6s ease-in-out infinite alternate}
+@keyframes pulse{to{transform:scale(1.07)}}
+.layout{width:100%;max-width:1000px;display:grid;grid-template-columns:1fr 250px;gap:12px}
+.stage{display:flex;flex-direction:column;gap:12px}
+.lake{height:120px;border-radius:18px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#5ec8ff 0%,#5ec8ff 28%,#1679b8 29%,#0b3d6b 100%)}
+.lake .wave{position:absolute;left:0;right:0;top:30%;height:8px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.5) 0 18px,transparent 18px 36px);animation:wave 3s linear infinite}
+@keyframes wave{to{background-position:72px 0}}
+.lake .boat{position:absolute;top:4px;left:18px;font-size:38px}
+.lake .line{position:absolute;top:30px;left:66px;width:2px;height:40px;background:#fff;transform-origin:top;transition:height .4s}
+.lake .bob{position:absolute;top:62px;left:58px;font-size:18px;transition:top .4s}
+.lake.cast .line{height:70px}
+.lake.cast .bob{top:92px;animation:bob .5s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(5px)}}
+.lake .lure{position:absolute;right:12px;top:10px;font-family:'Press Start 2P',monospace;font-size:10px;color:#04263a;background:rgba(255,255,255,.75);padding:6px 8px;border-radius:8px}
+.qcard{background:#fff;color:#0d2236;border-radius:18px;padding:22px 18px;min-height:110px;display:flex;align-items:center;justify-content:center;
+  text-align:center;font-weight:900;font-size:clamp(18px,3.4vw,28px);box-shadow:0 6px 0 #b9d7ee}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ans{border-radius:16px;font-weight:900;font-size:clamp(16px,2.8vw,22px);padding:18px 12px;min-height:80px;
+  box-shadow:0 6px 0 rgba(0,0,0,.35);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.ans:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.ans:nth-child(1){background:var(--a)}.ans:nth-child(2){background:var(--b)}
+.ans:nth-child(3){background:var(--c)}.ans:nth-child(4){background:var(--d)}
+.ans.dim{filter:grayscale(.85) brightness(.55)}
+.ans.right{outline:5px solid #fff}
+.board{background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;align-self:start}
+.board h3{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);margin-bottom:4px}
+.row{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:var(--panel2);font-weight:900}
+.row.me{background:#163f5c;outline:2px solid var(--sea)}
+.row .rk{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--muted);width:16px}
+.row .em{font-size:20px}
+.row .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .gd{color:var(--sea);font-family:'Press Start 2P',monospace;font-size:10px}
+.log{margin-top:6px;font-size:12px;color:var(--muted);min-height:34px;line-height:1.35}
+
+/* catch popup */
+.pop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:20;text-align:center;padding:20px}
+.pop.on{display:flex}
+.pop.good{background:rgba(8,60,95,.95)}
+.pop.bad{background:rgba(150,30,50,.94)}
+.pop.event{background:rgba(110,80,0,.95)}
+.pop .fish{font-size:110px;animation:jump .5s ease-out}
+@keyframes jump{0%{transform:translateY(60px) scale(.4) rotate(-30deg);opacity:0}70%{transform:translateY(-10px) scale(1.1)}100%{transform:none;opacity:1}}
+.pop .t{font-family:'Press Start 2P',monospace;font-size:clamp(18px,5vw,30px)}
+.pop .s{font-weight:900;font-size:20px}
+.pop .tier{font-family:'Press Start 2P',monospace;font-size:11px}
+
+/* end */
+#end h1{font-family:'Press Start 2P',monospace;font-size:clamp(22px,6vw,40px);color:var(--sea);margin:48px 0 6px;text-align:center}
+.endmsg{font-weight:900;font-size:20px;margin-bottom:6px;text-align:center}
+.endstats{color:var(--muted);margin-bottom:6px;text-align:center}
+.endtok{font-family:'Press Start 2P',monospace;color:var(--gold);font-size:12px;margin-bottom:16px;text-align:center;line-height:1.6}
+.pod{display:flex;gap:10px;align-items:flex-end;margin-bottom:18px}
+.pod div{background:var(--panel);border:3px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-weight:900;min-width:90px}
+.pod .em{font-size:40px}
+.pod .p1{border-color:var(--gold);padding-bottom:30px}
+.pod small{display:block;color:var(--sea);font-family:'Press Start 2P',monospace;font-size:9px;margin-top:4px}
+.endbtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.ghost{font-family:'Press Start 2P',monospace;font-size:12px;padding:16px 20px;border-radius:14px;background:var(--panel);border:3px solid var(--line);text-decoration:none;color:#fff}
+.best{margin-top:14px;color:var(--muted);font-weight:900;text-align:center}
+@media (max-width:760px){ .layout{grid-template-columns:1fr} .board{order:-1} }
+</style>
+</head>
+<body>
+<a class="toplink" href="../">&larr; ARCADE</a>
+
+<!-- START -->
+<section class="screen on" id="start">
+  <h1>FISHING FRENZY</h1>
+  <p class="tag">Answer right to cast. Catch the heaviest haul in 2:30 to win!</p>
+  <div class="box">
+    <h2><span>YOU FISH AS</span><a href="../darkys/">CHANGE DARKY &rarr;</a></h2>
+    <div class="me"><div class="av" id="meAv"></div><div id="meName"></div></div>
+  </div>
+  <div class="box">
+    <h2><span>QUESTIONS</span></h2>
+    <div class="sets" id="sets"></div>
+  </div>
+  <div class="box">
+    <h2><span>WHAT'S IN THE LAKE</span></h2>
+    <div class="fishlist" id="fishlist"></div>
+  </div>
+  <button class="big" id="playBtn">CAST OFF!</button>
+  <p class="howto">Every right answer catches a fish. 3 right in a row upgrades your lure, and a better lure brings bigger fish.
+    A wrong answer lets the fish get away and drops your lure a level. Watch for ⚡ Frenzy: double weight for 15 seconds!</p>
+</section>
+
+<!-- GAME -->
+<section class="screen" id="game">
+  <div class="hud">
+    <span class="pill" id="timer">2:30</span>
+    <span class="pill frenzy" id="frenzy">⚡ FRENZY x2</span>
+    <span class="pill lbs" id="myLbs">0 lbs</span>
+  </div>
+  <div class="layout">
+    <div class="stage">
+      <div class="lake" id="lake"><div class="wave"></div><div class="boat" id="boat"></div><div class="line"></div><div class="bob">🔴</div><div class="lure" id="lure">LURE 1</div></div>
+      <div class="qcard" id="question"></div>
+      <div class="answers" id="answers"></div>
+    </div>
+    <div class="board">
+      <h3>BIGGEST HAUL</h3>
+      <div id="rows"></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</section>
+
+<div class="pop" id="pop"></div>
+
+<!-- END -->
+<section class="screen" id="end">
+  <h1>TIME'S UP!</h1>
+  <div class="endmsg" id="endmsg"></div>
+  <div class="endstats" id="endstats"></div>
+  <div class="endtok" id="endtok"></div>
+  <div class="pod" id="pod"></div>
+  <div class="endbtns">
+    <button class="big" id="againBtn">FISH AGAIN</button>
+    <a class="ghost" href="../darkys/">SPEND TOKENS</a>
+    <button class="ghost" id="menuBtn">MENU</button>
+  </div>
+  <div class="best" id="best"></div>
+</section>
+
+<script src="../darkys.js?v=20"></script>
+<script>
+(function () {
+'use strict';
+var ROUND_SECONDS = 150;
+var RIVALS = [
+  { name: 'Finn',   em: '🐻' }, { name: 'Marina', em: '🦦' }, { name: 'Captain', em: '🐧' },
+  { name: 'Reel',   em: '🦝' }, { name: 'Splash', em: '🐸' }
+];
+
+// The lake. weight in lbs: [min, max]
+var FISH = {
+  junk:      { name: 'Junk',      color: '#9aa6b5', list: [['👢', 'Old Boot', 0, 0], ['🥫', 'Tin Can', 0, 0], ['🧦', 'Soggy Sock', 0, 0]] },
+  common:    { name: 'Common',    color: '#cfe3f5', list: [['🐟', 'Minnow', 1, 3], ['🐟', 'Perch', 2, 6], ['🦐', 'Shrimp', 1, 2]] },
+  uncommon:  { name: 'Uncommon',  color: '#4fe07a', list: [['🐠', 'Clownfish', 4, 10], ['🦀', 'Crab', 5, 12], ['🐡', 'Pufferfish', 6, 14]] },
+  rare:      { name: 'Rare',      color: '#3fa8ff', list: [['🦑', 'Squid', 15, 35], ['🐢', 'Sea Turtle', 20, 45]] },
+  epic:      { name: 'Epic',      color: '#c06bff', list: [['🐙', 'Octopus', 40, 80], ['🦈', 'Shark', 80, 160]] },
+  legendary: { name: 'Legendary', color: '#ffc83d', list: [['🐋', 'Whale', 250, 500], ['🐳', 'Blue Whale', 400, 800]] }
+};
+function odds(lure) {
+  return { junk: 12 - 2 * lure, common: 50 - 7 * lure, uncommon: 25, rare: 8 + 3 * lure, epic: 3 + 2 * lure, legendary: 0.4 + 0.7 * lure };
+}
+
+// QUESTION SETS  (q, right answer, three wrong answers)
+// ---------------------------------------------------------------
+var SETS = {
+  mixed:   { name: 'Mix of Everything', note: 'A bit of every set', icon: '🎲' },
+  math:    { name: 'Quick Math',        note: 'New sums every game', icon: '➕' },
+  science: { name: 'Science',           note: 'Space, body, nature', icon: '🔬' },
+  world:   { name: 'Around the World',  note: 'Countries & places',  icon: '🌍' },
+  animals: { name: 'Animals',           note: 'Wild facts',          icon: '🐾' }
+};
+
+var BANK = {
+  science: [
+    ['What planet is known as the Red Planet?', 'Mars', 'Venus', 'Jupiter', 'Saturn'],
+    ['What gas do plants take in from the air?', 'Carbon dioxide', 'Oxygen', 'Helium', 'Nitrogen'],
+    ['How many legs does an insect have?', '6', '8', '4', '10'],
+    ['What is the closest star to Earth?', 'The Sun', 'Polaris', 'Sirius', 'The Moon'],
+    ['Water freezes at how many degrees Celsius?', '0', '10', '100', '-10'],
+    ['Which organ pumps blood around your body?', 'Heart', 'Lungs', 'Brain', 'Liver'],
+    ['What is the biggest planet in our solar system?', 'Jupiter', 'Saturn', 'Earth', 'Neptune'],
+    ['What do bees make?', 'Honey', 'Milk', 'Silk', 'Wax paper'],
+    ['How many bones are in an adult human body?', '206', '106', '306', '56'],
+    ['What force pulls things down to the ground?', 'Gravity', 'Magnetism', 'Friction', 'Wind'],
+    ['What is H2O better known as?', 'Water', 'Salt', 'Air', 'Sugar'],
+    ['Which planet has the most famous rings?', 'Saturn', 'Mars', 'Mercury', 'Earth'],
+    ['What part of the plant soaks up water?', 'Roots', 'Petals', 'Leaves', 'Seeds'],
+    ['What do we call frozen water falling from clouds in balls?', 'Hail', 'Fog', 'Dew', 'Steam'],
+    ['Which sense do you use your nose for?', 'Smell', 'Taste', 'Touch', 'Hearing'],
+    ['What is the hardest natural material?', 'Diamond', 'Gold', 'Iron', 'Glass'],
+    ['How long does Earth take to go around the Sun?', '1 year', '1 day', '1 month', '1 week'],
+    ['What do caterpillars turn into?', 'Butterflies', 'Bees', 'Beetles', 'Spiders'],
+    ['Which planet is closest to the Sun?', 'Mercury', 'Venus', 'Mars', 'Pluto'],
+    ['Light travels faster than...', 'Sound', 'Nothing', 'Thought', 'Shadows'],
+    ['What makes a rainbow?', 'Sunlight and rain', 'Wind and snow', 'Clouds and moon', 'Thunder'],
+    ['Which blood cells fight germs?', 'White', 'Red', 'Blue', 'Green']
+  ],
+  world: [
+    ['What is the capital of France?', 'Paris', 'Rome', 'Madrid', 'Berlin'],
+    ['Which is the largest ocean?', 'Pacific', 'Atlantic', 'Indian', 'Arctic'],
+    ['What is the capital of Japan?', 'Tokyo', 'Seoul', 'Beijing', 'Osaka'],
+    ['Which country has the pyramids of Giza?', 'Egypt', 'Mexico', 'Greece', 'India'],
+    ['How many continents are there?', '7', '5', '6', '9'],
+    ['What is the capital of Turkey?', 'Ankara', 'Istanbul', 'Izmir', 'Antalya'],
+    ['Which is the longest river in the world?', 'Nile', 'Thames', 'Danube', 'Seine'],
+    ['Kangaroos come from which country?', 'Australia', 'Brazil', 'Canada', 'Kenya'],
+    ['What is the capital of Italy?', 'Rome', 'Venice', 'Milan', 'Naples'],
+    ['Which is the tallest mountain on Earth?', 'Everest', 'Kilimanjaro', 'Alps', 'Fuji'],
+    ['Which country is shaped like a boot?', 'Italy', 'Spain', 'Chile', 'Norway'],
+    ['What is the biggest country by area?', 'Russia', 'China', 'USA', 'Brazil'],
+    ['The Great Wall is in which country?', 'China', 'Japan', 'India', 'Peru'],
+    ['What is the capital of the United Kingdom?', 'London', 'Dublin', 'Paris', 'Edinburgh'],
+    ['Which desert is the largest hot desert?', 'Sahara', 'Gobi', 'Atacama', 'Kalahari'],
+    ['What is the capital of Spain?', 'Madrid', 'Barcelona', 'Lisbon', 'Seville'],
+    ['Which country is famous for maple syrup?', 'Canada', 'Iceland', 'Egypt', 'Kenya'],
+    ['The Eiffel Tower is in which city?', 'Paris', 'London', 'Rome', 'New York'],
+    ['What is the capital of Germany?', 'Berlin', 'Munich', 'Vienna', 'Hamburg'],
+    ['Which continent is Brazil on?', 'South America', 'Africa', 'Asia', 'Europe'],
+    ['What is the capital of the USA?', 'Washington, D.C.', 'New York', 'Los Angeles', 'Chicago'],
+    ['Which is the coldest continent?', 'Antarctica', 'Europe', 'Asia', 'Africa']
+  ],
+  animals: [
+    ['What is the largest animal on Earth?', 'Blue whale', 'Elephant', 'Giraffe', 'Shark'],
+    ['Which animal is known as the King of the Jungle?', 'Lion', 'Tiger', 'Gorilla', 'Bear'],
+    ['How many legs does a spider have?', '8', '6', '10', '4'],
+    ['What is a baby kangaroo called?', 'Joey', 'Cub', 'Kit', 'Calf'],
+    ['Which bird can not fly?', 'Penguin', 'Eagle', 'Parrot', 'Owl'],
+    ['What is the fastest land animal?', 'Cheetah', 'Horse', 'Lion', 'Rabbit'],
+    ['Which animal has a long trunk?', 'Elephant', 'Rhino', 'Hippo', 'Camel'],
+    ['What do pandas mostly eat?', 'Bamboo', 'Fish', 'Grass', 'Berries'],
+    ['Which animal is the tallest?', 'Giraffe', 'Elephant', 'Camel', 'Horse'],
+    ['A group of wolves is called a...', 'Pack', 'Herd', 'Flock', 'School'],
+    ['What is a baby cat called?', 'Kitten', 'Puppy', 'Foal', 'Chick'],
+    ['Which animal can change its colour?', 'Chameleon', 'Dog', 'Cow', 'Duck'],
+    ['How many hearts does an octopus have?', '3', '1', '2', '8'],
+    ['Which mammal can truly fly?', 'Bat', 'Flying squirrel', 'Sugar glider', 'Penguin'],
+    ['Where do polar bears live?', 'The Arctic', 'The desert', 'The jungle', 'Antarctica'],
+    ['What do you call an animal that eats only plants?', 'Herbivore', 'Carnivore', 'Omnivore', 'Predator'],
+    ['Which sea animal has eight arms?', 'Octopus', 'Starfish', 'Crab', 'Jellyfish'],
+    ['What is the slowest-moving mammal?', 'Sloth', 'Turtle', 'Koala', 'Snail'],
+    ['Which animal is famous for its black and white stripes?', 'Zebra', 'Tiger', 'Skunk', 'Panda'],
+    ['A frog starts life as a...', 'Tadpole', 'Caterpillar', 'Chick', 'Larva'],
+    ['Which animal has the longest neck?', 'Giraffe', 'Ostrich', 'Swan', 'Llama'],
+    ['What do bees live in?', 'A hive', 'A den', 'A nest', 'A burrow']
+  ]
+};
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+function pick(a) { return a[rnd(a.length)]; }
+function shuffle(a) {
+  a = a.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = rnd(i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+function mathQuestion() {
+  var kind = rnd(4), a, b, ans, q;
+  if (kind === 0) { a = 5 + rnd(45); b = 5 + rnd(45); ans = a + b; q = a + ' + ' + b; }
+  else if (kind === 1) { a = 20 + rnd(60); b = 2 + rnd(a - 2); ans = a - b; q = a + ' − ' + b; }
+  else if (kind === 2) { a = 2 + rnd(11); b = 2 + rnd(11); ans = a * b; q = a + ' × ' + b; }
+  else { b = 2 + rnd(9); ans = 2 + rnd(11); a = b * ans; q = a + ' ÷ ' + b; }
+  var wrong = {};
+  var offs = shuffle([-10, -3, -2, -1, 1, 2, 3, 10, b, -b]);
+  for (var i = 0; i < offs.length && Object.keys(wrong).length < 3; i++) {
+    var w = ans + offs[i];
+    if (w >= 0 && w !== ans) wrong[w] = 1;
+  }
+  return { q: q + ' = ?', right: String(ans), wrong: Object.keys(wrong) };
+}
+
+var deck = [];
+function nextQuestion() {
+  var set = state.set;
+  if (set === 'math' || (set === 'mixed' && rnd(4) === 0)) return mathQuestion();
+  if (!deck.length) {
+    var src = set === 'mixed' ? BANK.science.concat(BANK.world, BANK.animals) : BANK[set];
+    deck = shuffle(src);
+  }
+  var r = deck.pop();
+  return { q: r[0], right: r[1], wrong: r.slice(2) };
+}
+
+
+// ---------------------------------------------------------------
+var state = { set: 'mixed', players: [], me: null, timeLeft: ROUND_SECONDS, running: false,
+  lure: 1, streak: 0, right: 0, wrong: 0, catches: 0, biggest: null, frenzyUntil: 0, timers: [] };
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function show(id) {
+  ['start', 'game', 'end'].forEach(function (s) { $(s).classList.toggle('on', s === id); });
+  document.querySelector('.toplink').style.display = id === 'game' ? 'none' : '';
+  window.scrollTo(0, 0);
+}
+function playerName() {
+  try { return (localStorage.getItem('darkyplayName') || 'You').slice(0, 12); } catch (e) { return 'You'; }
+}
+function roll(o) {
+  var t = 0, k;
+  for (k in o) t += o[k];
+  var x = Math.random() * t;
+  for (k in o) { x -= o[k]; if (x < 0) return k; }
+  return 'common';
+}
+function catchFish(lure) {
+  var tier = roll(odds(lure)), f = pick(FISH[tier].list);
+  var lbs = f[2] + Math.round(Math.random() * (f[3] - f[2]));
+  return { tier: tier, em: f[0], name: f[1], lbs: lbs };
+}
+
+// ---------- start ----------
+function buildStart() {
+  var me = Darkys.selected();
+  $('meAv').innerHTML = me.em;
+  $('meName').textContent = me.name;
+  var sets = $('sets');
+  sets.innerHTML = '';
+  Object.keys(SETS).forEach(function (k) {
+    var b = document.createElement('button');
+    b.className = 'set' + (k === state.set ? ' sel' : '');
+    b.innerHTML = SETS[k].icon + ' ' + SETS[k].name + '<small>' + SETS[k].note + '</small>';
+    b.onclick = function () { state.set = k; deck = []; buildStart(); };
+    sets.appendChild(b);
+  });
+  var fl = $('fishlist');
+  fl.innerHTML = '';
+  Object.keys(FISH).forEach(function (t) {
+    FISH[t].list.forEach(function (f) {
+      var d = document.createElement('div');
+      d.style.borderBottom = '3px solid ' + FISH[t].color;
+      d.innerHTML = '<b>' + f[0] + '</b>' + f[1] + '<br>' + (f[3] ? f[2] + '-' + f[3] + ' lbs' : '0 lbs');
+      fl.appendChild(d);
+    });
+  });
+}
+
+// ---------- round ----------
+function startRound() {
+  state.timers.forEach(clearTimeout); state.timers = [];
+  state.me = { name: playerName(), em: Darkys.selected().em, lbs: 0, me: true };
+  state.players = [state.me].concat(RIVALS.map(function (r) { return { name: r.name, em: r.em, lbs: 0, lure: 1 + rnd(2), skill: 0.6 + Math.random() * 0.25 }; }));
+  state.timeLeft = ROUND_SECONDS; state.running = true;
+  state.lure = 1; state.streak = 0; state.right = 0; state.wrong = 0; state.catches = 0; state.biggest = null; state.frenzyUntil = 0;
+  $('boat').innerHTML = state.me.em;
+  deck = [];
+  show('game');
+  render();
+  askQuestion();
+  tick();
+  state.players.forEach(function (p) { if (!p.me) botLoop(p); });
+  if (window.gtag) gtag('event', 'fishing_start', { set: state.set });
+}
+function tick() {
+  if (!state.running) return;
+  var m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
+  $('timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  $('timer').classList.toggle('low', state.timeLeft <= 15);
+  $('frenzy').classList.toggle('on', Date.now() < state.frenzyUntil);
+  if (state.timeLeft <= 0) { endRound(); return; }
+  state.timeLeft--;
+  state.timers.push(setTimeout(tick, 1000));
+}
+function botLoop(p) {
+  state.timers.push(setTimeout(function () {
+    if (!state.running) return;
+    if (Math.random() < p.skill) {
+      var f = catchFish(p.lure);
+      p.lbs += f.lbs;
+      if (Math.random() < 0.3) p.lure = Math.min(5, p.lure + 1);
+      if (f.tier === 'epic' || f.tier === 'legendary') log(p.em + ' ' + p.name + ' caught a ' + f.em + ' ' + f.name + ' (' + f.lbs + ' lbs)!');
+    } else p.lure = Math.max(1, p.lure - 1);
+    render();
+    botLoop(p);
+  }, 2600 + rnd(2600)));
+}
+
+// ---------- questions ----------
+var current = null, locked = false;
+function askQuestion() {
+  current = nextQuestion();
+  locked = false;
+  $('question').textContent = current.q;
+  var opts = shuffle([current.right].concat(current.wrong.slice(0, 3)));
+  var box = $('answers');
+  box.innerHTML = '';
+  opts.forEach(function (o) {
+    var b = document.createElement('button');
+    b.className = 'ans';
+    b.textContent = o;
+    b.onclick = function () { answer(b, o); };
+    box.appendChild(b);
+  });
+  $('lake').classList.remove('cast');
+}
+function answer(btn, choice) {
+  if (locked || !state.running) return;
+  locked = true;
+  var ok = choice === current.right;
+  [].forEach.call($('answers').children, function (b) {
+    if (b.textContent === current.right) b.classList.add('right'); else b.classList.add('dim');
+  });
+  $('lake').classList.add('cast');
+  if (ok) {
+    state.right++; state.streak++;
+    var lureUp = state.streak % 3 === 0 && state.lure < 5;
+    if (lureUp) state.lure++;
+    var ev = Math.random();
+    if (ev < 0.06) {
+      state.frenzyUntil = Date.now() + 15000;
+      popup('event', '⚡', 'FRENZY!', 'Double weight for 15 seconds!');
+    } else if (ev < 0.10 && state.lure < 5) {
+      state.lure++;
+      popup('event', '🪝', 'GOLDEN LURE!', 'Your lure went up to level ' + state.lure + '!');
+    } else {
+      var f = catchFish(state.lure), x2 = Date.now() < state.frenzyUntil;
+      if (x2) f.lbs *= 2;
+      state.me.lbs += f.lbs;
+      state.catches++;
+      if (!state.biggest || f.lbs > state.biggest.lbs) state.biggest = f;
+      var T = FISH[f.tier];
+      popup('good', f.em, f.name.toUpperCase(),
+        (f.lbs ? '+' + f.lbs.toLocaleString('en-US') + ' lbs' + (x2 ? ' (⚡x2)' : '') : 'Nothing but junk...') + (lureUp ? '<br>🪝 Lure up! Level ' + state.lure : ''),
+        '<span class="tier" style="color:' + T.color + '">' + T.name.toUpperCase() + '</span>');
+    }
+  } else {
+    state.wrong++; state.streak = 0;
+    state.lure = Math.max(1, state.lure - 1);
+    popup('bad', '💨', 'IT GOT AWAY!', 'Answer: ' + esc(current.right));
+  }
+  render();
+  setTimeout(function () { $('pop').className = 'pop'; if (state.running) askQuestion(); }, ok ? 1100 : 1400);
+}
+function popup(kind, icon, title, sub, extra) {
+  $('pop').innerHTML = '<div class="fish">' + icon + '</div><div class="t">' + title + '</div>' + (extra || '') + '<div class="s">' + sub + '</div>';
+  $('pop').className = 'pop on ' + kind;
+}
+function log(t) { $('log').textContent = t; }
+
+function render() {
+  $('myLbs').textContent = state.me.lbs.toLocaleString('en-US') + ' lbs';
+  $('lure').textContent = 'LURE ' + state.lure + ' ' + '★'.repeat(state.lure);
+  var rows = state.players.slice().sort(function (a, b) { return b.lbs - a.lbs; });
+  $('rows').innerHTML = rows.map(function (p, i) {
+    return '<div class="row' + (p.me ? ' me' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="em">' + p.em + '</span><span class="nm">' +
+      esc(p.name) + '</span><span class="gd">' + p.lbs.toLocaleString('en-US') + '</span></div>';
+  }).join('');
+}
+
+function endRound() {
+  state.running = false;
+  state.timers.forEach(clearTimeout); state.timers = [];
+  $('pop').className = 'pop';
+  var rows = state.players.slice().sort(function (a, b) { return b.lbs - a.lbs; });
+  var place = rows.indexOf(state.me) + 1;
+  var msgs = ['BIGGEST HAUL! YOU WIN! 👑', '2nd place, so close!', '3rd place, nice catch!', '4th place, cast again!', '5th place, you got this!', '6th place, the fish were sneaky today!'];
+  $('endmsg').textContent = msgs[place - 1];
+  $('endstats').textContent = state.me.lbs.toLocaleString('en-US') + ' lbs · ' + state.catches + ' catches · ' + state.right + ' right, ' + state.wrong + ' wrong';
+  var earned = state.right ? Math.min(80, state.right * 2 + Math.round(state.me.lbs / 40) + [10, 6, 4, 2, 1, 0][place - 1]) : 0;
+  var total = Darkys.addTokens(earned);
+  if (Darkys.gameDone) Darkys.gameDone({ right: state.right, gold: 0, place: place });
+  $('endtok').innerHTML = earned ? '+' + earned + ' 🎟️ tokens<br>(you have ' + total.toLocaleString('en-US') + ')' : 'Answer questions to earn 🎟️ tokens!';
+  var top = rows.slice(0, 3), order = [top[1], top[0], top[2]];
+  $('pod').innerHTML = order.map(function (p, i) {
+    if (!p) return '';
+    return '<div class="' + (i === 1 ? 'p1' : '') + '"><div class="em">' + p.em + '</div>' + esc(p.name) + '<small>' + p.lbs.toLocaleString('en-US') + ' lbs</small></div>';
+  }).join('');
+  var key = 'darkyplayFishBest', best = 0;
+  try { best = +localStorage.getItem(key) || 0; if (state.me.lbs > best) localStorage.setItem(key, state.me.lbs); } catch (e) {}
+  $('best').textContent = (state.biggest ? 'Biggest catch: ' + state.biggest.em + ' ' + state.biggest.name + ' (' + state.biggest.lbs + ' lbs). ' : '') +
+    (state.me.lbs > best ? 'New personal best!' : 'Personal best: ' + best.toLocaleString('en-US') + ' lbs');
+  show('end');
+  if (window.gtag) gtag('event', 'fishing_end', { place: place, lbs: state.me.lbs });
+}
+
+$('playBtn').onclick = startRound;
+$('againBtn').onclick = startRound;
+$('menuBtn').onclick = function () { buildStart(); show('start'); };
+buildStart();
+})();
+</script>
+</body>
+</html>
