@@ -50,6 +50,8 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .packs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
 .packs .buy{font-size:8px;padding:9px 2px;line-height:1.6;box-shadow:0 4px 0 #a06a00}
 .packs .buy b{display:block;font-size:12px}
+.allbtn{background:#ff4f6d;color:#fff;box-shadow:0 5px 0 #8f1f33}
+.allbtn:active{box-shadow:0 2px 0 #8f1f33}
 .sum{display:none;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;width:min(680px,100%);max-height:52vh;overflow:auto;padding:4px}
 .sum.on{display:grid}
 .sum .card{cursor:default}
@@ -171,6 +173,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
           <div class="odds" id="darkOdds">Every rarity, even<br>Epic &amp; Legendary</div>
           <button class="buy" id="darkBtn">OPEN 1 · 🎟️ 25</button>
           <div class="packs" id="packs"></div>
+          <button class="buy allbtn" id="allBtn">SPEND ALL 🎟️</button>
         </div>
       </div>
     </div>
@@ -195,7 +198,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=8"></script>
+<script src="../darkys.js?v=9"></script>
 <script>
 (function () {
 'use strict';
@@ -316,6 +319,8 @@ function render() {
   $('freeBtn').disabled = wait > 0;
   $('freeBtn').textContent = wait > 0 ? 'IN ' + timeLeft(wait) : 'OPEN FREE';
   $('darkBtn').disabled = Darkys.tokens() < Darkys.BOXES.dark.cost;
+  $('allBtn').disabled = Darkys.tokens() < Darkys.BOXES.dark.cost;
+  if (!allArmed) $('allBtn').textContent = 'SPEND ALL 🎟️ ' + Darkys.tokens().toLocaleString('en-US');
   [].forEach.call($('packs').children, function (b) {
     b.disabled = Darkys.tokens() < Darkys.BOXES.dark.cost * +b.dataset.n;
   });
@@ -360,9 +365,8 @@ function hideSummary() {
   $('sumHead').className = 'sumhead';
 }
 
-function openPack(n) {
-  var res = Darkys.openMany('dark', n);
-  if (res.error) { toast(res.error); render(); return; }
+function openPack(n, all) {
+  if (Darkys.tokens() < Darkys.BOXES.dark.cost * (all ? 1 : n)) { toast('Not enough tokens'); render(); return; }
   last = null;
   hideSummary();
   $('equipBtn').style.display = 'none';
@@ -371,11 +375,18 @@ function openPack(n) {
   $('prize').className = 'prize';
   $('rbtns').className = 'rbtns';
   $('reveal').className = 'reveal on';
-  if (window.gtag) gtag('event', 'darkys_pack', { size: n });
+  if (window.gtag) gtag('event', 'darkys_pack', { size: all ? 'all' : n });
+  var t0 = Date.now(), res;
+  // let the box start shaking before the (possibly long) roll
   setTimeout(function () {
+    res = all ? Darkys.spendAll() : Darkys.openMany('dark', n);
+    setTimeout(showPack, Math.max(0, 1400 - (Date.now() - t0)));
+  }, 60);
+  function showPack() {
+    if (res.error) { $('reveal').className = 'reveal'; toast(res.error); render(); return; }
     $('shake').style.display = 'none';
     var best = res.list[0].darky, br = R[best.r];
-    $('sumHead').innerHTML = 'OPENED ' + n.toLocaleString('en-US') + ' DARK BOXES<br>' +
+    $('sumHead').innerHTML = (all ? 'SPENT IT ALL!<br>' : '') + 'OPENED ' + res.count.toLocaleString('en-US') + ' DARK BOXES<br>' +
       '<span style="color:#7dffb2">' + res.fresh + ' NEW</span> · BEST: <span style="color:' + br.color + '">' + br.name.toUpperCase() + '</span>' +
       (res.refund ? '<br><span style="color:var(--muted)">DUPLICATES: +' + res.refund.toLocaleString('en-US') + ' 🎟️</span>' : '');
     var sum = $('sum');
@@ -393,8 +404,21 @@ function openPack(n) {
     sum.className = 'sum on';
     $('rbtns').className = 'rbtns on';
     render();
-  }, 1400);
+  }
 }
+
+// Spend All: two taps, so nobody spends everything by accident.
+var allArmed = 0;
+$('allBtn').onclick = function () {
+  if (Date.now() - allArmed > 3000) {
+    allArmed = Date.now();
+    $('allBtn').textContent = 'SURE? TAP AGAIN';
+    setTimeout(function () { allArmed = 0; render(); }, 3000);
+    return;
+  }
+  allArmed = 0;
+  openPack(0, true);
+};
 
 function openBox(id) {
   hideSummary();
