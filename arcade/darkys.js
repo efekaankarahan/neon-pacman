@@ -59,7 +59,9 @@
         rare:      { name: 'Rare',      color: '#3fa8ff', refund: 15 },
         epic:      { name: 'Epic',      color: '#c06bff', refund: 40 },
         legendary: { name: 'Legendary', color: '#ffc83d', refund: 100 },
-        mystical:  { name: 'Mystical',  color: '#ff5cf0', refund: 300 }
+        mystical:  { name: 'Mystical',  color: '#ff5cf0', refund: 300 },
+        // the 2 winners of the opening drawing contest; never in a box
+        unique:    { name: 'Unique',    color: '#ff8a3d', refund: 500 }
     };
 
     var LIST = [
@@ -261,7 +263,7 @@
 
     // Open the same box n times in one go (Dark Box packs of 10, 50, 100, 1000).
     // Pays for the whole pack up front, so it opens all n or none.
-    var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'mystical'];
+    var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'mystical', 'unique'];
     // Fast path: rolls n boxes in memory and saves once, so even millions of
     // boxes (Spend All) finish in a few seconds.
     function openMany(boxId, n, untilBroke) {
