@@ -771,6 +771,43 @@
         return b.reward;
     }
 
+    // Trading
+    // -------
+    // No server, so a trade is a gift code: the sender gives up one copy of a
+    // Darky and gets a code; whoever enters the code gets that Darky. Each
+    // device can use a code once. Sending the code back to yourself undoes it.
+    function giftCheck(id, nonce) { return ('0000' + hash(id + '|' + nonce + '|darkyplay-gift').toString(36)).slice(-5); }
+    function giftable() {
+        var s = load();
+        return LIST.filter(function (d) { return s.owned[d.id] && d.id !== 'darky'; });
+    }
+    function giftCreate(id) {
+        var s = load(), d = BY_ID[id];
+        if (!d || id === 'darky' || !s.owned[id]) return { error: 'You don\'t have that Darky' };
+        var nonce = '';
+        for (var i = 0; i < 6; i++) nonce += 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random() * 31)];
+        var code = id + '-' + nonce + '-' + giftCheck(id, nonce);
+        s.owned[id]--;
+        if (!s.owned[id]) { delete s.owned[id]; if (s.selected === id) s.selected = 'darky'; }
+        s.sent = (s.sent || []).concat([{ code: code, id: id, at: Date.now() }]).slice(-10);
+        save();
+        return { code: code, darky: d };
+    }
+    function giftRedeem(code) {
+        var s = load(), c = String(code || '').trim().toLowerCase().replace(/^.*[?&]gift=/, '');
+        var parts = c.split('-');
+        if (parts.length < 3) return { error: 'That code doesn\'t look right' };
+        var check = parts.pop(), nonce = parts.pop(), id = parts.join('-'), d = BY_ID[id];
+        if (!d || giftCheck(id, nonce) !== check) return { error: 'That code doesn\'t work' };
+        s.redeemed = s.redeemed || {};
+        if (s.redeemed[c]) return { error: 'This code was already used here' };
+        s.redeemed[c] = 1;
+        var isNew = !s.owned[id];
+        s.owned[id] = (s.owned[id] || 0) + 1;
+        save();
+        return { darky: d, isNew: isNew };
+    }
+
     window.Darkys = {
         LIST: LIST,
         RARITY: RARITY,
@@ -850,6 +887,10 @@
         buyEvent: buyEvent,
         quests: todaysQuests,
         badges: badges,
+        giftable: giftable,
+        giftCreate: giftCreate,
+        giftRedeem: giftRedeem,
+        giftsSent: function () { return (load().sent || []).slice().reverse(); },
         claimBadge: claimBadge,
         claimQuest: claimQuest,
         streak: streakInfo,
