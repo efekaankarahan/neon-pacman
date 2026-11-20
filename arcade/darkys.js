@@ -84,7 +84,9 @@
         unique:    { name: 'Unique',    color: '#ff8a3d', refund: 500 },
         // Unique + Mystical + Chroma in one: the holiday Darkys, one per
         // special day, sold only on that day or week
-        mystichroma: { name: 'Mystichroma', color: '#ffb36b', refund: 2000 }
+        mystichroma: { name: 'Mystichroma', color: '#ffb36b', refund: 2000 },
+        // the religious holiday Darkys: all equal, only in the Faith Pack
+        sacred:    { name: 'Sacred',    color: '#ffe9a8', refund: 20 }
     };
 
     var LIST = [
@@ -155,6 +157,45 @@
         { id: 'witchy',   name: 'Witchy',      em: '🧙', r: 'legendary', season: 'autumn' }
     ];
 
+    // Religious holiday Darkys: one for each big holiday of the world's
+    // faiths. All Sacred, all equally likely, only from the Faith Pack.
+    [
+        ['ramazan',    'Crescent',     '🌙', 'Islam · Eid al-Fitr (Ramazan Bayramı)'],
+        ['kurban',     'Lamby',        '🐑', 'Islam · Eid al-Adha (Kurban Bayramı)'],
+        ['kadir',      'Night Mosque', '🕌', 'Islam · Laylat al-Qadr (Kadir Gecesi)'],
+        ['mevlid',     'Rose Light',   '💫', 'Islam · Mawlid (Mevlid Kandili)'],
+        ['hicri',      'Hijri Star',   '⭐', 'Islam · Islamic New Year'],
+        ['asure',      'Aşure',        '🍲', 'Islam · Ashura (Aşure Günü)'],
+        ['noel',       'Jingle Bell',  '🔔', 'Christianity · Christmas'],
+        ['paskalya',   'Chickpip',     '🐣', 'Christianity · Easter'],
+        ['epiphany',   'Three Crowns', '👑', 'Christianity · Epiphany'],
+        ['pentecost',  'Dove',         '🕊️', 'Christianity · Pentecost'],
+        ['allsaints',  'Candlelight',  '🕯️', "Christianity · All Saints' Day"],
+        ['hanukkah',   'Menorah',      '🕎', 'Judaism · Hanukkah'],
+        ['pesach',     'Matzah',       '🫓', 'Judaism · Passover'],
+        ['roshhash',   'Honey Apple',  '🍎', 'Judaism · Rosh Hashanah'],
+        ['yomkippur',  'Shofar',       '📯', 'Judaism · Yom Kippur'],
+        ['purim',      'Masky',        '🎭', 'Judaism · Purim'],
+        ['sukkot',     'Lulav',        '🌿', 'Judaism · Sukkot'],
+        ['diwali',     'Diya',         '🪔', 'Hinduism · Diwali'],
+        ['holi',       'Color Splash', '🎨', 'Hinduism · Holi'],
+        ['navratri',   'Dhol',         '🪘', 'Hinduism · Navratri'],
+        ['ganesh',     'Gajju',        '🐘', 'Hinduism · Ganesh Chaturthi'],
+        ['rakhi',      'Rakhi',        '🧵', 'Hinduism · Raksha Bandhan'],
+        ['vesak',      'Lotus',        '🪷', 'Buddhism · Vesak'],
+        ['bodhi',      'Bodhi Leaf',   '🌳', 'Buddhism · Bodhi Day'],
+        ['obon',       'Obon Lantern', '🏮', 'Buddhism · Obon'],
+        ['vaisakhi',   'Harvest',      '🌾', 'Sikhism · Vaisakhi'],
+        ['gurpurab',   'Golden Light', '✨', 'Sikhism · Guru Nanak Gurpurab'],
+        ['paryushana', 'Namaste',      '🙏', 'Jainism · Paryushana'],
+        ['ridvan',     'Ridván Rose',  '🌹', "Bahá'í · Ridván"],
+        ['sadeh',      'Sadeh Flame',  '🔥', 'Zoroastrianism · Sadeh'],
+        ['shogatsu',   'Kadomatsu',    '🎍', 'Shinto · Shōgatsu'],
+        ['midautumn',  'Mooncake',     '🥮', 'Chinese tradition · Mid-Autumn Festival']
+    ].forEach(function (h) {
+        LIST.push({ id: 'holy-' + h[0], name: h[1], em: h[2], r: 'sacred', holy: true, where: h[3] });
+    });
+
     // Chroma Darkys
     // -------------
     // Each year brings 1 to 3 new Chromas: glowing versions of existing
@@ -214,6 +255,7 @@
             odds: { common: 52, uncommon: 30, rare: 13, epic: 4, legendary: 1 }
         }
     };
+    BOXES.holy = { name: 'Faith Pack', cost: 50, icon: '🛐', odds: { sacred: 1 } };
     Object.keys(SEASONS).forEach(function (k) {
         BOXES[k] = { name: SEASONS[k].name, cost: 100, icon: SEASONS[k].icon, season: k, odds: SEASON_ODDS };
     });
