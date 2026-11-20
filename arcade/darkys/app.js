@@ -132,7 +132,7 @@ function render() {
   var shown = 0;
   Darkys.LIST.forEach(function (d) {
     var owned = Darkys.owns(d.id), rr = R[d.r];
-    if ((d.chroma || d.event) && !owned) return;      // Chromas and holiday Darkys stay secret until you get one
+    if ((d.chroma || d.event || d.daily !== undefined) && !owned) return;      // Chromas and holiday Darkys stay secret until you get one
     shown++;
     var gone = !owned && d.market && over && !unlocked;
     if (owned) have++;
@@ -148,6 +148,7 @@ function render() {
   $('count').textContent = have + '/' + shown;
   renderSeasons();
   renderThemes();
+  renderDayPack();
   renderEvent();
   renderHoly();
   renderDaily();
@@ -353,6 +354,80 @@ function renderThemes() {
   });
 }
 buildThemes();
+
+// ---------- Pack of the Day (Market) ----------
+function buildDayPack() {
+  if (!has('market') || !Darkys.DAILY) return;
+  var css = document.createElement('style');
+  css.textContent = '.daybox{border-color:#7ee8ff!important;box-shadow:0 0 22px rgba(126,232,255,.18)}' +
+    '.day{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}' +
+    '.day .crate{flex:none;width:min(280px,100%);border-color:#7ee8ff}' +
+    '.day .info{flex:1;min-width:240px;color:var(--muted);font-size:14px;line-height:1.5}' +
+    '.day .info b{color:#7ee8ff}' +
+    '.dstrip{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}' +
+    '.dstrip div{background:var(--panel2);border:2px solid #3a3660;border-radius:10px;padding:6px 2px;text-align:center;font-size:30px;line-height:1.1}' +
+    '.dstrip div small{display:block;font-family:"Press Start 2P",monospace;font-size:6px;margin-top:4px;line-height:1.4}' +
+    '.dstrip div.no{filter:brightness(0) opacity(.35)}' +
+    '.dayown{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-family:"Press Start 2P",monospace;font-size:9px;color:var(--gold)}' +
+    '.dayown select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px;max-width:100%}';
+  document.head.appendChild(css);
+  var box = document.createElement('div');
+  box.className = 'box daybox';
+  box.id = 'dayPack';
+  box.innerHTML = '<h2><span>📅 PACK OF THE DAY</span><span id="dayLeft"></span></h2>' +
+    '<div class="day"><div class="crate"><div class="ic" id="dayIc"></div><div class="nm" id="dayNm"></div>' +
+    '<div class="odds">10 Darkys · Common to Legendary<br>Only today!</div>' +
+    '<button class="buy" id="dayBtn">OPEN 1 · 🎟️ ' + Darkys.DAILY_COST + '</button>' +
+    '<div class="packs" id="dayPacks"></div><button class="buy allbtn" id="dayAll">SPEND ALL</button></div>' +
+    '<div class="info"><div id="dayInfo"></div><div class="dstrip" id="dayStrip"></div><div id="dayNext"></div>' +
+    '<div class="dayown" id="dayOwner" style="display:none"></div></div></div>';
+  var wrap = document.querySelector('.wrap');
+  wrap.insertBefore(box, wrap.firstChild);
+  $('dayBtn').onclick = function () { openBox('daily'); };
+  [10, 50, 100, 1000].forEach(function (n) {
+    var b = document.createElement('button');
+    b.className = 'buy'; b.dataset.n = n;
+    b.innerHTML = '<b>×' + n + '</b>🎟️ ' + (Darkys.DAILY_COST * n).toLocaleString('en-US');
+    b.onclick = function () { openPack('daily', n); };
+    $('dayPacks').appendChild(b);
+  });
+  $('dayAll').onclick = function () { spendAllTap('daily', $('dayAll')); };
+  if (Darkys.isOwner()) {
+    var sel = document.createElement('select');
+    sel.innerHTML = '<option value="">Today</option>' + Darkys.DAILY.map(function (P) {
+      var d = new Date(2026, 0, 1 + P.i);
+      return '<option value="' + P.i + '">' + MON[d.getMonth()] + ' ' + d.getDate() + ' · ' + P.icon + ' ' + esc(P.name) + '</option>';
+    }).join('');
+    sel.value = Darkys.dailyToday() === Darkys.dayOfYear() ? '' : Darkys.dailyToday();
+    sel.onchange = function () { Darkys.setOwnerDay(sel.value); render(); };
+    $('dayOwner').innerHTML = '<span>👑 OWNER · OPEN ANY DAY</span>';
+    $('dayOwner').appendChild(sel);
+    $('dayOwner').style.display = '';
+  }
+}
+function renderDayPack() {
+  if (!has('dayPack')) return;
+  var i = Darkys.dailyToday(), P = Darkys.DAILY[i], t = Darkys.tokens(), have = 0, strip = '';
+  for (var j = 0; j < 10; j++) {
+    var d = Darkys.get('day' + i + '-' + j), own = Darkys.owns(d.id);
+    if (own) have++;
+    strip += '<div class="' + (own ? '' : 'no') + '" title="' + esc(own ? d.name : '???') + '">' + d.em +
+      '<small style="color:' + R[d.r].color + '">' + (own ? esc(d.name.split(' ').pop()).toUpperCase() : '???') + '</small></div>';
+  }
+  $('dayIc').innerHTML = P.icon;
+  $('dayNm').textContent = P.name.toUpperCase() + ' PACK';
+  $('dayInfo').innerHTML = 'A different pack every day of the year. Today: <b>' + esc(P.name) + '</b>, comes back on this day next year. ' +
+    '<b>' + have + ' / 10</b> collected.';
+  $('dayStrip').innerHTML = strip;
+  var nx = Darkys.DAILY[(Darkys.dayOfYear() + 1) % Darkys.DAILY.length];
+  $('dayNext').innerHTML = 'Tomorrow: ' + nx.icon + ' <b>' + esc(nx.name) + '</b>';
+  var now = new Date(), mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  $('dayLeft').textContent = 'ENDS IN ' + timeLeft(mid - now);
+  $('dayBtn').disabled = t < Darkys.DAILY_COST;
+  [].forEach.call($('dayPacks').children, function (b) { b.disabled = t < Darkys.DAILY_COST * +b.dataset.n; });
+  $('dayAll').disabled = t < Darkys.DAILY_COST;
+  if (armedBox !== 'daily') $('dayAll').textContent = 'SPEND ALL';
+}
 
 // ---------- daily quests and streak ----------
 function reward(n, what) {
@@ -616,6 +691,7 @@ $('darkBtn').onclick = function () { openBox('dark'); };
 $('equipBtn').onclick = function () { if (last) Darkys.select(last.id); $('reveal').className = 'reveal'; render(); };
 $('closeBtn').onclick = function () { $('reveal').className = 'reveal'; hideSummary(); render(); };
 
+buildDayPack();
 render();
 setInterval(render, 60000);
 // Opened from a gift link: redeem it once and clean the address.
