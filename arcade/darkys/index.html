@@ -148,6 +148,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   linear-gradient(120deg,#ff8a3d,#ff5cf0,#7dfcff,#ff8a3d) border-box!important;
   background-size:100% 100%,300% 300%!important;animation:mys 2s linear infinite}
 .evbox{border-color:#ffb36b!important;box-shadow:0 0 26px rgba(255,140,90,.25);background:linear-gradient(120deg,#3a1d14,#1d1b2b 50%,#123446)!important}
+#ev{display:flex;flex-direction:column;gap:16px}
 .ev{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 .ev .big{width:130px;height:130px;flex:none;border-radius:24px;display:grid;place-items:center;font-size:72px;border:5px solid}
 .ev .big.locked{filter:grayscale(1) brightness(.5)}
@@ -215,9 +216,9 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
     </div>
 
     <div class="box evbox">
-      <h2><span>🌍 HOLIDAY DARKY</span><span>🎟️ 200</span></h2>
+      <h2><span>🌍 HOLIDAY DARKYS · 195 COUNTRIES</span><span>🎟️ 200</span></h2>
       <div class="evown" id="evOwner" style="display:none"></div>
-      <div class="ev" id="ev"></div>
+      <div id="ev"></div>
     </div>
   </div>
 
@@ -233,7 +234,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=14"></script>
+<script src="../darkys.js?v=15"></script>
 <script>
 (function () {
 'use strict';
@@ -535,28 +536,19 @@ if (Darkys.isOwner()) {
   $('evOwner').appendChild(esel);
   $('evOwner').style.display = '';
 }
-function renderEvent() {
-  var st = Darkys.eventNow(), host = $('ev'), r = R.mystichroma;
-  var d = evPick ? Darkys.get(evPick) : st.live && st.live.darky;
-  if (!d) {
-    var nx = st.next;
-    host.innerHTML = '<div class="big locked umc">🔒</div><div><div class="nm">No holiday today</div>' +
-      '<div class="rr umcr">MYSTICHROMA</div>' +
-      (nx ? '<div class="why">Next: <b style="color:#fff">' + esc(nx.darky.where.split(' · ')[1]) + '</b> on ' + fmtDay(nx.start) +
-        ' (' + esc(nx.darky.where.split(' · ')[0]) + '). A new glowing Darky will be on sale.</div>' : '') + '</div>';
-    return;
-  }
-  var owned = Darkys.owns(d.id), until = !evPick && st.live ? st.live.end : null;
-  if (until) until = new Date(until.getTime() - 1);
-  host.innerHTML = '<div class="big umc" style="box-shadow:0 0 40px ' + r.color + '">' + d.em + '</div>' +
+function evCard(d, until) {
+  var owned = Darkys.owns(d.id), r = R.mystichroma, c = document.createElement('div');
+  c.className = 'ev';
+  c.innerHTML = '<div class="big umc" style="box-shadow:0 0 40px ' + r.color + '">' + d.em + '</div>' +
     '<div><div class="nm">' + esc(d.name) + '</div><div class="rr umcr">MYSTICHROMA · ONLY 1</div>' +
     '<div class="where">' + esc(d.where) + '</div>' +
     '<div class="why">' + (owned ? 'You have it! It never comes back to the shop.' :
       (until ? 'On sale until ' + fmtDay(until) + '. After that it is gone until next year.' : 'Owner pick.')) + '</div>' +
-    (owned ? '' : '<button class="buy" id="evBuy">BUY · 🎟️ ' + Darkys.EVENT_COST + '</button>') + '</div>';
-  if (!owned) {
-    $('evBuy').disabled = Darkys.tokens() < Darkys.EVENT_COST;
-    $('evBuy').onclick = function () {
+    (owned ? '' : '<button class="buy">BUY · 🎟️ ' + Darkys.EVENT_COST + '</button>') + '</div>';
+  var b = c.querySelector('.buy');
+  if (b) {
+    b.disabled = Darkys.tokens() < Darkys.EVENT_COST;
+    b.onclick = function () {
       var res = Darkys.buyEvent(d.id);
       if (res.error) { toast(res.error); render(); return; }
       last = res.darky;
@@ -572,6 +564,22 @@ function renderEvent() {
       render();
     };
   }
+  return c;
+}
+function renderEvent() {
+  var st = Darkys.eventNow(), host = $('ev');
+  host.innerHTML = '';
+  if (evPick) { host.appendChild(evCard(Darkys.get(evPick), null)); return; }
+  if (!st.live) {
+    var nx = st.next, names = nx ? nx.darkys.map(function (d) { return d.where; }) : [];
+    host.innerHTML = '<div class="ev"><div class="big locked umc">🔒</div><div><div class="nm">No holiday today</div>' +
+      '<div class="rr umcr">MYSTICHROMA</div>' +
+      (nx ? '<div class="why">Next on ' + fmtDay(nx.start) + ': <b style="color:#fff">' + esc(names.slice(0, 3).join(', ')) + '</b>' +
+        (names.length > 3 ? ' and ' + (names.length - 3) + ' more' : '') + '.</div>' : '') + '</div></div>';
+    return;
+  }
+  var until = new Date(st.live.end.getTime() - 1);
+  st.live.darkys.forEach(function (d) { host.appendChild(evCard(d, until)); });
 }
 
 function openBox(id) {
