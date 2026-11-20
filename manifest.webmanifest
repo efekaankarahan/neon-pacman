@@ -1,0 +1,23 @@
+{
+  "name": "Darky Play",
+  "short_name": "Darky Play",
+  "description": "Free browser games and quiz games: Arcade, Darkys, Gold Quiz, Fishing Frenzy and more.",
+  "id": "/",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "categories": ["games", "kids", "education"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Arcade", "url": "/arcade/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Darkys", "url": "/arcade/darkys/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
