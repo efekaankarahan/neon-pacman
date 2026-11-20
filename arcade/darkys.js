@@ -665,8 +665,8 @@
     // daily reward that grows while the player comes back every day.
     var QUESTS = [
         // group 0: play
-        [['play1', 'Play 1 Gold Quiz game', 'games', 1, 25], ['play3', 'Play 3 Gold Quiz games', 'games', 3, 60],
-         ['win1', 'Win a Gold Quiz game (1st place)', 'wins', 1, 50]],
+        [['play1', 'Play 1 Arcade game', 'games', 1, 25], ['play3', 'Play 3 Arcade games', 'games', 3, 60],
+         ['win1', 'Win an Arcade game (1st place)', 'wins', 1, 50]],
         // group 1: skill
         [['right20', 'Answer 20 questions right', 'correct', 20, 40], ['right50', 'Answer 50 questions right', 'correct', 50, 90],
          ['gold500', 'Get 500 gold in one Gold Quiz game', 'bestGold', 500, 50]],
@@ -742,10 +742,10 @@
         ['faith',    '🕊️', 'Faithful',       'Collect every religious holiday Darky', 300, function (s) { return [ownedWhere(s, function (d) { return d.holy; }), LIST.filter(function (d) { return d.holy; }).length]; }],
         ['mystic',   '✨', 'Mystic',         'Own Etermaximus',                      300, function (s) { return [s.owned.etermaximus ? 1 : 0, 1]; }],
         ['unique',   '🎨', 'One of a Kind',  'Own a Unique Darky',                   300, function (s) { return [ownedWhere(s, function (d) { return d.unique; }), 1]; }],
-        ['game1',    '🎮', 'First Game',     'Play a Gold Quiz game',                20,  function (s) { return [stat(s, 'games'), 1]; }],
-        ['game25',   '🕹️', 'Regular',        'Play 25 Gold Quiz games',              100, function (s) { return [stat(s, 'games'), 25]; }],
-        ['win1',     '🥇', 'Champion',       'Win a Gold Quiz game',                 50,  function (s) { return [stat(s, 'wins'), 1]; }],
-        ['win10',    '🏆', 'Unstoppable',    'Win 10 Gold Quiz games',               200, function (s) { return [stat(s, 'wins'), 10]; }],
+        ['game1',    '🎮', 'First Game',     'Play an Arcade game',                20,  function (s) { return [stat(s, 'games'), 1]; }],
+        ['game25',   '🕹️', 'Regular',        'Play 25 Arcade games',              100, function (s) { return [stat(s, 'games'), 25]; }],
+        ['win1',     '🥇', 'Champion',       'Win an Arcade game',                 50,  function (s) { return [stat(s, 'wins'), 1]; }],
+        ['win10',    '🏆', 'Unstoppable',    'Win 10 Arcade games',               200, function (s) { return [stat(s, 'wins'), 10]; }],
         ['right100', '🧠', 'Brainiac',       'Answer 100 questions right',           100, function (s) { return [stat(s, 'correct'), 100]; }],
         ['gold1k',   '💰', 'Gold Rush',      'Get 1,000 gold in one game',           150, function (s) { return [stat(s, 'bestGold'), 1000]; }],
         ['box100',   '📦', 'Unboxer',        'Open 100 boxes or packs',              50,  function (s) { return [stat(s, 'boxes'), 100]; }],
@@ -895,7 +895,7 @@
         claimQuest: claimQuest,
         streak: streakInfo,
         claimStreak: claimStreak,
-        // Gold Quiz reports a finished game here.
+        // Arcade games (Gold Quiz, Fishing Frenzy) report a finished game here.
         gameDone: function (o) {
             var s = load();
             bump(s, 'games', 1);
