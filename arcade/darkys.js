@@ -81,7 +81,10 @@
         chroma:    { name: 'Chroma',    color: '#7dfcff', refund: 1000 },
         mystical:  { name: 'Mystical',  color: '#ff5cf0', refund: 300 },
         // the 2 winners of the opening drawing contest; never in a box
-        unique:    { name: 'Unique',    color: '#ff8a3d', refund: 500 }
+        unique:    { name: 'Unique',    color: '#ff8a3d', refund: 500 },
+        // Unique + Mystical + Chroma in one: the holiday Darkys, one per
+        // special day, sold only on that day or week
+        mystichroma: { name: 'Mystichroma', color: '#ffb36b', refund: 2000 }
     };
 
     var LIST = [
@@ -412,6 +415,97 @@
     // Open the same box n times in one go (Dark Box packs of 10, 50, 100, 1000).
     // Pays for the whole pack up front, so it opens all n or none.
     var MAX_OPEN = 20000000;
+
+    // Holiday Darkys
+    // --------------
+    // Every special day around the world has its own glowing Darky. It is on
+    // sale from that day until the next special day starts, at most a week,
+    // for EVENT_COST tokens, one per player. Dates use the player's local date.
+    var EVENT_COST = 200, WEEK = 7 * DAY;
+    var LUNAR = { 2026: [1, 17], 2027: [1, 6], 2028: [0, 26], 2029: [1, 13], 2030: [1, 3], 2031: [0, 23], 2032: [1, 11],
+        2033: [0, 31], 2034: [1, 19], 2035: [1, 8], 2036: [0, 28], 2037: [1, 15], 2038: [1, 4], 2039: [0, 24], 2040: [1, 12] };
+    function easter(y) {
+        var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4,
+            f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30,
+            i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+        var mo = Math.floor((h + l - 7 * m + 114) / 31), dd = ((h + l - 7 * m + 114) % 31) + 1;
+        return [mo - 1, dd];
+    }
+    function thanksgiving(y) {
+        var w = new Date(y, 10, 1).getDay();
+        return [10, 1 + ((4 - w + 7) % 7) + 21];
+    }
+    // [id, name, emoji, where, month (0-11) and day, or a function of the year]
+    var EVENTS = [
+        ['newyear',     'Nova Year',     '🎆', 'Worldwide · New Year',             [0, 1]],
+        ['lunar',       'Lucky Lantern', '🧧', 'East Asia · Lunar New Year',       function (y) { return LUNAR[y]; }],
+        ['valentine',   'Lovebug',       '💘', "Worldwide · Valentine's Day",      [1, 14]],
+        ['womens',      'Bloom Queen',   '💐', "Worldwide · Women's Day",          [2, 8]],
+        ['patrick',     'Lucky Clover',  '☘️', "Ireland · St. Patrick's Day",      [2, 17]],
+        ['nowruz',      'Nowruz Tulip',  '🌷', 'Iran & Central Asia · Nowruz',     [2, 21]],
+        ['fools',       'Prankster',     '🤡', "Worldwide · April Fools' Day",     [3, 1]],
+        ['easter',      'Eggbert',       '🥚', 'Worldwide · Easter',               easter],
+        ['earth',       'Gaia',          '🌍', 'Worldwide · Earth Day',            [3, 22]],
+        ['cocuk',       'Balloonie',     '🎈', "Türkiye · Children's Day",         [3, 23]],
+        ['cinco',       'Piñata',        '🪅', 'Mexico · Cinco de Mayo',           [4, 5]],
+        ['genclik',     'Sprinty',       '🏃', 'Türkiye · Youth & Sports Day',     [4, 19]],
+        ['canada',      'Maple',         '🍁', 'Canada · Canada Day',              [6, 1]],
+        ['usa',         'Liberty Spark', '🎇', 'USA · Independence Day',           [6, 4]],
+        ['bastille',    'Baguette',      '🥖', 'France · Bastille Day',            [6, 14]],
+        ['india',       'Kite Flyer',    '🪁', 'India · Independence Day',         [7, 15]],
+        ['zafer',       'Victory',       '🏅', 'Türkiye · Victory Day',            [7, 30]],
+        ['brazil',      'Arara',         '🦜', 'Brazil · Independence Day',        [8, 7]],
+        ['mexico',      'Chili',         '🌶️', 'Mexico · Independence Day',        [8, 16]],
+        ['germany',     'Pretzel',       '🥨', 'Germany · Unity Day',              [9, 3]],
+        ['cumhuriyet',  'Republic Star', '🇹🇷', 'Türkiye · Republic Day',           [9, 29]],
+        ['halloween',   'Webby',         '🕸️', 'Worldwide · Halloween',            [9, 31]],
+        ['muertos',     'Calavera',      '💀', 'Mexico · Day of the Dead',         [10, 1]],
+        ['bonfire',     'Bonfire',       '🔥', 'UK · Bonfire Night',               [10, 5]],
+        ['thanks',      'Gobbler',       '🦃', 'USA · Thanksgiving',               thanksgiving],
+        ['xmas',        'Starry Tree',   '🎄', 'Worldwide · Christmas',            [11, 25]]
+    ].map(function (e) {
+        var d = { id: 'ev-' + e[0], name: e[1], em: '<span class="chroma">' + e[2] + '</span>', tx: e[2],
+            r: 'mystichroma', event: true, where: e[3], when: e[4] };
+        LIST.push(d); BY_ID[d.id] = d;
+        return d;
+    });
+    function eventStart(ev, y) {
+        var md = typeof ev.when === 'function' ? ev.when(y) : ev.when;
+        return md ? new Date(y, md[0], md[1]) : null;
+    }
+    // Every holiday slot around now, in date order: { darky, start, end }.
+    function eventSlots() {
+        var y = new Date().getFullYear(), all = [];
+        [y - 1, y, y + 1].forEach(function (yy) {
+            EVENTS.forEach(function (ev) { var st = eventStart(ev, yy); if (st) all.push({ darky: ev, start: st }); });
+        });
+        all.sort(function (a, b) { return a.start - b.start; });
+        all.forEach(function (sl, i) {
+            var next = all[i + 1] ? all[i + 1].start.getTime() : Infinity;
+            sl.end = new Date(Math.min(sl.start.getTime() + WEEK, next));
+        });
+        return all;
+    }
+    // The holiday Darky on sale right now (or null), and the next one.
+    function eventNow() {
+        var now = Date.now(), slots = eventSlots(), live = null, next = null;
+        for (var i = 0; i < slots.length; i++) {
+            if (slots[i].start <= now && now < slots[i].end) live = slots[i];
+            if (!next && slots[i].start > now) next = slots[i];
+        }
+        return { live: live, next: next };
+    }
+    function buyEvent(id) {
+        var s = load(), d = BY_ID[id], cur = eventNow().live;
+        if (!d || !d.event) return { error: 'No such Darky' };
+        if (s.owned[id]) return { error: 'You already have it' };
+        if (!isOwner() && (!cur || cur.darky.id !== id)) return { error: 'Not on sale today' };
+        if (s.tokens < EVENT_COST) return { error: 'Not enough tokens' };
+        s.tokens -= EVENT_COST;
+        s.owned[id] = 1;
+        save();
+        return { darky: d };
+    }
     var RANK = ['free', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'chroma', 'mystical', 'unique'];
     // Fast path: rolls n boxes in memory and saves once, so even millions of
     // boxes (Spend All) finish in a few seconds.
@@ -532,6 +626,15 @@
         setChromaYear: function (y) {
             if (!isOwner()) return;
             load().ownerYear = +y; save();
-        }
+        },
+        EVENTS: EVENTS,
+        EVENT_COST: EVENT_COST,
+        eventNow: eventNow,
+        buyEvent: buyEvent
     };
+
+    // Another tab saved: drop this tab's copy so it never writes old numbers back.
+    try {
+        window.addEventListener('storage', function (e) { if (e.key === KEY) mem = null; });
+    } catch (e) { /* no window */ }
 })();
