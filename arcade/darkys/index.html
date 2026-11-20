@@ -183,7 +183,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
   </div>
   <div class="toast" id="toast"></div>
 
-<script src="../darkys.js?v=5"></script>
+<script src="../darkys.js?v=6"></script>
 <script>
 (function () {
 'use strict';
@@ -217,10 +217,10 @@ function renderTournament() {
     msg = 'Starts soon! Finish in the top ' + T.PRIZE_RANK + ' to win Etermaximus.';
     left = 'STARTS IN ' + bigTime(T.START - Date.now());
   } else if (st === 'live') {
-    msg = 'Your best Gold Quiz score counts. Be in the top ' + T.PRIZE_RANK + ' when it ends on November 21 to win Etermaximus! The others keep playing, so keep climbing.';
+    msg = 'Your best Gold Quiz score counts. Be in the top ' + T.PRIZE_RANK + ' when the 5 minutes are up to win Etermaximus! The others keep playing, so keep climbing.';
     left = 'ENDS IN ' + bigTime(T.endsIn()) + '  ·  YOUR BEST ' + best + '  ·  RANK #' + rank;
   } else {
-    msg = best && rank <= T.PRIZE_RANK
+    msg = Darkys.marketUnlocked()
       ? 'You finished #' + rank + '. Etermaximus is yours: claim it in the Market!'
       : 'The tournament is over.' + (best ? ' You finished #' + rank + '.' : '');
     left = 'FINAL RESULTS';
