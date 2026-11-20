@@ -52,6 +52,20 @@
         ['Nemo', 20], ['Pogo', 10], ['Kiwi', 10], ['Bo', 10], ['Tiny', 10]
     ];
 
+    // Drawn Darkys are pictures, not emoji: em holds an <img> tag and tx a
+    // plain-text stand-in for places that can only show text.
+    var XLOJO = 'data:image/webp;base64,UklGRnYQAABXRUJQVlA4IGoQAADwTQCdASrIAL4APmEsk0YkIqGhJ3R7yIAMCWZu3V3omzF/UF8T+WHte15+5/iH8qvlB3URsOzT+T92nzr/yH+49iXmEfrp+w3939pD9M/cx+6PqA/ZD90vdt/2fqo/qvqCfyT/P///sPv3Z9g39yvTf/dL4VP7T/yP3X9rH//50n/lu3b/Ecu4kh+3n7Xij4BHrP/X76mAL897tz5O9Zfr1/svcA/j/9h40igN/MP8T6JegR8//0PsHfzb+/GgUH8gHoOqlJ6p+IJmO9F4yGkzV02hRV9+vXmhdX5jNmySRfBf/PhwrqPW3g7U8QKFP+eRZwg/yguvyi+/Q4lBq1LESqKsf8oDoxdID8zUq+5iPHsXvk4EN7vkAkiySwaR5kVIjOwEpCxgn9Ufdu17w4SqvkgQBUcDom8Uq5myKT2mZhmvVlReGl/DpMLqFW9nl5S4ZOffgXBYXhZVTB795p8RoVk+nVwHYjtB4EoLOeOnMXXfSM8JxVwhB6heFRfg2+2OKOCY+TyrbtAjGdHvkYDWAgTQoP5yRFXzW0KEL+Ku9xO/tpoq0EOuC/fQr4C9GIUzcT8rkJeHpz++AR88gY4Vwk01ENEY9ETsN8ZRORwbBDn3qaOaVMxgYPo3gCJMb/Tasz3+9EgbZcVrx5UzC7B5u+edw9fhzpbjOe7iKEC8kOQjxfBZ9UQ7u1W1zPaxAP/MMrLZRlo/4tfuEWUMVMgvHn9e/blcCmz3DnKMde31akhgwN9WNXd1iyyUuG6pyqmuFoydOIUpM2mSjKUB0ljt8uHIqLImeQu1V17zahqgoeSObmoFUjPUYBsAIoY1+750NJGDrShQAAD++ooj+H2Km4Nm0FSsNzPZymxv8Rf/ZPSdYUUy1gUXToGOEVh0jFaqsKjN6yeFcWfqXlu2vF/7+WL+M5Rgt/Y4eOybbnHN1dfGVhq3rlCGVFMqKqZzMc3aw8I9ObfuqugmPOlOEpzCR0fhW81omobXFB6dOgAPVc/pcNIFPbRjmTJEL8XLETpu3B/CFTzjNLfan3pDzPbNOpp9K4QCyv5aT9vHvuZ0nlKv/W3gZs8f9Q72JVshCmiAFmgZ11otmjMQs/YZSUBo1r/IqmLvg3yMSF2tagB77ez5OFEaHZQ3K62cYx7TSjkmUIvLxjpuVGJTIU3aHwHAxKmdiHCHWZzKut05KdWP21noe1fx17JCxQPDkebwSePlqIQuPxSNZw5hZ/SUdBf3AhV7qY5Zag6DvaEP+W6jhgXbNV8rdiWcP9vNOC4bjOAA4auHvEJsAGISv8p64n55c8Y6AHJ50BpJksQv5kgp1a4WjwTYDzfKts5cMG09HaxDaQWZ1lXUhF/I9f85PwBSmIA5sUWJ+qU18D7xFxooFualbNyqvVwMtErO9ynAQHGpDSEXRFjXeQoL/w8B28KMSOmT03OXMtZW3AvX2Tp3zW8WkVDS/OFvH8itRB1aJ6OjIFbh2sXrNdn9GLMVPmOAXOUgg53/fWzII+ZIMy2fLea57Hq+dK1tIaTqc2TsnLEgTsitXjxyImzjYSvuvxisq/nsdh0IkYvQfw3WmJqS+e2YdqTKUvFCOqlkW9zNVSGDkK/ZNB+kVSXIt3pqRPlqHGK+pVFk9S3WgSskbvBtE/ng6HGYnJsSh8U+Y2EdrFkJG4FtNaMzHYnc1gXeJNzrCgo+Can65bYcFp+y726MVU/O3YwtFrRJ6rdxHnX89HGk7hQOwT+ARoBRlCjclqsWq0aJpWpHOggwe9icHvoKUJvD8fNua+3APRtnHTLfeCvVAU2PBJZwMt2vxMMFEJv9DqafJm4ouyVe5dsJbp9LwGV8/K32R8cuFn2BCNKM1MYNsD/GuWAzeLaB7Y7K0MNYB7FIbnQ8lbUgjQ1n6vEq2t3lTEQ5JX8cBJwh0enqdNCRjtiDLl7Gq3n9QEXg2LPs46cOlgI7zF7bNHr973dT3L9RONJdCn4wbTYMIOCuckKrCG+7rexlBYcsrauzOxxfIA/rDn23YCMs+Y+sTx8IdAfsFE1hFuPAccgd1W5G1P87pR7AUhhPFvpPR6RnXeU18lnU6bG6qd+mCOqdW0VN8PaW/yB8/eKtuXkcOSxb/6d+CWcuXURsVe0Q0M8y60DqqzIBj/suYtsW3NK2YwVfm4aDXi0i4ZNhGRolD6utvKRBJ9NSjdRX8k3Bh8ofKJ7SpgFaE39y107r1TNrLBkDE/GSa5fG9PAjmU6DM2N+dSuZyFbn9PQ67TSQrsRyL9qkQAMiL/6EO4qY2DjK08xhdgAB8pwDSELByaHfkYd6RZm168bzrJCdpaA2SBjCLKIAk0heK9dfRt65QoWa0oDG77H8qiSiLGU4lAvUI6AV86WX2EkszNsnLyp6EnYjSRJopX0ULSaoqQ2IZ+9gbdAJQLX4LNGct6ktv3FD3zLR0u96k7ww0Xl8Gb86EZBowiNLBFEZKi9fs2npTz411Up9z0hv+5p+3PmrBrhTqHzxUbmRsmuUoqsGbNfBhCFhYJcFGiJqpGcvcx5VDeUALquQSl4Vhu04fWX9VJ11lxQCPWSP/gh6mSXMui1I5IH2gSK6038XJZZ79w5Lq20xaOe1nKg23Ak0ofxF8lGNp61tXEowcqfPsHLQda57rvwu1GppPlQ/9GO35x9Pn7CdLDcxm9M/LGnev0g2U6E9kanPyLjciSO5MHXvVQb3KnV+dskdGxtvmCaRhTUIJEa3HJv9pyWEiYbsLoSgeTVG079wOk78R6SGJVv3n7hJ+H3H0jfmyd7u88dwLqCMMo1YlRmfUbRW9TTJX73oZ6Ze8Y2BxPU8NtFqE6bU4UOLvrkF6SI0I9+9aZLe6HMrQHofATIc7ujJHUuvQHwY6Yp21kfeCxNJPmSjhJcjOIYJRVRN0Cz4jniIWAev5oi+pt2icge4FFiBKD/wjLkUt01S1We1gNwuvIbjvukoiNo3cc0D3tRA3rAZONYDBDDvTU6BLvL0vl4W17N6qJSLnwCPfIroXGGHMQlWlt3PZpz7aJTMoSZMP+poks2uLRdbuS2/ipp/RI68rvRvnmQBSMqvYqQKOmoY6jMhC9UPa+kHwn8DG38Bv2j16JSnFWwL3S21zO9zEXNhihchc4/yxgLEiqRMuRPJ7we5mxEY+ASKe+oAyUUGVs3XNBYLxv04+Fc9HKH+xf5Vo2hiakV4iyx88P0pRvmCUfknBRAz0/Pnjr9AHm4po/Bq5l1gLAJxnI+HI2I14VjtYSaUpL9rTBv8Q7pUp5e0ERC1tG09DOwhbQE1L+Og/yv1ORW1vuJXWrXiu03xnSUp71hfvl8em4HfdI2cf+pXghLnztHbgEMHlJTY9TEVIti0vqmv8AhsuJ0xmcW6Vz6fJNjcJyCPyITeO7gqwHmnzCJd6niimhygqmDB6DzEJ+vOL75VmPGqks/8/MCpycNwisymNDnHxIH+lSsqUel5J02skB+ktuXM2Kn+mqav1D/O5rHT6G273uc1PcMnsBp/Apk9H/99AkrVslv73tviVz5zDggPvwli+DEtpuOu9gq94U7OW24kDM44kzOmD2YG1vqfAdsrDJdwff30yyPzyIUsSMx+La+P6EhwL7S2y11T1DPe4lY4xarHJCG/LaaqEdeRrw8m+GkrMSupNoHgv/UFAiC49L4wqn62vw82YccTij+vYC0jt4r8a/didXc9QBZekGwGYwDC8kCUNfGHvxW8av6RCeM0ujdje8YNI1/vvW1Hy9lroJws1WDnEALt6CAT41YcuDoEScYfjnqROn0gyfs/pwXzkECVum+GdoV8q/4viGUSVe3OS20N5csASZcCp7YU1lVvd5as9QNDwvCNA9Yu1iZBEw9RMU5WOD8MnKYXb6q4AVZ4jddMPCxaPjWYettopJ3mdL6QBmH0sOATS3S3Oqnjl/iN+smdIX4z2+1hrj1enoGFxJdhta1ftZmFSviVw6RNNEhlgWGu6trQ9Dc7mBBF/KU5zTCyde0fsdZ9VrasELgLRSozLIe0zj2RkyjijPHcWZmro540L2LRuNrSPPA4x0h90XKWBUFfpzCvlVhreoYs0wBvi/X9sK/SJZjgLO6MQaputc3oK7Z5InqaodRM1h1lW7CatMjoOG2M5jzeLVWy+8oFJCaeJBXQpp6Vlegef4gnxJujSJpVIEN4oGRbnYly7lBZdN2zmOyCDlcaa6e9e1dGAT3+zOYOmgOYh33cfFx0zqSA/nxaj1FzFtmNGVNM8wbxVcRfLRh4hQ50PzvPY5w7oykR6Z9DG9osf6x+JuLxmDift5xiPvYzskuduLB/E4Ru51UtIeQFtXF/m9qyJA9WHQ9YoKyLeTt2LrCZLPzrXANIThxFBpv2uG/6lQIvLpKyDXmhXDx1NLf5bH2AVTgIfMtFjwq53CSv974tfHm/Bn2jxmtT9EjE32h4uUrmczGi4ag6h2e6xgZcfWHHadWRVCurR/e7YjBcjms3YwG9MYduHwc6m4qTbewlIKm/56fz67RLafPpXSNKn6cQDa7dD0OZhinTuv2OUsup7ClIJeRlv4aD0gEyuL4d3E61uHFERzOeVnFIcV+l/aHjFozVPv4Ibuh2PqGTIJMfg2D54gtb7ZljBYmlePrD3j1868e1rzaeAWNbR/Y6vFtdZIWltC/dQDFabZU86uv8cJlM2pb+EMXBhWbdmRxqoakprLkQbA5LfoM2jXQzKWoszdePCab9aevtRfJ7psyqGDQD1A0CAt/JJE+Lw6jOvW/mh+HcdW/w5sHzj8xnD5s0L0AkL6ZjYHHS7jCxPbbO28bwBN97WjmbqYTwOV+SoTkEiv/i9OFo7rMuoa/DfVKfNYtYDbkjdktOa1ZABa8O0QAF2gq+InHle2Z1utBurqp0rp5PVAn+4yO757AeJvylLGq5vjOzIbgDQzqSbQI4uN6fcrgLYZSTwOtyCii30/f24xIEX9/+93hBWkNlHEEy8DkdQZcrxgoL/BMf5HB46VbfTyb3RFCfwx0qCICU/NwXJCTfggYMoS52B9ED9jc9JcIDzj1EkwAB1pbljTPmTzs0UiJ15k8Q/aqAI4ePU2oKSloIt/lJpih38Dy4B9u6tS6trcXGHlBR5fRDGeGcrBZ1hMwgkYfs+WT0ZJQheMBa3zNqNJHm4Zp6oER9zzohZ1Q5VzYPR2c6YNb5XtNKFsWzQXMUaYZa1UVQK48hxtPaXdClN2jYkW6J/4EZYa90/V7kZt7aBR+8BB4kqOiwFw/zY5tOYbBg6y4k2IRsLaN+CuCGbDWlvwrF3wAAJwFnzy+SfxUOAG81ZrI5QXl8h3ZOJiWvJVZXuPdEv1YBRODULN8r0eK4AKGobEl1bbIWMlI9pTvUor4NbfpX7Djni/Dr2GhHcchJ9rfiTPzl77C6UtO2bLJCPb2JOWMeW4+O7HbvIrfzzx8LGv9llCA7zbJUe7XX1pAd60yn6AP06CJo9hfO2zfXa9AhPGycLd40nAav7dmy2dvwGslCjfQ5/kDE64yHLciRo5BzQrjoFNCxuqGFesndcl7jA+ZCMHuSnSuUHFUbd/uTG1pBPqk/Oa/VxxOUfoMPJ0BG6Y8/NvFqdwQJcmbixisAAAAAAA==';
+    function img(src) { return '<img class="dkimg" alt="" src="' + src + '">'; }
+    try {
+        var st = document.createElement('style');
+        st.textContent = '.dkimg{width:1em;height:1em;object-fit:cover;vertical-align:middle;border-radius:.18em;display:inline-block}';
+        document.head.appendChild(st);
+    } catch (e) { /* no DOM */ }
+
+    // Opening a page with ?claim=<code> gives that Unique Darky to this
+    // device. The owner's device gets every Unique automatically.
+    var UNIQUE_CLAIMS = { 'xlojo-7713': 'xlojo' };
+
     var RARITY = {
         free:      { name: 'Free',      color: '#7ee8ff', refund: 1 },
         common:    { name: 'Common',    color: '#b9b6cf', refund: 2 },
@@ -93,7 +107,10 @@
         { id: 'rex',     name: 'King Rex', em: '🦖', r: 'legendary' },
         { id: 'drako',   name: 'Drako',   em: '🐉', r: 'legendary' },
 
-        { id: 'etermaximus', name: 'Etermaximus', em: '🔮', r: 'mystical', market: true }
+        { id: 'etermaximus', name: 'Etermaximus', em: '🔮', r: 'mystical', market: true },
+        // Unique: winners of the opening drawing contest, drawn by players.
+        // Never in a box; given with a claim link (see UNIQUE_CLAIMS).
+        { id: 'xlojo', name: 'Xlojo', em: img(XLOJO), tx: '⚡', r: 'unique', unique: true }
     ];
 
     var BOXES = {
@@ -125,6 +142,9 @@
         if (!s.owned.darky) s.owned.darky = 1;                 // the free one is always yours
         if (typeof s.tokens !== 'number' || s.tokens < 0) s.tokens = 0;
         if (!BY_ID[s.selected] || !s.owned[s.selected]) s.selected = 'darky';
+        var claim = (location.search.match(/[?&]claim=([\w-]+)/) || [])[1];
+        if (claim && UNIQUE_CLAIMS[claim]) s.owned[UNIQUE_CLAIMS[claim]] = s.owned[UNIQUE_CLAIMS[claim]] || 1;
+        if (isOwner()) LIST.forEach(function (d) { if (d.unique && !s.owned[d.id]) s.owned[d.id] = 1; });
         if (s.tId !== T_ID) { s.tId = T_ID; s.tBest = 0; s.etermaxUnlocked = false; }   // new round: everyone from 0
         mem = s;
         return s;
@@ -235,7 +255,7 @@
 
     function claimMarket(id) {
         var s = load(), d = BY_ID[id];
-        if (!d || !d.market || !marketUnlocked() || s.owned[id]) return null;
+        if (!d || !d.market || d.unique || !marketUnlocked() || s.owned[id]) return null;
         s.owned[id] = 1;
         save();
         return d;
