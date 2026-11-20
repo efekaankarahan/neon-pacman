@@ -30,18 +30,26 @@
     // entrants are bots. Each bot has a final score it reaches by the end and
     // climbs toward it as the tournament goes on, so the top 5 gets harder to
     // hold the later it gets. The bot list is the same for every player.
-    var T_START = Date.parse('2026-11-20T05:45:00Z');
-    var T_END = Date.parse('2026-11-22T08:00:00Z');
+    // Round 2: a fresh 5-minute tournament, 22:06-22:11 Pacific on 19 Nov.
+    // T_ID changes per round so every player's old best is wiped.
+    var T_ID = 'r2';
+    var T_START = Date.parse('2026-11-20T06:06:00Z');
+    var T_END = Date.parse('2026-11-20T06:11:00Z');
+
+    // The site owner always finishes first. Their device is marked by
+    // opening any Arcade page once with ?owner=efe-9k27 in the address.
+    var OWNER_KEY = 'darkyplayOwner';
+    var OWNER_NAME = 'Efe 👑';
     var T_PRIZE_RANK = 5;
     var T_BOTS = [
-        ['NovaKid', 25000], ['ZapZap', 18000], ['Pixelina', 13500], ['MrQuizz', 10500], ['Glimmer', 8000],
-        ['TurboTom', 7200], ['Luma', 6500], ['BeanBoss', 5900], ['Kiko', 5300], ['RocketRay', 4800],
-        ['Mimi99', 4300], ['Sparky', 3900], ['Dash', 3500], ['Yuki', 3200], ['Orbit', 2900],
-        ['FoxFire', 2600], ['Bubbles', 2350], ['Ace', 2100], ['Nugget', 1900], ['Moxie', 1700],
-        ['Zed', 1500], ['Pepper', 1350], ['Ziggy7', 1200], ['Coco', 1050], ['Bolt2', 950],
-        ['Waffles', 850], ['Juno', 750], ['Taco', 650], ['Pip', 560], ['Rex10', 480],
-        ['Sunny', 400], ['Milo', 340], ['Ivy', 280], ['Jax', 230], ['Lulu', 180],
-        ['Nemo', 140], ['Pogo', 110], ['Kiwi', 85], ['Bo', 60], ['Tiny', 40]
+        ['NovaKid', 3000], ['ZapZap', 2160], ['Pixelina', 1620], ['MrQuizz', 1260], ['Glimmer', 960],
+        ['TurboTom', 860], ['Luma', 780], ['BeanBoss', 710], ['Kiko', 640], ['RocketRay', 580],
+        ['Mimi99', 520], ['Sparky', 470], ['Dash', 420], ['Yuki', 380], ['Orbit', 350],
+        ['FoxFire', 310], ['Bubbles', 280], ['Ace', 250], ['Nugget', 230], ['Moxie', 200],
+        ['Zed', 180], ['Pepper', 160], ['Ziggy7', 140], ['Coco', 130], ['Bolt2', 110],
+        ['Waffles', 100], ['Juno', 90], ['Taco', 80], ['Pip', 70], ['Rex10', 60],
+        ['Sunny', 50], ['Milo', 40], ['Ivy', 30], ['Jax', 30], ['Lulu', 20],
+        ['Nemo', 20], ['Pogo', 10], ['Kiwi', 10], ['Bo', 10], ['Tiny', 10]
     ];
 
     var RARITY = {
@@ -115,6 +123,7 @@
         if (!s.owned.darky) s.owned.darky = 1;                 // the free one is always yours
         if (typeof s.tokens !== 'number' || s.tokens < 0) s.tokens = 0;
         if (!BY_ID[s.selected] || !s.owned[s.selected]) s.selected = 'darky';
+        if (s.tId !== T_ID) { s.tId = T_ID; s.tBest = 0; s.etermaxUnlocked = false; }   // new round: everyone from 0
         mem = s;
         return s;
     }
@@ -148,9 +157,9 @@
 
     function botScore(final, now) {
         if (now >= T_END) return final;
-        if (now <= T_START) return Math.round(final * 0.2);
+        if (now <= T_START) return 0;
         var p = (now - T_START) / (T_END - T_START);
-        return Math.round(final * (0.2 + 0.8 * Math.pow(p, 0.8)));
+        return Math.round(final * Math.pow(p, 0.8));
     }
 
     function playerName() {
@@ -158,10 +167,23 @@
     }
 
     // Everyone in the tournament, best first, with the player marked me:true.
+    function isOwner() {
+        try {
+            if (/[?&]owner=efe-9k27\b/.test(location.search)) localStorage.setItem(OWNER_KEY, '1');
+            return localStorage.getItem(OWNER_KEY) === '1';
+        } catch (e) { return false; }
+    }
+
     function standings() {
-        var s = load(), now = Math.min(Date.now(), T_END);
+        var s = load(), now = Math.min(Date.now(), T_END), owner = isOwner();
         var rows = T_BOTS.map(function (b) { return { name: b[0], score: botScore(b[1], now) }; });
-        rows.push({ name: playerName(), score: s.tBest || 0, me: true });
+        var mine = { name: owner ? OWNER_NAME : playerName(), score: s.tBest || 0, me: true };
+        rows.push(mine);
+        // the owner's entry always sits one step above everyone else
+        var top = 0;
+        rows.forEach(function (r) { if (!(owner && r.me)) top = Math.max(top, r.score); });
+        if (owner) mine.score = Math.max(mine.score, top + 10);
+        else rows.push({ name: OWNER_NAME, score: top + 10 });
         // a tie goes to the player
         rows.sort(function (a, b) { return (b.score - a.score) || ((b.me ? 1 : 0) - (a.me ? 1 : 0)); });
         rows.forEach(function (r, i) { r.rank = i + 1; });
@@ -186,7 +208,7 @@
     function marketUnlocked() {
         var s = load();
         if (s.etermaxUnlocked) return true;
-        if (tState() === 'over' && (s.tBest || 0) > 0 && myRank() <= T_PRIZE_RANK) {
+        if (tState() === 'over' && ((s.tBest || 0) > 0 || isOwner()) && myRank() <= T_PRIZE_RANK) {
             s.etermaxUnlocked = true;
             save();
             return true;
