@@ -418,9 +418,11 @@
 
     // Holiday Darkys
     // --------------
-    // Every special day around the world has its own glowing Darky. It is on
-    // sale from that day until the next special day starts, at most a week,
-    // for EVENT_COST tokens, one per player. Dates use the player's local date.
+    // Every special day around the world has its own glowing Darky: the big
+    // world holidays below plus the national day of every one of the 195
+    // countries. A day's Darkys are on sale from that day until the next
+    // special day starts (at most a week), for EVENT_COST tokens, one each
+    // per player. Dates use the player's local date.
     var EVENT_COST = 200, WEEK = 7 * DAY;
     var LUNAR = { 2026: [1, 17], 2027: [1, 6], 2028: [0, 26], 2029: [1, 13], 2030: [1, 3], 2031: [0, 23], 2032: [1, 11],
         2033: [0, 31], 2034: [1, 19], 2035: [1, 8], 2036: [0, 28], 2037: [1, 15], 2038: [1, 4], 2039: [0, 24], 2040: [1, 12] };
@@ -469,16 +471,73 @@
         LIST.push(d); BY_ID[d.id] = d;
         return d;
     });
+    // National days: code|country|month-day|I (Independence Day) or N (National Day).
+    // Canada, USA, France, India, Brazil, Mexico, Germany, Ireland, Iran,
+    // Türkiye and the UK already have their days in the list above.
+    var NATIONAL = 'AF|Afghanistan|8-19|I;AL|Albania|11-28|I;DZ|Algeria|7-5|I;AD|Andorra|9-8|N;AO|Angola|11-11|I;' +
+        'AG|Antigua and Barbuda|11-1|I;AR|Argentina|7-9|I;AM|Armenia|9-21|I;AU|Australia|1-26|N;AT|Austria|10-26|N;' +
+        'AZ|Azerbaijan|5-28|I;BS|Bahamas|7-10|I;BH|Bahrain|12-16|N;BD|Bangladesh|3-26|I;BB|Barbados|11-30|I;' +
+        'BY|Belarus|7-3|I;BE|Belgium|7-21|N;BZ|Belize|9-21|I;BJ|Benin|8-1|I;BT|Bhutan|12-17|N;BO|Bolivia|8-6|I;' +
+        'BA|Bosnia and Herzegovina|3-1|I;BW|Botswana|9-30|I;BN|Brunei|2-23|N;BG|Bulgaria|3-3|N;BF|Burkina Faso|8-5|I;' +
+        'BI|Burundi|7-1|I;CV|Cabo Verde|7-5|I;KH|Cambodia|11-9|I;CM|Cameroon|5-20|N;CF|Central African Republic|8-13|I;' +
+        'TD|Chad|8-11|I;CL|Chile|9-18|I;CN|China|10-1|N;CO|Colombia|7-20|I;KM|Comoros|7-6|I;CG|Congo|8-15|I;' +
+        'CD|DR Congo|6-30|I;CR|Costa Rica|9-15|I;CI|Côte d\'Ivoire|8-7|I;HR|Croatia|5-30|N;CU|Cuba|1-1|N;' +
+        'CY|Cyprus|10-1|I;CZ|Czechia|10-28|N;DK|Denmark|6-5|N;DJ|Djibouti|6-27|I;DM|Dominica|11-3|I;' +
+        'DO|Dominican Republic|2-27|I;EC|Ecuador|8-10|I;EG|Egypt|7-23|N;SV|El Salvador|9-15|I;' +
+        'GQ|Equatorial Guinea|10-12|I;ER|Eritrea|5-24|I;EE|Estonia|2-24|I;SZ|Eswatini|9-6|I;ET|Ethiopia|5-28|N;' +
+        'FJ|Fiji|10-10|I;FI|Finland|12-6|I;GA|Gabon|8-17|I;GM|Gambia|2-18|I;GE|Georgia|5-26|I;GH|Ghana|3-6|I;' +
+        'GR|Greece|3-25|I;GD|Grenada|2-7|I;GT|Guatemala|9-15|I;GN|Guinea|10-2|I;GW|Guinea-Bissau|9-24|I;' +
+        'GY|Guyana|5-26|I;HT|Haiti|1-1|I;HN|Honduras|9-15|I;HU|Hungary|8-20|N;IS|Iceland|6-17|N;ID|Indonesia|8-17|I;' +
+        'IQ|Iraq|10-3|N;IL|Israel|5-14|I;IT|Italy|6-2|N;JM|Jamaica|8-6|I;JP|Japan|2-11|N;JO|Jordan|5-25|I;' +
+        'KZ|Kazakhstan|12-16|I;KE|Kenya|12-12|I;KI|Kiribati|7-12|I;KW|Kuwait|2-25|N;KG|Kyrgyzstan|8-31|I;' +
+        'LA|Laos|12-2|N;LV|Latvia|11-18|I;LB|Lebanon|11-22|I;LS|Lesotho|10-4|I;LR|Liberia|7-26|I;LY|Libya|12-24|I;' +
+        'LI|Liechtenstein|8-15|N;LT|Lithuania|2-16|I;LU|Luxembourg|6-23|N;MG|Madagascar|6-26|I;MW|Malawi|7-6|I;' +
+        'MY|Malaysia|8-31|I;MV|Maldives|7-26|I;ML|Mali|9-22|I;MT|Malta|9-21|I;MH|Marshall Islands|5-1|N;' +
+        'MR|Mauritania|11-28|I;MU|Mauritius|3-12|I;FM|Micronesia|11-3|I;MD|Moldova|8-27|I;MC|Monaco|11-19|N;' +
+        'MN|Mongolia|7-11|N;ME|Montenegro|7-13|N;MA|Morocco|7-30|N;MZ|Mozambique|6-25|I;MM|Myanmar|1-4|I;' +
+        'NA|Namibia|3-21|I;NR|Nauru|1-31|I;NP|Nepal|5-28|N;NL|Netherlands|4-27|N;NZ|New Zealand|2-6|N;' +
+        'NI|Nicaragua|9-15|I;NE|Niger|8-3|I;NG|Nigeria|10-1|I;KP|North Korea|9-9|N;MK|North Macedonia|9-8|I;' +
+        'NO|Norway|5-17|N;OM|Oman|11-20|N;PK|Pakistan|8-14|I;PW|Palau|10-1|I;PS|Palestine|11-15|I;PA|Panama|11-3|I;' +
+        'PG|Papua New Guinea|9-16|I;PY|Paraguay|5-15|I;PE|Peru|7-28|I;PH|Philippines|6-12|I;PL|Poland|11-11|I;' +
+        'PT|Portugal|6-10|N;QA|Qatar|12-18|N;RO|Romania|12-1|N;RU|Russia|6-12|N;RW|Rwanda|7-1|I;' +
+        'KN|Saint Kitts and Nevis|9-19|I;LC|Saint Lucia|2-22|I;VC|Saint Vincent and the Grenadines|10-27|I;' +
+        'WS|Samoa|6-1|I;SM|San Marino|9-3|N;ST|São Tomé and Príncipe|7-12|I;SA|Saudi Arabia|9-23|N;SN|Senegal|4-4|I;' +
+        'RS|Serbia|2-15|N;SC|Seychelles|6-29|I;SL|Sierra Leone|4-27|I;SG|Singapore|8-9|N;SK|Slovakia|8-29|N;' +
+        'SI|Slovenia|6-25|N;SB|Solomon Islands|7-7|I;SO|Somalia|7-1|I;ZA|South Africa|4-27|N;KR|South Korea|10-3|N;' +
+        'SS|South Sudan|7-9|I;ES|Spain|10-12|N;LK|Sri Lanka|2-4|I;SD|Sudan|1-1|I;SR|Suriname|11-25|I;SE|Sweden|6-6|N;' +
+        'CH|Switzerland|8-1|N;SY|Syria|4-17|I;TJ|Tajikistan|9-9|I;TZ|Tanzania|4-26|N;TH|Thailand|12-5|N;' +
+        'TL|Timor-Leste|5-20|I;TG|Togo|4-27|I;TO|Tonga|6-4|N;TT|Trinidad and Tobago|8-31|I;TN|Tunisia|3-20|I;' +
+        'TM|Turkmenistan|9-27|I;TV|Tuvalu|10-1|I;UG|Uganda|10-9|I;UA|Ukraine|8-24|I;AE|United Arab Emirates|12-2|N;' +
+        'UY|Uruguay|8-25|I;UZ|Uzbekistan|9-1|I;VU|Vanuatu|7-30|I;VA|Vatican City|5-8|N;VE|Venezuela|7-5|I;' +
+        'VN|Vietnam|9-2|N;YE|Yemen|5-22|N;ZM|Zambia|10-24|I;ZW|Zimbabwe|4-18|I;';
+    function flag(code) {
+        return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65, 0x1F1E6 + code.charCodeAt(1) - 65);
+    }
+    NATIONAL.split(';').forEach(function (row) {
+        if (!row) return;
+        var f = row.split('|'), md = f[2].split('-');
+        var d = { id: 'ev-' + f[0].toLowerCase(), name: f[1] + ' Spirit', em: '<span class="chroma">' + flag(f[0]) + '</span>', tx: flag(f[0]),
+            r: 'mystichroma', event: true, where: f[1] + ' · ' + (f[3] === 'I' ? 'Independence Day' : 'National Day'),
+            when: [+md[0] - 1, +md[1]] };
+        LIST.push(d); BY_ID[d.id] = d; EVENTS.push(d);
+    });
     function eventStart(ev, y) {
         var md = typeof ev.when === 'function' ? ev.when(y) : ev.when;
         return md ? new Date(y, md[0], md[1]) : null;
     }
-    // Every holiday slot around now, in date order: { darky, start, end }.
+    // Every holiday date around now, in order: { start, end, darkys: [...] }.
+    // Darkys that share a date go on sale together.
     function eventSlots() {
-        var y = new Date().getFullYear(), all = [];
+        var y = new Date().getFullYear(), by = {};
         [y - 1, y, y + 1].forEach(function (yy) {
-            EVENTS.forEach(function (ev) { var st = eventStart(ev, yy); if (st) all.push({ darky: ev, start: st }); });
+            EVENTS.forEach(function (ev) {
+                var st = eventStart(ev, yy);
+                if (!st) return;
+                var k = st.getTime();
+                (by[k] = by[k] || { start: st, darkys: [] }).darkys.push(ev);
+            });
         });
+        var all = Object.keys(by).map(function (k) { return by[k]; });
         all.sort(function (a, b) { return a.start - b.start; });
         all.forEach(function (sl, i) {
             var next = all[i + 1] ? all[i + 1].start.getTime() : Infinity;
@@ -486,7 +545,7 @@
         });
         return all;
     }
-    // The holiday Darky on sale right now (or null), and the next one.
+    // The holiday Darkys on sale right now (or null), and the next ones.
     function eventNow() {
         var now = Date.now(), slots = eventSlots(), live = null, next = null;
         for (var i = 0; i < slots.length; i++) {
@@ -499,7 +558,7 @@
         var s = load(), d = BY_ID[id], cur = eventNow().live;
         if (!d || !d.event) return { error: 'No such Darky' };
         if (s.owned[id]) return { error: 'You already have it' };
-        if (!isOwner() && (!cur || cur.darky.id !== id)) return { error: 'Not on sale today' };
+        if (!isOwner() && (!cur || cur.darkys.indexOf(d) < 0)) return { error: 'Not on sale today' };
         if (s.tokens < EVENT_COST) return { error: 'Not enough tokens' };
         s.tokens -= EVENT_COST;
         s.owned[id] = 1;
