@@ -441,7 +441,9 @@
         if (s.tokens < box.cost) return { error: 'Not enough tokens' };
 
         s.tokens -= box.cost;
-        if (boxId === 'free') s.lastFree = Date.now();
+        if (boxId === 'free') { s.lastFree = Date.now(); bump(s, 'free', 1); }
+        if (boxId === 'holy') bump(s, 'faith', 1);
+        bump(s, 'boxes', 1);
 
         var r = rollRarity(box.odds);
         var pool = poolFor(box, r);
@@ -643,6 +645,8 @@
             opened += batch;
         } while (untilBroke && opened < MAX_OPEN);
 
+        bump(s, 'boxes', opened);
+        if (boxId === 'holy' && opened) bump(s, 'faith', opened);
         var list = [], fresh = 0;
         for (k in counts) {
             var isNew = !s.owned[k];
@@ -653,6 +657,64 @@
         save();
         list.sort(function (a, b) { return (RANK.indexOf(b.darky.r) - RANK.indexOf(a.darky.r)) || (b.count - a.count); });
         return { count: opened, list: list, refund: refund, fresh: fresh, capped: opened >= MAX_OPEN && s.tokens >= box.cost };
+    }
+
+    // Daily quests and streak
+    // -----------------------
+    // Three quests a day (the same three for everyone on that date) and a
+    // daily reward that grows while the player comes back every day.
+    var QUESTS = [
+        // group 0: play
+        [['play1', 'Play 1 Gold Quiz game', 'games', 1, 25], ['play3', 'Play 3 Gold Quiz games', 'games', 3, 60],
+         ['win1', 'Win a Gold Quiz game (1st place)', 'wins', 1, 50]],
+        // group 1: skill
+        [['right20', 'Answer 20 questions right', 'correct', 20, 40], ['right50', 'Answer 50 questions right', 'correct', 50, 90],
+         ['gold500', 'Get 500 gold in one Gold Quiz game', 'bestGold', 500, 50]],
+        // group 2: collect
+        [['box5', 'Open 5 boxes or packs', 'boxes', 5, 30], ['box25', 'Open 25 boxes or packs', 'boxes', 25, 60],
+         ['free1', 'Open the Free Box', 'free', 1, 20], ['faith1', 'Open a Faith Pack', 'faith', 1, 40]]
+    ];
+    var STREAK = [20, 30, 40, 60, 80, 100, 200];
+    function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+    function daily(s) {
+        var k = dayKey();
+        if (!s.daily || s.daily.day !== k) s.daily = { day: k, prog: {}, done: {} };
+        return s.daily;
+    }
+    function bump(s, what, n) {
+        var dl = daily(s);
+        if (what === 'bestGold') dl.prog[what] = Math.max(dl.prog[what] || 0, n);
+        else dl.prog[what] = (dl.prog[what] || 0) + n;
+    }
+    function hash(str) { var h = 7; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
+    function todaysQuests() {
+        var s = load(), dl = daily(s), h = hash(dl.day);
+        return QUESTS.map(function (g, i) {
+            var q = g[(h >>> (i * 4)) % g.length], have = Math.min(q[3], dl.prog[q[2]] || 0);
+            return { id: q[0], text: q[1], goal: q[3], reward: q[4], have: have, ready: have >= q[3], claimed: !!dl.done[q[0]] };
+        });
+    }
+    function claimQuest(id) {
+        var s = load(), dl = daily(s), q = todaysQuests().filter(function (x) { return x.id === id; })[0];
+        if (!q || !q.ready || q.claimed) return 0;
+        dl.done[id] = true;
+        s.tokens += q.reward;
+        save();
+        return q.reward;
+    }
+    function streakInfo() {
+        var s = load(), st = s.streak || { last: '', n: 0 }, today = dayKey();
+        var y = new Date(); y.setDate(y.getDate() - 1);
+        var next = st.last === today ? st.n : (st.last === dayKey(y) ? st.n + 1 : 1);
+        return { claimedToday: st.last === today, day: next, reward: STREAK[(next - 1) % STREAK.length], table: STREAK };
+    }
+    function claimStreak() {
+        var s = load(), info = streakInfo();
+        if (info.claimedToday) return 0;
+        s.streak = { last: dayKey(), n: info.day };
+        s.tokens += info.reward;
+        save();
+        return info.reward;
     }
 
     window.Darkys = {
@@ -731,7 +793,20 @@
         EVENTS: EVENTS,
         EVENT_COST: EVENT_COST,
         eventNow: eventNow,
-        buyEvent: buyEvent
+        buyEvent: buyEvent,
+        quests: todaysQuests,
+        claimQuest: claimQuest,
+        streak: streakInfo,
+        claimStreak: claimStreak,
+        // Gold Quiz reports a finished game here.
+        gameDone: function (o) {
+            var s = load();
+            bump(s, 'games', 1);
+            bump(s, 'correct', o.right || 0);
+            bump(s, 'bestGold', o.gold || 0);
+            if (o.place === 1) bump(s, 'wins', 1);
+            save();
+        }
     };
 
     // Another tab saved: drop this tab's copy so it never writes old numbers back.
