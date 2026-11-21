@@ -757,7 +757,7 @@ function endRound() {
   $('endstats').textContent = state.me.gold + ' gold · ' + state.right + ' right answers out of ' + state.asked;
   var earned = state.right ? Math.min(80, state.right * 2 + Math.round(state.me.gold / 25) + [10, 6, 4, 2, 1][place - 1]) : 0;
   var total = Darkys.addTokens(earned);
-  if (Darkys.gameDone) Darkys.gameDone({ right: state.right, gold: state.me.gold, place: place });
+  var cupMsg = Darkys.gameDone ? Darkys.gameDone({ game: 'gold', right: state.right, gold: state.me.gold, place: place }) : '';
   var T = Darkys.tournament, tl = $('endtour');
   if (T.state() === 'live') {
     var isBest = T.submit(state.me.gold);
@@ -765,7 +765,8 @@ function endRound() {
     tl.textContent = '🏆 Tournament: ' + (isBest ? 'new best ' + state.me.gold + '! ' : 'your best is ' + T.best() + '. ') +
       'You are #' + rk + (rk <= T.PRIZE_RANK ? ', in the Etermaximus zone! 🔮' : ', top ' + T.PRIZE_RANK + ' win Etermaximus.');
     tl.classList.add('on');
-  } else tl.classList.remove('on');
+  } else if (cupMsg) { tl.textContent = '🏆 Cups: ' + cupMsg; tl.classList.add('on'); }
+  else tl.classList.remove('on');
   $('endtokens').textContent = earned ? '+' + earned + ' 🎟️ tokens  (you have ' + total + ')' : 'Answer questions to earn 🎟️ tokens!';
   show('end');
   if (window.gtag) gtag('event', 'gold_quiz_end', { place: place, gold: state.me.gold });
