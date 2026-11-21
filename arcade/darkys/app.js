@@ -742,9 +742,135 @@ $('darkBtn').onclick = function () { openBox('dark'); };
 $('equipBtn').onclick = function () { if (last) Darkys.select(last.id); $('reveal').className = 'reveal'; render(); };
 $('closeBtn').onclick = function () { $('reveal').className = 'reveal'; hideSummary(); render(); };
 
+// ---------- Cups (tournaments page) ----------
+(function addCupsTab() {
+  var nav = document.querySelector('.tabs');
+  if (!nav || !Darkys.cups || nav.querySelector('a[href="../cups/"]')) return;
+  var a = document.createElement('a');
+  a.href = '../cups/';
+  a.id = 'tabCups';
+  a.textContent = '🏆 CUPS';
+  if (/\/cups\//.test(location.pathname)) { [].forEach.call(nav.children, function (x) { x.classList.remove('on'); }); a.className = 'on'; }
+  nav.appendChild(a);
+})();
+var CUP_PLAY = { fish: ['../fishing-frenzy/', 'PLAY FISHING FRENZY'], speed: ['../gold-quiz/', 'PLAY GOLD QUIZ'], king: ['../', 'PLAY BOTH GAMES'],
+  box: ['../market/', 'OPEN BOXES'], ko: ['../gold-quiz/', 'PLAY YOUR MATCH'], league: ['../gold-quiz/', 'PLAY GOLD QUIZ'] };
+function buildCups() {
+  if (!has('cups') || !Darkys.cups) return;
+  var css = document.createElement('style');
+  css.textContent = '.cuptop{text-align:center;margin-bottom:14px}' +
+    '.cuptime{font-family:"Press Start 2P",monospace;font-size:clamp(20px,5vw,34px);color:var(--gold);text-shadow:0 0 14px rgba(255,200,61,.5)}' +
+    '.cupme{margin-top:8px;font-weight:900;color:#fff}' +
+    '.cups{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}' +
+    '.cup{background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}' +
+    '.cup.in{border-color:#ffd23f;box-shadow:0 0 22px rgba(255,210,63,.3)}' +
+    '.cup.off{opacity:.55}' +
+    '.cup .hd{display:flex;align-items:center;gap:10px}.cup .hd .ic{font-size:38px}' +
+    '.cup .hd b{font-family:"Press Start 2P",monospace;font-size:11px;line-height:1.5;display:block}' +
+    '.cup .how{color:var(--muted);font-size:13px;line-height:1.45}' +
+    '.cup .pz{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:12px;padding:8px;font-weight:900;font-size:13px}' +
+    '.cup .pz .em{font-size:34px;width:46px;text-align:center}' +
+    '.cup .lb{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:900}' +
+    '.cup .lb div{display:flex;justify-content:space-between;padding:4px 8px;border-radius:8px;background:var(--panel2)}' +
+    '.cup .lb div.me{background:#ffd23f;color:#3b2400}.cup .lb div.dots{background:none;justify-content:center;color:var(--muted)}' +
+    '.cup .acts{display:flex;gap:8px}.cup .acts>*{flex:1;text-align:center;text-decoration:none}' +
+    '.ko{display:flex;gap:6px}.ko span{flex:1;text-align:center;font-family:"Press Start 2P",monospace;font-size:8px;padding:8px 2px;border-radius:8px;background:var(--panel2);line-height:1.5}' +
+    '.ko span.won{background:#2ee59d;color:#062}.ko span.lost{background:#ff4d6d;color:#fff}.ko span.next{outline:2px solid #ffd23f}' +
+    '@media (max-width:720px){.cups{grid-template-columns:1fr}}';
+  document.head.appendChild(css);
+  var host = $('cups');
+  Darkys.cups.LIST.forEach(function (c) {
+    var d = document.createElement('div');
+    d.className = 'cup';
+    d.id = 'cup-' + c.id;
+    var pz = c.prize ? Darkys.get(c.prize) : null;
+    d.innerHTML = '<div class="hd"><span class="ic">' + c.icon + '</span><div><b>' + c.name.toUpperCase() + '</b><span class="st" style="font-size:12px;color:var(--muted)"></span></div></div>' +
+      '<div class="how">' + esc(c.how) + '</div>' +
+      '<div class="pz"><span class="em">' + (pz ? pz.em : '🛡️') + '</span><span class="pzt"></span></div>' +
+      '<div class="extra"></div><div class="lb"></div>' +
+      '<div class="acts"><button class="buy jn">JOIN</button><a class="buy alt" href="' + CUP_PLAY[c.id][0] + '">' + CUP_PLAY[c.id][1] + '</a></div>';
+    d.querySelector('.jn').onclick = function () {
+      if (Darkys.cups.join(c.id)) { toast(c.icon + ' You joined the ' + c.name + '!'); renderCups(); }
+      else toast('You are already in another Cup this round. A new round starts every 5 minutes!');
+    };
+    host.appendChild(d);
+  });
+  setInterval(renderCups, 1000);
+}
+function cupSettleShow() {
+  if (!Darkys.cups) return;
+  var won = Darkys.cups.settle();
+  if (!won.length) return;
+  var best = won.filter(function (w) { return w.darky; })[0];
+  var tok = won.reduce(function (n, w) { return n + (w.tokens || 0); }, 0);
+  if (best) {
+    last = null; hideSummary();
+    $('shake').style.display = 'none'; $('equipBtn').style.display = 'none';
+    $('prize').innerHTML = '<div class="new">' + best.cup.icon + ' ' + esc(best.cup.name).toUpperCase() + ' · #' + best.rank + '</div>' +
+      '<div class="em" style="border-color:#ffd23f;box-shadow:0 0 60px #ffd23f">' + best.darky.em + '</div>' +
+      '<div class="nm">' + esc(best.darky.name) + '</div><div class="rr" style="color:#ffd23f">TROPHY</div>' +
+      (tok ? '<div class="note">+' + tok.toLocaleString('en-US') + ' 🎟️ tokens</div>' : '');
+    $('prize').className = 'prize on'; $('rbtns').className = 'rbtns on'; $('reveal').className = 'reveal on';
+    render();
+  } else if (tok) reward(tok, won.map(function (w) { return w.cup.icon + ' #' + w.rank; }).join(' · ') + ' IN LAST ROUND!');
+  else won.forEach(function (w) { if (w.move === 'down') toast('🛡️ You dropped to the ' + Darkys.cups.LEAGUES[Darkys.cups.tier()][0] + ' League.'); });
+}
+function fmtLeft(ms) { var t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + ('0' + t % 60).slice(-2); }
+var cupRoundSeen = null;
+function renderCups() {
+  if (!has('cups') || !Darkys.cups) return;
+  var C = Darkys.cups, joined = C.joined(), r = C.round();
+  if (cupRoundSeen !== null && cupRoundSeen !== r) cupSettleShow();
+  cupRoundSeen = r;
+  $('cupTime').textContent = fmtLeft(C.endsIn());
+  $('cupMe').innerHTML = joined === 'all' ? '👑 Owner: you are in all 6 Cups and win them all.'
+    : joined ? 'You are in the <b>' + esc(C.LIST.filter(function (c) { return c.id === joined; })[0].name) + '</b> this round. Next round you can pick again.'
+    : 'Pick <b>one</b> Cup for this round. Top 3 win 🎟️ 5,000 / 2,000 / 1,000 and the Trophy Darky.';
+  C.LIST.forEach(function (c) {
+    var d = $('cup-' + c.id), isIn = joined === 'all' || joined === c.id, e = C.entry(c.id);
+    d.className = 'cup' + (isIn ? ' in' : joined && joined !== 'all' ? ' off' : '');
+    var jn = d.querySelector('.jn');
+    jn.textContent = isIn ? '✓ JOINED' : 'JOIN';
+    jn.disabled = isIn || (!!joined && joined !== 'all');
+    var pzt = d.querySelector('.pzt');
+    if (c.id === 'league') {
+      var L = C.LEAGUES[e ? e.tier : C.tier()], sh = Darkys.get(L[1]);
+      d.querySelector('.pz .em').innerHTML = sh.em;
+      pzt.innerHTML = 'You are in the <b>' + L[0] + ' League</b>. Top 3 win the ' + esc(sh.name) + (Darkys.owns(sh.id) ? ' ✓' : '') + ' and move up.';
+    } else {
+      var pz = Darkys.get(c.prize);
+      pzt.innerHTML = (c.top === 1 ? 'Only #1 wins ' : 'Top 3 win ') + '<b>' + esc(pz.name) + '</b>, Trophy Darky' + (Darkys.owns(pz.id) ? ' ✓ owned' : '');
+    }
+    var lb = d.querySelector('.lb'), ex = d.querySelector('.extra');
+    if (c.id === 'ko') {
+      var st = e ? e.st : 0, out = e && e.out, names = ['QUARTER', 'SEMI', 'FINAL'];
+      ex.innerHTML = '<div class="ko">' + names.map(function (n, i) {
+        return '<span class="' + (i < st ? 'won' : out && i === st ? 'lost' : isIn && i === st ? 'next' : '') + '">' + n + '</span>';
+      }).join('') + '</div>';
+      var opp = C.koOpponent(r, Math.min(st, 2));
+      lb.innerHTML = st >= 3 ? '<div class="me"><span>🏆 CHAMPION!</span><span>prize when the round ends</span></div>'
+        : out ? '<div><span>Knocked out. Try again next round!</span></div>'
+        : '<div><span>Next: vs ' + esc(opp.name) + '</span><span>beat ' + opp.gold + ' gold</span></div>';
+      d.querySelector('.st').textContent = '';
+      return;
+    }
+    ex.innerHTML = '';
+    var rows = C.standings(c.id), me = rows.filter(function (x) { return x.me; })[0], html = '';
+    rows.slice(0, 5).forEach(function (x) {
+      html += '<div class="' + (x.me && isIn ? 'me' : '') + '"><span>#' + x.rank + ' ' + esc(x.me && !isIn ? 'You (not joined)' : x.name) + '</span><span>' + x.score.toLocaleString('en-US') + ' ' + c.unit + '</span></div>';
+    });
+    if (isIn && me.rank > 5) html += '<div class="dots">⋯</div><div class="me"><span>#' + me.rank + ' ' + esc(me.name) + '</span><span>' + me.score.toLocaleString('en-US') + ' ' + c.unit + '</span></div>';
+    lb.innerHTML = html;
+    d.querySelector('.st').textContent = isIn ? 'You: #' + me.rank : '';
+  });
+}
+
 buildDayPack();
 buildSpecials();
+buildCups();
+cupSettleShow();
 render();
+renderCups();
 setInterval(render, 60000);
 // Opened from a gift link: redeem it once and clean the address.
 (function () {
