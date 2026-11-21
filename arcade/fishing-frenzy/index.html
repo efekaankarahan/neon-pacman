@@ -500,8 +500,9 @@ function endRound() {
   $('endstats').textContent = state.me.lbs.toLocaleString('en-US') + ' lbs · ' + state.catches + ' catches · ' + state.right + ' right, ' + state.wrong + ' wrong';
   var earned = state.right ? Math.min(80, state.right * 2 + Math.round(state.me.lbs / 40) + [10, 6, 4, 2, 1, 0][place - 1]) : 0;
   var total = Darkys.addTokens(earned);
-  if (Darkys.gameDone) Darkys.gameDone({ right: state.right, gold: 0, place: place });
-  $('endtok').innerHTML = earned ? '+' + earned + ' 🎟️ tokens<br>(you have ' + total.toLocaleString('en-US') + ')' : 'Answer questions to earn 🎟️ tokens!';
+  var cupMsg = Darkys.gameDone ? Darkys.gameDone({ game: 'fish', right: state.right, gold: 0, lbs: state.me.lbs, place: place }) : '';
+  $('endtok').innerHTML = (earned ? '+' + earned + ' 🎟️ tokens<br>(you have ' + total.toLocaleString('en-US') + ')' : 'Answer questions to earn 🎟️ tokens!') +
+    (cupMsg ? '<br>🏆 ' + esc(cupMsg) : '');
   // Darky Fish: one free Ocean Pack each (at most 3 a round)
   var gifts = [];
   for (var g = 0; g < Math.min(3, state.darkyFish) && Darkys.bonusOpen; g++) {
