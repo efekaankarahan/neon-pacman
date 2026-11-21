@@ -110,7 +110,9 @@
         atomic:    { name: 'Atomic',    color: '#8cff6b', refund: 20 },
         divine:    { name: 'Divine',    color: '#fff1c4', refund: 20 },
         wild:      { name: 'Wild',      color: '#2ee59d', refund: 20 },
-        explorer:  { name: 'Explorer',  color: '#ffa94d', refund: 20 }
+        explorer:  { name: 'Explorer',  color: '#ffa94d', refund: 20 },
+        // won only in the 5-minute Cups (tournaments), never in a box
+        trophy:    { name: 'Trophy',    color: '#ffd23f', refund: 1000 }
     };
 
     var LIST = [
@@ -406,6 +408,20 @@
         BOXES[k] = { name: SEASONS[k].name, cost: 100, icon: SEASONS[k].icon, season: k, odds: SEASON_ODDS };
     });
 
+    // Cup prize Darkys (see Cups below)
+    [['leviathan', 'Leviathan', '<span class="dkspin">🐋</span>', '🐋', 'Fishing Cup'],
+     ['chronos', 'Chronos', '<span class="dkspin">⏳</span>', '⏳', 'Speed Cup'],
+     ['arcadeking', 'Arcade King', '<span class="dkgold">👑</span>', '👑', 'Arcade King Cup'],
+     ['luckystar', 'Lucky Star', '<span class="dkfire">🌟</span>', '🌟', 'Box Cup'],
+     ['champion', 'Champion', '<span class="dkgold">🏆</span>', '🏆', 'Knockout Cup'],
+     ['bronze', 'Bronze Shield', '🥉', '🥉', 'League · Bronze'],
+     ['silver', 'Silver Shield', '🥈', '🥈', 'League · Silver'],
+     ['gold', 'Gold Shield', '<span class="dkgold">🥇</span>', '🥇', 'League · Gold'],
+     ['diamond', 'Diamond Shield', '<span class="dkfire">💎</span>', '💎', 'League · Diamond']
+    ].forEach(function (c) {
+        LIST.push({ id: 'cup-' + c[0], name: c[1], em: c[2], tx: c[3], r: 'trophy', cup: true, where: c[4] });
+    });
+
     var BY_ID = {};
     LIST.forEach(function (d) { BY_ID[d.id] = d; });
 
@@ -426,7 +442,7 @@
         if (!BY_ID[s.selected] || !s.owned[s.selected]) s.selected = 'darky';
         var claim = (location.search.match(/[?&]claim=([\w-]+)/) || [])[1];
         if (claim && UNIQUE_CLAIMS[claim]) s.owned[UNIQUE_CLAIMS[claim]] = s.owned[UNIQUE_CLAIMS[claim]] || 1;
-        if (isOwner()) LIST.forEach(function (d) { if ((d.unique || d.theme || d.special || d.holy) && !s.owned[d.id]) s.owned[d.id] = 1; });
+        if (isOwner()) LIST.forEach(function (d) { if ((d.unique || d.theme || d.special || d.holy || d.cup) && !s.owned[d.id]) s.owned[d.id] = 1; });
         if (s.tId !== T_ID) { s.tId = T_ID; s.tBest = 0; s.etermaxUnlocked = false; }   // new round: everyone from 0
         mem = s;
         return s;
@@ -604,6 +620,7 @@
         if (boxId === 'free') { s.lastFree = Date.now(); bump(s, 'free', 1); }
         if (boxId === 'holy') bump(s, 'faith', 1);
         bump(s, 'boxes', 1);
+        cupScore(s, 'box', 1, true);
 
         var r = rollRarity(box.odds);
         var pool = poolFor(box, r);
@@ -807,6 +824,7 @@
         } while (untilBroke && opened < MAX_OPEN);
 
         bump(s, 'boxes', opened);
+        cupScore(s, 'box', opened, true);
         if (boxId === 'holy' && opened) bump(s, 'faith', opened);
         var list = [], fresh = 0;
         for (k in counts) {
@@ -979,6 +997,206 @@
         return { darky: d, isNew: isNew };
     }
 
+    // Cups
+    // ----
+    // Six tournaments run side by side, each in back-to-back 5-minute rounds
+    // on the clock (12:00, 12:05, 12:10...). A player joins one Cup per round;
+    // the site owner is in all of them and wins all of them. Like the old
+    // Etermaximus Tournament the other entrants are bots: every bot has a
+    // final score for the round (the same on every device, seeded by the
+    // round number) and climbs toward it as the 5 minutes go by.
+    var CUP_LEN = 5 * 60 * 1000;
+    var CUPS = [
+        { id: 'fish',   name: 'Fishing Cup',    icon: '🎣', prize: 'cup-leviathan',  top: 3, scale: 2600, unit: 'lbs',
+          how: 'Your best Fishing Frenzy haul (total lbs) in the round.' },
+        { id: 'speed',  name: 'Speed Cup',      icon: '⚡', prize: 'cup-chronos',    top: 3, scale: 34,   unit: 'right',
+          how: 'Most right answers in one Gold Quiz game: answer fast!' },
+        { id: 'king',   name: 'Arcade King',    icon: '👑', prize: 'cup-arcadeking', top: 1, scale: 4200, unit: 'pts',
+          how: 'Your best Gold Quiz gold + your best Fishing Frenzy lbs. Only #1 wins.' },
+        { id: 'box',    name: 'Box Cup',        icon: '📦', prize: 'cup-luckystar',  top: 3, scale: 900,  unit: 'Darkys',
+          how: 'Open the most boxes and packs in the round (any box or pack counts).' },
+        { id: 'ko',     name: 'Knockout Cup',   icon: '🏟️', prize: 'cup-champion',   top: 1, scale: 0,    unit: '',
+          how: '8 players, 1-on-1 Gold Quiz matches: quarterfinal, semifinal, final. Beat the bot\'s gold to go through, one loss and you are out.' },
+        { id: 'league', name: 'League',         icon: '🛡️', prize: null,             top: 3, scale: 1500, unit: 'gold',
+          how: 'Best Gold Quiz gold in the round. Top 3 of your league move up and win its Shield, the bottom 3 move down.' }
+    ];
+    var CUP_BY = {};
+    CUPS.forEach(function (c) { CUP_BY[c.id] = c; });
+    var LEAGUES = [['Bronze', 'cup-bronze', 1], ['Silver', 'cup-silver', 1.35], ['Gold', 'cup-gold', 1.75], ['Diamond', 'cup-diamond', 2.3]];
+    var CUP_TOKENS = { 1: 5000, 2: 2000, 3: 1000 };
+
+    function cupRound(t) { return Math.floor((t || Date.now()) / CUP_LEN); }
+    function cupState(s) {
+        var c = s.cups = s.cups || {};
+        c.v = c.v || {};          // cup id -> { r: round, v: score, ...}
+        if (c.tier === undefined) c.tier = 0;
+        return c;
+    }
+    function rng(seed) {
+        return function () {
+            seed = (seed + 0x6D2B79F5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    function cupIn(s, id, r) {
+        if (isOwner()) return true;
+        var c = cupState(s);
+        return !!c.join && c.join.r === r && c.join.cup === id;
+    }
+    function cupEntry(s, id, r) {
+        var c = cupState(s), e = c.v[id];
+        if (!e || e.r !== r) e = c.v[id] = { r: r, v: 0, g: 0, f: 0, st: 0, out: false, tier: c.tier };
+        return e;
+    }
+    // add (box) or keep the best (others); only counts for a Cup you are in
+    function cupScore(s, id, n, add) {
+        var r = cupRound();
+        if (!cupIn(s, id, r)) return;
+        var e = cupEntry(s, id, r);
+        e.v = add ? e.v + n : Math.max(e.v, n);
+    }
+    function botFinals(id, r, tier) {
+        var cup = CUP_BY[id], rand = rng(r * 131 + CUPS.indexOf(cup) * 7 + (tier || 0) * 1009), out = [];
+        var mult = id === 'league' ? LEAGUES[tier || 0][2] : 1;
+        var n = id === 'league' ? 9 : 19;
+        var pool = T_BOTS.map(function (b) { return b[0]; });
+        for (var i = 0; i < n; i++) {
+            var name = pool.splice(Math.floor(rand() * pool.length), 1)[0];
+            out.push({ name: name, v: Math.round(cup.scale * mult * Math.pow(rand(), 1.6) * (0.35 + 0.65 * rand())) + 1 });
+        }
+        return out;
+    }
+    function cupStandings(id, r) {
+        r = r === undefined ? cupRound() : r;
+        var s = load(), live = r === cupRound(), owner = isOwner();
+        var e = (cupState(s).v[id] || {}).r === r ? cupState(s).v[id] : null;
+        var tier = e ? e.tier : cupState(s).tier;
+        var p = live ? Math.min(1, (Date.now() - r * CUP_LEN) / CUP_LEN) : 1;
+        var rows = botFinals(id, r, tier).map(function (b) { return { name: b.name, score: Math.round(b.v * Math.pow(p, 0.8)) }; });
+        var mine = { name: owner ? OWNER_NAME : playerName(), score: e ? e.v : 0, me: true };
+        if (owner) mine.score = Math.max(mine.score, rows.reduce(function (m, x) { return Math.max(m, x.score); }, 0) + 10);
+        rows.push(mine);
+        rows.sort(function (a, b) { return (b.score - a.score) || ((b.me ? 1 : 0) - (a.me ? 1 : 0)); });
+        rows.forEach(function (x, i) { x.rank = i + 1; });
+        return rows;
+    }
+    function cupRank(id, r) {
+        var rows = cupStandings(id, r);
+        for (var i = 0; i < rows.length; i++) if (rows[i].me) return rows[i].rank;
+        return rows.length;
+    }
+    function grantDarky(s, id) {
+        if (!id || s.owned[id]) return false;
+        s.owned[id] = 1;
+        return true;
+    }
+    // Settle finished rounds: prizes for the last round you played.
+    function cupSettle() {
+        var s = load(), c = cupState(s), now = cupRound(), won = [];
+        c.paid = c.paid || {};
+        CUPS.forEach(function (cup) {
+            var e = c.v[cup.id];
+            if (!e || e.r >= now || c.paid[cup.id] === e.r) return;
+            c.paid[cup.id] = e.r;
+            var played = isOwner() || (c.join && c.join.r === e.r && c.join.cup === cup.id);
+            if (!played) return;
+            if (cup.id === 'ko') {
+                if (e.st >= 3) { s.tokens += CUP_TOKENS[1]; grantDarky(s, cup.prize); won.push({ cup: cup, rank: 1, tokens: CUP_TOKENS[1], darky: BY_ID[cup.prize] }); }
+                return;
+            }
+            if (!e.v && !isOwner()) return;
+            var rank = cupRank(cup.id, e.r);
+            if (cup.id === 'league') {
+                var L = LEAGUES[e.tier], res = { cup: cup, rank: rank, tokens: 0 };
+                if (rank <= 3) {
+                    res.tokens = CUP_TOKENS[rank]; s.tokens += res.tokens;
+                    if (grantDarky(s, L[1])) res.darky = BY_ID[L[1]];
+                    if (c.tier < 3) { c.tier = e.tier + 1; res.move = 'up'; }
+                } else if (rank >= 8 && c.tier > 0) { c.tier = e.tier - 1; res.move = 'down'; }
+                won.push(res);
+                return;
+            }
+            if (rank <= 3) {
+                var res2 = { cup: cup, rank: rank, tokens: CUP_TOKENS[rank] };
+                s.tokens += res2.tokens;
+                if (rank <= cup.top && grantDarky(s, cup.prize)) res2.darky = BY_ID[cup.prize];
+                won.push(res2);
+            }
+        });
+        if (won.length) save();
+        return won;
+    }
+    // Knockout: each Gold Quiz game in the round is your next match.
+    function koOpponent(r, stage) {
+        var rand = rng(r * 977 + stage * 31);
+        var names = ['NovaKid', 'ZapZap', 'Pixelina', 'MrQuizz', 'Glimmer', 'TurboTom', 'Luma', 'BeanBoss'];
+        return { name: names[Math.floor(rand() * names.length)], gold: Math.round((350 + rand() * 650) * (1 + stage * 0.3)) };
+    }
+    function cupGame(o) {
+        var s = load(), r = cupRound(), msg = [];
+        var game = o.game || (o.gold ? 'gold' : 'fish');
+        if (game === 'fish') {
+            cupScore(s, 'fish', o.lbs || 0);
+            if (cupIn(s, 'king', r)) { var k = cupEntry(s, 'king', r); k.f = Math.max(k.f, o.lbs || 0); k.v = k.g + k.f; }
+        } else {
+            cupScore(s, 'speed', o.right || 0);
+            cupScore(s, 'league', o.gold || 0);
+            if (cupIn(s, 'king', r)) { var k2 = cupEntry(s, 'king', r); k2.g = Math.max(k2.g, o.gold || 0); k2.v = k2.g + k2.f; }
+            if (cupIn(s, 'ko', r)) {
+                var e = cupEntry(s, 'ko', r);
+                if (!e.out && e.st < 3) {
+                    var opp = koOpponent(r, e.st), stages = ['Quarterfinal', 'Semifinal', 'Final'];
+                    if ((o.gold || 0) > opp.gold || isOwner()) {
+                        msg.push('🏟️ ' + stages[e.st] + ' won vs ' + opp.name + ' (' + opp.gold + ')!' + (e.st === 2 ? ' You are the CHAMPION 🏆' : ''));
+                        e.st++;
+                    } else { e.out = true; msg.push('🏟️ Knocked out in the ' + stages[e.st] + ' by ' + opp.name + ' (' + opp.gold + ').'); }
+                    e.v = e.st;
+                }
+            }
+        }
+        save();
+        var c = cupState(s);
+        CUPS.forEach(function (cup) {
+            if (cup.id === 'ko' || !cupIn(s, cup.id, r)) return;
+            if (game === 'fish' && !(cup.id === 'fish' || cup.id === 'king')) return;
+            if (game !== 'fish' && cup.id === 'fish') return;
+            if (cup.id === 'box') return;
+            msg.push(cup.icon + ' ' + cup.name + ': #' + cupRank(cup.id, r));
+        });
+        return msg.join('  ·  ');
+    }
+    var cupsAPI = {
+        LEN: CUP_LEN,
+        LIST: CUPS,
+        LEAGUES: LEAGUES,
+        TOKENS: CUP_TOKENS,
+        round: cupRound,
+        endsIn: function () { return (cupRound() + 1) * CUP_LEN - Date.now(); },
+        joined: function () {
+            var s = load(), c = cupState(s);
+            return isOwner() ? 'all' : (c.join && c.join.r === cupRound() ? c.join.cup : null);
+        },
+        join: function (id) {
+            var s = load(), c = cupState(s), r = cupRound();
+            if (!CUP_BY[id]) return false;
+            if (isOwner()) return true;
+            if (c.join && c.join.r === r) return c.join.cup === id;
+            c.join = { r: r, cup: id };
+            cupEntry(s, id, r);
+            save();
+            return true;
+        },
+        entry: function (id) { var e = cupState(load()).v[id]; return e && e.r === cupRound() ? e : null; },
+        tier: function () { return cupState(load()).tier; },
+        standings: cupStandings,
+        rank: cupRank,
+        koOpponent: koOpponent,
+        settle: cupSettle,
+        lastMsg: ''
+    };
+
     window.Darkys = {
         LIST: LIST,
         RARITY: RARITY,
@@ -1094,7 +1312,10 @@
             bump(s, 'bestGold', o.gold || 0);
             if (o.place === 1) bump(s, 'wins', 1);
             save();
-        }
+            cupsAPI.lastMsg = cupGame(o);
+            return cupsAPI.lastMsg;
+        },
+        cups: cupsAPI
     };
 
     // Another tab saved: drop this tab's copy so it never writes old numbers back.
