@@ -129,7 +129,7 @@ h1{font-family:'Press Start 2P',monospace;font-size:clamp(30px,8vw,56px);color:#
 .owner select{font-family:inherit;font-size:10px;background:var(--panel2);color:#fff;border:2px solid var(--gold);border-radius:8px;padding:6px}
 @media (max-width:720px){ .seas{grid-template-columns:1fr 1fr} }
 /* theme packs */
-.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .themes .crate{padding:14px 8px;gap:8px}
 .themes .crate .ic{font-size:46px}
 .themes .crate .nm{font-size:10px}
