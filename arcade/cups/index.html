@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cups - 5-Minute Tournaments | Darky Play Arcade</title>
+<meta name="description" content="Six tournaments every 5 minutes in Darky Play Arcade: Fishing Cup, Speed Cup, Arcade King, Box Cup, Knockout Cup and the League. Win Trophy Darkys and tokens.">
+<link rel="canonical" href="https://darkyplay.com/arcade/cups/">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="../../shared/analytics.js?v=2"></script>
+<link rel="stylesheet" href="../darkys/darkys.css?v=1">
+</head>
+<body>
+  <div class="top">
+    <a href="../">&larr; ARCADE</a>
+    <span class="pill">🎟️ <span id="tokens">0</span></span>
+  </div>
+
+  <h1>CUPS</h1>
+  <p class="tag">6 tournaments, a new round every 5 minutes. Join one, play, and win a Trophy Darky!</p>
+  <nav class="tabs"><a href="../darkys/">🌚 DARKYS</a><a href="../market/">🛒 MARKET</a><a href="../quests/" id="tabQuests">📅 QUESTS</a><a href="../trade/">🤝 TRADE</a><a href="../badges/" id="tabBadges">🏅 BADGES</a></nav>
+
+  <div class="wrap">
+    <div class="box">
+      <div class="cuptop"><h2 style="justify-content:center"><span>🏆 ROUND ENDS IN</span></h2><div class="cuptime" id="cupTime">5:00</div><div class="cupme" id="cupMe"></div></div>
+      <div class="cups" id="cups"></div>
+    </div>
+
+    <a class="play" href="../">PLAY ARCADE GAMES TO EARN 🎟️</a>
+  </div>
+
+  <div class="reveal" id="reveal">
+    <div class="shake" id="shake">📦</div>
+    <div class="prize" id="prize"></div>
+    <div class="sumhead" id="sumHead"></div>
+    <div class="sum" id="sum"></div>
+    <div class="rbtns" id="rbtns">
+      <button class="buy" id="equipBtn" style="width:auto">PLAY AS IT</button>
+      <button class="ghost" id="closeBtn">CLOSE</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="../darkys.js?v=21"></script>
+<script src="../darkys/app.js?v=1"></script>
+</body>
+</html>
