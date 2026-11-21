@@ -151,6 +151,7 @@ function render() {
   renderDayPack();
   renderEvent();
   renderHoly();
+  renderSpecials();
   renderDaily();
   renderBadges();
   renderTrade();
@@ -586,6 +587,56 @@ function renderHoly() {
   if (armedBox !== 'holy') $('holyAll').textContent = 'SPEND ALL';
 }
 
+// ---------- Special Packs (Market, under the Faith Pack) ----------
+function buildSpecials() {
+  if (!has('faith') || !Darkys.SPECIAL) return;
+  var after = $('faith');
+  Darkys.SPECIAL_ORDER.slice().reverse().forEach(function (k) {
+    var S = Darkys.SPECIAL[k], col = R[S.r].color, box = document.createElement('div');
+    box.className = 'box holybox';
+    box.id = 'sp-' + k;
+    box.style.cssText = 'border-color:' + col + '!important;box-shadow:0 0 22px ' + col + '2e;background:linear-gradient(120deg,' + col + '22,#1d1b2b 55%,#1c2340)!important';
+    box.innerHTML = '<h2><span>' + S.icon + ' ' + S.name.toUpperCase() + '</span><span style="color:' + col + '">' + R[S.r].name.toUpperCase() + ' ONLY</span></h2>' +
+      '<div class="holy"><div class="crate" style="border-color:' + col + '"><div class="ic">' + S.icon + '</div><div class="nm">' + S.name.toUpperCase() + '</div>' +
+      '<div class="odds">' + S.list.length + ' ' + R[S.r].name + ' Darkys<br>all equally likely</div>' +
+      '<button class="buy one">OPEN 1 · 🎟️ ' + S.cost + '</button><div class="packs"></div><button class="buy allbtn">SPEND ALL</button></div>' +
+      '<div class="info"></div></div>';
+    box.querySelector('.one').onclick = function () { openBox(k); };
+    [10, 50, 100, 1000].forEach(function (n) {
+      var b = document.createElement('button');
+      b.className = 'buy'; b.dataset.n = n;
+      b.innerHTML = '<b>×' + n + '</b>🎟️ ' + (S.cost * n).toLocaleString('en-US');
+      b.onclick = function () { openPack(k, n); };
+      box.querySelector('.packs').appendChild(b);
+    });
+    var all = box.querySelector('.allbtn');
+    all.onclick = function () { spendAllTap(k, all); };
+    after.parentNode.insertBefore(box, after.nextSibling);
+  });
+}
+function renderSpecials() {
+  if (!Darkys.SPECIAL) return;
+  var t = Darkys.tokens();
+  Darkys.SPECIAL_ORDER.forEach(function (k) {
+    var box = document.getElementById('sp-' + k);
+    if (!box) return;
+    var S = Darkys.SPECIAL[k], col = R[S.r].color, have = 0, groups = [];
+    Darkys.LIST.forEach(function (d) {
+      if (d.special !== k) return;
+      if (Darkys.owns(d.id)) have++;
+      var g = k === 'elements' ? d.where.split(' · ')[1] : d.where.split(' · ')[0];
+      if (groups.indexOf(g) < 0) groups.push(g);
+    });
+    box.querySelector('.info').innerHTML = esc(S.about) + ' Always open.<br><b style="color:' + col + '">' + have + ' / ' + S.list.length + '</b> collected' +
+      '<div class="faiths">' + groups.map(function (g) { return '<span>' + esc(g) + '</span>'; }).join('') + '</div>';
+    box.querySelector('.one').disabled = t < S.cost;
+    [].forEach.call(box.querySelectorAll('.packs .buy'), function (b) { b.disabled = t < S.cost * +b.dataset.n; });
+    var all = box.querySelector('.allbtn');
+    all.disabled = t < S.cost;
+    if (armedBox !== k) all.textContent = 'SPEND ALL';
+  });
+}
+
 // ---------- holiday Darky ----------
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function fmtDay(d) { return MON[d.getMonth()] + ' ' + d.getDate(); }
@@ -692,6 +743,7 @@ $('equipBtn').onclick = function () { if (last) Darkys.select(last.id); $('revea
 $('closeBtn').onclick = function () { $('reveal').className = 'reveal'; hideSummary(); render(); };
 
 buildDayPack();
+buildSpecials();
 render();
 setInterval(render, 60000);
 // Opened from a gift link: redeem it once and clean the address.
